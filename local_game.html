@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local Multiplayer - Battleship</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2980, #26d0ce);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            margin-bottom: 10px;
+        }
+
+        .player-turn {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 30px;
+            border-radius: 50px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        .game-container {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin: 20px auto;
+            max-width: 1400px;
+            flex-wrap: wrap;
+        }
+
+        .player-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            width: 600px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .player-section h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #3498db;
+        }
+
+        .grid-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .grid-wrapper {
+            text-align: center;
+        }
+
+        .grid-wrapper h3 {
+            color: #34495e;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(10, 1fr);
+            gap: 2px;
+            width: 400px;
+            height: 400px;
+            border: 3px solid #2c3e50;
+            background-color: #3498db;
+            margin: 0 auto;
+        }
+
+        .cell {
+            background-color: #ecf0f1;
+            border: 1px solid #bdc3c7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .cell:hover {
+            background-color: #d6eaf8;
+        }
+
+        .cell.hit {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .cell.miss {
+            background-color: #7f8c8d;
+            color: white;
+        }
+
+        .cell.ship {
+            background-color: #2c3e50;
+            color: white;
+        }
+
+        .cell.ship.hit {
+            background-color: #c0392b;
+        }
+
+        .controls {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #ecf0f1;
+        }
+
+        .ready-btn, .back-btn {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 0 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .ready-btn {
+            background: linear-gradient(to right, #2ecc71, #27ae60);
+            color: white;
+        }
+
+        .ready-btn:hover {
+            background: linear-gradient(to right, #27ae60, #229954);
+            transform: scale(1.05);
+        }
+
+        .ready-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .back-btn {
+            background: linear-gradient(to right, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        .back-btn:hover {
+            background: linear-gradient(to right, #c0392b, #a93226);
+            transform: scale(1.05);
+        }
+
+        .screen-blur {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .screen-blur h2 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            color: #3498db;
+        }
+
+        .screen-blur p {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .ship-status {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .ship-status-item {
+            background: #ecf0f1;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .ship-status-item.sunk {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .ship-status-item.active {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .instructions {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            color: white;
+            max-width: 800px;
+            margin: 20px auto;
+        }
+
+        .instructions h3 {
+            margin-bottom: 10px;
+            color: #3498db;
+        }
+
+        .instructions ul {
+            list-style: none;
+            text-align: left;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .instructions li:before {
+            content: "•";
+            color: #3498db;
+            position: absolute;
+            left: 0;
+        }
+
+        @media (max-width: 1200px) {
+            .game-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .player-section {
+                width: 95%;
+            }
+            
+            .grid {
+                width: 350px;
+                height: 350px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                width: 300px;
+                height: 300px;
+            }
+            
+            .grid-container {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚢 Local Multiplayer Battleship</h1>
+        <div class="player-turn" id="turnIndicator">Player 1's Turn</div>
+    </div>
+
+    <!-- Screen blur for player switching -->
+    <div class="screen-blur hidden" id="screenBlur">
+        <h2 id="blurTitle">Player 1's Turn</h2>
+        <p id="blurMessage">Prepare to attack! Click READY when you're prepared to make your move.</p>
+        <button class="ready-btn" id="readyBtn" onclick="startTurn()">READY</button>
+        <div class="instructions" style="margin-top: 30px; max-width: 500px;">
+            <h3>Player Instructions:</h3>
+            <ul>
+                <li>When it's your turn, you'll see both boards</li>
+                <li>Your ships are on the left, enemy board on the right</li>
+                <li>Click on the enemy board to attack</li>
+                <li>Red = Hit, Gray = Miss</li>
+                <li>Sink all enemy ships to win!</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Game Container -->
+    <div class="game-container">
+        <!-- Player 1 Section -->
+        <div class="player-section" id="player1Section">
+            <h2>Player 1 - Your Fleet</h2>
+            <div class="grid-container">
+                <div class="grid-wrapper">
+                    <h3>Your Ships</h3>
+                    <div class="grid" id="player1Grid"></div>
+                </div>
+                <div class="grid-wrapper">
+                    <h3>Attack Board</h3>
+                    <div class="grid" id="player1AttackGrid"></div>
+                </div>
+            </div>
+            <div class="ship-status" id="player1Ships">
+                <!-- Ships will be added here by JavaScript -->
+            </div>
+        </div>
+
+        <!-- Player 2 Section -->
+        <div class="player-section" id="player2Section">
+            <h2>Player 2 - Your Fleet</h2>
+            <div class="grid-container">
+                <div class="grid-wrapper">
+                    <h3>Your Ships</h3>
+                    <div class="grid" id="player2Grid"></div>
+                </div>
+                <div class="grid-wrapper">
+                    <h3>Attack Board</h3>
+                    <div class="grid" id="player2AttackGrid"></div>
+                </div>
+            </div>
+            <div class="ship-status" id="player2Ships">
+                <!-- Ships will be added here by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="back-btn" onclick="window.location.href='index.html'">Back to Main Menu</button>
+        <button class="ready-btn" id="endTurnBtn" onclick="endTurn()">End Turn</button>
+    </div>
+
+    <div class="instructions">
+        <h3>Local Multiplayer Rules:</h3>
+        <ul>
+            <li><strong>Player 1</strong> and <strong>Player 2</strong> take turns on this same device</li>
+            <li>When it's your turn, you'll see both players' boards</li>
+            <li>Click "End Turn" when you're done attacking</li>
+            <li>The screen will blur to prevent the other player from seeing</li>
+            <li>Press "READY" when you're ready for your turn</li>
+            <li>Ships are automatically placed at the beginning</li>
+        </ul>
+    </div>
+
+    <script>
+        // Game state variables
+        let currentPlayer = 1;
+        let gameStarted = false;
+        let ships = {
+            player1: [],
+            player2: []
+        };
+        let attacks = {
+            player1: new Set(),
+            player2: new Set()
+        };
+
+        // Ship types with size and count
+        const shipTypes = [
+            { name: "Carrier", size: 5, id: "carrier" },
+            { name: "Battleship", size: 4, id: "battleship" },
+            { name: "Cruiser", size: 3, id: "cruiser" },
+            { name: "Submarine", size: 3, id: "submarine" },
+            { name: "Destroyer", size: 2, id: "destroyer" }
+        ];
+
+        // Initialize the game
+        function initGame() {
+            createGrids();
+            placeShips('player1');
+            placeShips('player2');
+            updateShipStatus();
+            showTurnScreen();
+        }
+
+        // Create game grids
+        function createGrids() {
+            const grids = ['player1Grid', 'player2Grid', 'player1AttackGrid', 'player2AttackGrid'];
+            
+            grids.forEach(gridId => {
+                const grid = document.getElementById(gridId);
+                grid.innerHTML = '';
+                
+                for (let row = 0; row < 10; row++) {
+                    for (let col = 0; col < 10; col++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.dataset.row = row;
+                        cell.dataset.col = col;
+                        cell.dataset.grid = gridId;
+                        
+                        // Add click event for attack grids
+                        if (gridId.includes('Attack')) {
+                            cell.addEventListener('click', () => handleAttack(cell, gridId));
+                        }
+                        
+                        grid.appendChild(cell);
+                    }
+                }
+            });
+        }
+
+        // Randomly place ships for a player
+        function placeShips(player) {
+            const grid = document.getElementById(player + 'Grid');
+            ships[player] = [];
+            
+            shipTypes.forEach(shipType => {
+                let placed = false;
+                while (!placed) {
+                    const isVertical = Math.random() > 0.5;
+                    const maxRow = isVertical ? 10 - shipType.size : 9;
+                    const maxCol = isVertical ? 9 : 10 - shipType.size;
+                    
+                    const startRow = Math.floor(Math.random() * (maxRow + 1));
+                    const startCol = Math.floor(Math.random() * (maxCol + 1));
+                    
+                    // Check if ship can be placed
+                    if (canPlaceShip(player, startRow, startCol, shipType.size, isVertical)) {
+                        // Place the ship
+                        const shipCells = [];
+                        for (let i = 0; i < shipType.size; i++) {
+                            const row = isVertical ? startRow + i : startRow;
+                            const col = isVertical ? startCol : startCol + i;
+                            
+                            const cellIndex = row * 10 + col;
+                            const cell = grid.children[cellIndex];
+                            cell.classList.add('ship');
+                            cell.dataset.ship = shipType.id;
+                            
+                            shipCells.push({ row, col });
+                        }
+                        
+                        ships[player].push({
+                            ...shipType,
+                            cells: shipCells,
+                            hits: 0,
+                            sunk: false
+                        });
+                        
+                        placed = true;
+                    }
+                }
+            });
+        }
+
+        // Check if ship can be placed
+        function canPlaceShip(player, startRow, startCol, size, isVertical) {
+            for (let i = 0; i < size; i++) {
+                const row = isVertical ? startRow + i : startRow;
+                const col = isVertical ? startCol : startCol + i;
+                
+                // Check boundaries
+                if (row >= 10 || col >= 10) return false;
+                
+                // Check if cell is already occupied
+                const cellIndex = row * 10 + col;
+                const grid = document.getElementById(player + 'Grid');
+                if (grid.children[cellIndex].classList.contains('ship')) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Show turn screen (blur)
+        function showTurnScreen() {
+            const blurScreen = document.getElementById('screenBlur');
+            const blurTitle = document.getElementById('blurTitle');
+            const blurMessage = document.getElementById('blurMessage');
+            const readyBtn = document.getElementById('readyBtn');
+            
+            blurTitle.textContent = `Player ${currentPlayer}'s Turn`;
+            blurMessage.textContent = currentPlayer === 1 
+                ? "Player 1, it's your turn! Click READY when you're prepared to make your move."
+                : "Player 2, it's your turn! Click READY when you're prepared to make your move.";
+            
+            readyBtn.textContent = "READY";
+            blurScreen.classList.remove('hidden');
+            
+            // Hide player sections during turn switch
+            document.getElementById('player1Section').style.opacity = '0.3';
+            document.getElementById('player2Section').style.opacity = '0.3';
+            
+            updateTurnIndicator();
+        }
+
+        // Start player's turn
+        function startTurn() {
+            const blurScreen = document.getElementById('screenBlur');
+            blurScreen.classList.add('hidden');
+            
+            // Show current player's section fully, hide opponent's
+            if (currentPlayer === 1) {
+                document.getElementById('player1Section').style.opacity = '1';
+                document.getElementById('player2Section').style.opacity = '0.3';
+                document.getElementById('player2Grid').style.pointerEvents = 'none';
+            } else {
+                document.getElementById('player1Section').style.opacity = '0.3';
+                document.getElementById('player2Section').style.opacity = '1';
+                document.getElementById('player1Grid').style.pointerEvents = 'none';
+            }
+            
+            gameStarted = true;
+            updateTurnIndicator();
+        }
+
+        // Handle attack on enemy grid
+        function handleAttack(cell, gridId) {
+            if (!gameStarted) return;
+            
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            const attackKey = `${row},${col}`;
+            
+            // Determine which player is attacking
+            const attackingPlayer = gridId.includes('player1') ? 'player1' : 'player2';
+            const defendingPlayer = attackingPlayer === 'player1' ? 'player2' : 'player1';
+            
+            // Check if it's this player's turn
+            if ((currentPlayer === 1 && attackingPlayer !== 'player1') || 
+                (currentPlayer === 2 && attackingPlayer !== 'player2')) {
+                alert(`It's Player ${currentPlayer}'s turn!`);
+                return;
+            }
+            
+            // Check if already attacked this cell
+            if (attacks[attackingPlayer].has(attackKey)) {
+                alert('You already attacked this location!');
+                return;
+            }
+            
+            // Register attack
+            attacks[attackingPlayer].add(attackKey);
+            
+            // Check for hit
+            let hit = false;
+            let shipHit = null;
+            
+            for (const ship of ships[defendingPlayer]) {
+                for (const shipCell of ship.cells) {
+                    if (shipCell.row === row && shipCell.col === col) {
+                        hit = true;
+                        ship.hits++;
+                        shipHit = ship;
+                        
+                        // Mark as hit on both grids
+                        cell.classList.add('hit');
+                        
+                        // Mark on player's own grid too
+                        const playerGrid = document.getElementById(defendingPlayer + 'Grid');
+                        const playerCellIndex = row * 10 + col;
+                        playerGrid.children[playerCellIndex].classList.add('hit');
+                        
+                        // Check if ship is sunk
+                        if (ship.hits === ship.size) {
+                            ship.sunk = true;
+                            alert(`Player ${currentPlayer} sunk ${defendingPlayer === 'player1' ? 'Player 1' : 'Player 2'}'s ${ship.name}!`);
+                        }
+                        break;
+                    }
+                }
+                if (hit) break;
+            }
+            
+            if (!hit) {
+                cell.classList.add('miss');
+            }
+            
+            // Check for win condition
+            if (checkWin(defendingPlayer)) {
+                setTimeout(() => {
+                    alert(`Player ${currentPlayer} wins! All enemy ships have been sunk!`);
+                    if (confirm('Would you like to play again?')) {
+                        location.reload();
+                    } else {
+                        window.location.href = 'index.html';
+                    }
+                }, 500);
+                return;
+            }
+            
+            updateShipStatus();
+        }
+
+        // Check if a player has won
+        function checkWin(player) {
+            return ships[player].every(ship => ship.sunk);
+        }
+
+        // End current player's turn
+        function endTurn() {
+            if (!gameStarted) return;
+            
+            gameStarted = false;
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            showTurnScreen();
+        }
+
+        // Update turn indicator
+        function updateTurnIndicator() {
+            const indicator = document.getElementById('turnIndicator');
+            indicator.textContent = gameStarted 
+                ? `Player ${currentPlayer}'s Turn - Make Your Move!`
+                : `Player ${currentPlayer}'s Turn - Click READY`;
+            
+            // Update button text
+            const endTurnBtn = document.getElementById('endTurnBtn');
+            endTurnBtn.textContent = gameStarted ? 'End Turn' : 'Waiting...';
+            endTurnBtn.disabled = !gameStarted;
+        }
+
+        // Update ship status display
+        function updateShipStatus() {
+            const player1Status = document.getElementById('player1Ships');
+            const player2Status = document.getElementById('player2Ships');
+            
+            player1Status.innerHTML = '';
+            player2Status.innerHTML = '';
+            
+            // Update player 1 ships
+            ships.player1.forEach(ship => {
+                const shipItem = document.createElement('div');
+                shipItem.className = `ship-status-item ${ship.sunk ? 'sunk' : 'active'}`;
+                shipItem.innerHTML = `
+                    ${ship.sunk ? '💀' : '🚢'} ${ship.name} 
+                    (${ship.hits}/${ship.size})
+                `;
+                player1Status.appendChild(shipItem);
+            });
+            
+            // Update player 2 ships
+            ships.player2.forEach(ship => {
+                const shipItem = document.createElement('div');
+                shipItem.className = `ship-status-item ${ship.sunk ? 'sunk' : 'active'}`;
+                shipItem.innerHTML = `
+                    ${ship.sunk ? '💀' : '🚢'} ${ship.name} 
+                    (${ship.hits}/${ship.size})
+                `;
+                player2Status.appendChild(shipItem);
+            });
+        }
+
+        // Initialize the game when page loads
+        window.onload = initGame;
+    </script>
+</body>
+</html>
