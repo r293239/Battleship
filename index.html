@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battleship Online</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2980, #26d0ce);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(to right, #2c3e50, #4a6491);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .main-content {
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .game-modes {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin: 40px 0;
+            width: 100%;
+        }
+
+        .mode-card {
+            background: white;
+            border-radius: 15px;
+            width: 280px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 3px solid transparent;
+        }
+
+        .mode-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+            border-color: #3498db;
+        }
+
+        .mode-card h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.8rem;
+        }
+
+        .mode-card p {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .mode-icon {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            color: #3498db;
+        }
+
+        .play-btn {
+            background: linear-gradient(to right, #3498db, #2c3e50);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .play-btn:hover {
+            background: linear-gradient(to right, #2980b9, #1a252f);
+            transform: scale(1.05);
+        }
+
+        .instructions {
+            background-color: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 40px;
+            width: 100%;
+            max-width: 800px;
+            border-left: 5px solid #3498db;
+        }
+
+        .instructions h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .instructions ul {
+            list-style-type: none;
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 10px;
+            color: #555;
+            position: relative;
+            padding-left: 25px;
+        }
+
+        .instructions li:before {
+            content: "⚓";
+            position: absolute;
+            left: 0;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            background-color: #f1f2f6;
+            border-top: 1px solid #ddd;
+        }
+
+        .github-link {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .github-link:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .game-modes {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .mode-card {
+                width: 100%;
+                max-width: 350px;
+            }
+            
+            h1 {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚢 BATTLESHIP ONLINE</h1>
+            <p class="subtitle">Strategize. Attack. Conquer. The classic naval combat game reimagined!</p>
+        </header>
+
+        <div class="main-content">
+            <div class="game-modes">
+                <!-- Mode 1: Play with Friend -->
+                <div class="mode-card" id="local-mode">
+                    <div class="mode-icon">👥</div>
+                    <h2>Play with Friend</h2>
+                    <p>Challenge a friend on the same device. Take turns on one computer - perfect for couch gaming!</p>
+                    <button class="play-btn" onclick="startLocalGame()">Play Local</button>
+                </div>
+
+                <!-- Mode 2: Play vs Bot -->
+                <div class="mode-card" id="bot-mode">
+                    <div class="mode-icon">🤖</div>
+                    <h2>Play vs Bot</h2>
+                    <p>Test your skills against our AI opponent. Multiple difficulty levels available for all players.</p>
+                    <button class="play-btn" onclick="startBotGame()">Play vs Bot</button>
+                </div>
+
+                <!-- Mode 3: Online Multiplayer -->
+                <div class="mode-card" id="online-mode">
+                    <div class="mode-icon">🌐</div>
+                    <h2>Online Multiplayer</h2>
+                    <p>Match with random players worldwide. Prove you're the best naval commander on the seas!</p>
+                    <button class="play-btn" onclick="startOnlineGame()">Find Opponent</button>
+                </div>
+            </div>
+
+            <div class="instructions">
+                <h3>How to Play Battleship</h3>
+                <ul>
+                    <li>Each player places their fleet of ships on a hidden grid</li>
+                    <li>Take turns calling out coordinates to attack opponent's grid</li>
+                    <li>Mark hits and misses to track your progress</li>
+                    <li>Sink all of your opponent's ships to win the game</li>
+                    <li>Ships: Carrier (5), Battleship (4), Cruiser (3), Submarine (3), Destroyer (2)</li>
+                </ul>
+            </div>
+        </div>
+
+        <footer>
+            <p>Created with ❤️ by Battleship Online | 
+                <a href="https://github.com/yourusername/battleship-online" class="github-link" target="_blank">
+                    <span>⭐ View on GitHub</span>
+                </a>
+            </p>
+            <p style="margin-top: 10px; font-size: 0.9rem;">
+                This is a simple web-based implementation of the classic Battleship game.
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // Game mode selection functions
+        function startLocalGame() {
+            alert("Starting Local Game Mode!\n\nYou and your friend will share this device.\nGame page will be loaded next.");
+            window.location.href = "local-game.html";
+        }
+
+        function startBotGame() {
+            alert("Starting Bot Game Mode!\n\nChoose your difficulty:\n- Easy\n- Medium\n- Hard");
+            window.location.href = "bot-game.html";
+        }
+
+        function startOnlineGame() {
+            alert("Starting Online Multiplayer Mode!\n\nFinding an opponent for you...");
+            window.location.href = "online-game.html";
+        }
+
+        // Add hover effects
+        document.querySelectorAll('.mode-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-10px)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+
+        // Add click sound effect simulation
+        document.querySelectorAll('.play-btn').forEach(button => {
+            button.addEventListener('click', function(e) {
+                // Simple click effect
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = 'scale(1.05)';
+                }, 100);
+            });
+        });
+    </script>
+</body>
+</html>
