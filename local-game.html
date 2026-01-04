@@ -19,7 +19,7 @@
         }
 
         /* Ready Screen - Pure Black with ONLY Ready Button */
-        .ready-screen {
+        #readyScreen {
             position: fixed;
             top: 0;
             left: 0;
@@ -35,14 +35,14 @@
             text-align: center;
         }
 
-        .ready-screen h2 {
+        #readyScreen h2 {
             font-size: 3rem;
             margin-bottom: 40px;
             color: #3498db;
             text-shadow: 0 0 20px rgba(52, 152, 219, 0.5);
         }
 
-        .ready-btn {
+        #readyButton {
             padding: 25px 80px;
             font-size: 2.5rem;
             font-weight: bold;
@@ -58,7 +58,7 @@
             transition: all 0.3s;
         }
 
-        .ready-btn:hover {
+        #readyButton:hover {
             transform: scale(1.1);
             box-shadow: 0 0 60px rgba(46, 204, 113, 1);
         }
@@ -69,8 +69,8 @@
             100% { transform: scale(1); }
         }
 
-        /* Game Screen - Only visible during gameplay */
-        .game-screen {
+        /* Game Screen */
+        #gameScreen {
             display: none;
             min-height: 100vh;
             background: linear-gradient(135deg, #1a2980, #26d0ce);
@@ -100,7 +100,6 @@
             margin-top: 10px;
         }
 
-        /* Game Container */
         .game-container {
             max-width: 1000px;
             margin: 0 auto;
@@ -119,7 +118,6 @@
             font-size: 2.2rem;
         }
 
-        /* Grids Container */
         .grids-container {
             display: flex;
             justify-content: center;
@@ -205,7 +203,6 @@
             100% { transform: scale(1); }
         }
 
-        /* Controls Container */
         .controls-container {
             margin-top: 30px;
             padding: 25px;
@@ -267,7 +264,6 @@
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
 
-        /* Ship Status */
         .ship-status-container {
             background: rgba(255, 255, 255, 0.9);
             border-radius: 10px;
@@ -319,7 +315,6 @@
             font-weight: bold;
         }
 
-        /* Current Ship Display */
         .current-ship-display {
             text-align: center;
             font-size: 1.4rem;
@@ -332,7 +327,6 @@
             border: 2px solid #f39c12;
         }
 
-        /* Message Display */
         .message-display {
             text-align: center;
             font-size: 1.3rem;
@@ -347,12 +341,10 @@
             justify-content: center;
         }
 
-        /* Hidden class */
         .hidden {
             display: none !important;
         }
 
-        /* Responsive */
         @media (max-width: 900px) {
             .grids-container {
                 flex-direction: column;
@@ -365,7 +357,7 @@
                 height: 320px;
             }
             
-            .ready-btn {
+            #readyButton {
                 padding: 20px 60px;
                 font-size: 2rem;
             }
@@ -386,7 +378,7 @@
                 height: 280px;
             }
             
-            .ready-btn {
+            #readyButton {
                 padding: 18px 50px;
                 font-size: 1.8rem;
             }
@@ -399,13 +391,13 @@
 </head>
 <body>
     <!-- Ready Screen - PURE BLACK with ONLY Ready Button -->
-    <div class="ready-screen" id="readyScreen">
+    <div id="readyScreen">
         <h2 id="readyTitle">PLAYER 1</h2>
-        <button class="ready-btn" id="readyButton" onclick="startTurn()">READY</button>
+        <button id="readyButton" onclick="startGame()">READY</button>
     </div>
 
     <!-- Game Screen - ALL game controls here -->
-    <div class="game-screen" id="gameScreen">
+    <div id="gameScreen">
         <div class="header">
             <h1>🚢 BATTLESHIP - LOCAL MULTIPLAYER</h1>
             <div class="player-turn" id="turnIndicator">Player 1's Turn</div>
@@ -414,17 +406,14 @@
         <div class="game-container">
             <h2 class="player-title" id="playerTitle">Player 1</h2>
             
-            <!-- Message Display -->
             <div class="message-display" id="messageDisplay">
                 Place your ships on the left grid. Click a cell to place your current ship.
             </div>
             
-            <!-- Current Ship Display -->
             <div class="current-ship-display" id="currentShipDisplay">
                 Placing: Carrier (5 cells) - Vertical
             </div>
             
-            <!-- Grids -->
             <div class="grids-container">
                 <div class="grid-wrapper">
                     <h3>Your Fleet</h3>
@@ -436,9 +425,7 @@
                 </div>
             </div>
             
-            <!-- Controls Container -->
             <div class="controls-container">
-                <!-- Placement Controls (shown during ship placement) -->
                 <div class="placement-controls" id="placementControls">
                     <h3>Ship Placement Controls</h3>
                     <div class="control-buttons">
@@ -454,7 +441,6 @@
                     </div>
                 </div>
                 
-                <!-- Game Controls (shown during battle) -->
                 <div class="game-controls hidden" id="gameControls">
                     <h3>Battle Controls</h3>
                     <div class="control-buttons">
@@ -462,52 +448,45 @@
                             🏠 Back to Menu
                         </button>
                         <button class="control-btn start-btn" onclick="endTurn()">
-                            ⏭️ End Turn
+                            ⏭️ End Turn & Switch Player
                         </button>
                     </div>
                 </div>
                 
-                <!-- Ship Status -->
                 <div class="ship-status-container">
                     <h3>Fleet Status</h3>
-                    <div class="ship-status" id="shipStatus">
-                        <!-- Ships will be added here dynamically -->
-                    </div>
+                    <div class="ship-status" id="shipStatus"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Game State
-        let gameState = {
-            phase: 'placement', // 'placement' or 'battle'
-            currentPlayer: 1,
-            currentPlacementPlayer: 1,
-            ships: {
-                player1: [],
-                player2: []
-            },
-            attacks: {
-                player1: new Set(),
-                player2: new Set()
-            }
-        };
-
-        // Ship types
-        const shipTypes = [
-            { name: "Carrier", size: 5, id: "carrier", placed: false },
-            { name: "Battleship", size: 4, id: "battleship", placed: false },
-            { name: "Cruiser", size: 3, id: "cruiser", placed: false },
-            { name: "Submarine", size: 3, id: "submarine", placed: false },
-            { name: "Destroyer", size: 2, id: "destroyer", placed: false }
-        ];
-
+        // SIMPLE GAME STATE
+        let currentPhase = 'placement'; // 'placement' or 'battle'
+        let currentPlayer = 1;
         let currentShipIndex = 0;
         let isVertical = true;
-        let canAttack = true;
+        
+        const ships = {
+            player1: [],
+            player2: []
+        };
+        
+        const attacks = {
+            player1: new Set(),
+            player2: new Set()
+        };
+        
+        const shipTypes = [
+            { name: "Carrier", size: 5, id: "carrier" },
+            { name: "Battleship", size: 4, id: "battleship" },
+            { name: "Cruiser", size: 3, id: "cruiser" },
+            { name: "Submarine", size: 3, id: "submarine" },
+            { name: "Destroyer", size: 2, id: "destroyer" }
+        ];
 
-        // Initialize game
+        // Initialize
         function initGame() {
             createGrids();
             updateDisplay();
@@ -521,7 +500,7 @@
             playerGrid.innerHTML = '';
             attackGrid.innerHTML = '';
             
-            // Create player grid
+            // Player grid for ships
             for (let row = 0; row < 10; row++) {
                 for (let col = 0; col < 10; col++) {
                     const cell = document.createElement('div');
@@ -530,27 +509,34 @@
                     cell.dataset.col = col;
                     cell.addEventListener('click', () => handlePlacementClick(row, col));
                     cell.addEventListener('mouseover', () => handlePlacementHover(row, col));
-                    cell.addEventListener('mouseout', handlePlacementHoverOut);
+                    cell.addEventListener('mouseout', clearPreview);
                     playerGrid.appendChild(cell);
                 }
             }
             
-            // Create attack grid
+            // Attack grid
             for (let row = 0; row < 10; row++) {
                 for (let col = 0; col < 10; col++) {
                     const cell = document.createElement('div');
                     cell.className = 'cell';
                     cell.dataset.row = row;
                     cell.dataset.col = col;
-                    cell.addEventListener('click', () => handleAttackClick(row, col));
+                    cell.addEventListener('click', () => handleAttack(row, col));
                     attackGrid.appendChild(cell);
                 }
             }
         }
 
-        // Update display
+        // Start game from ready screen
+        function startGame() {
+            document.getElementById('readyScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
+            updateDisplay();
+        }
+
+        // Update everything
         function updateDisplay() {
-            updateReadyScreen();
+            updateReadyTitle();
             updateGrids();
             updateShipStatus();
             updateCurrentShipDisplay();
@@ -558,17 +544,13 @@
             updateControls();
         }
 
-        // Update ready screen
-        function updateReadyScreen() {
+        // Update ready screen title
+        function updateReadyTitle() {
             const readyTitle = document.getElementById('readyTitle');
-            const readyButton = document.getElementById('readyButton');
-            
-            if (gameState.phase === 'placement') {
-                readyTitle.textContent = `PLAYER ${gameState.currentPlacementPlayer}`;
-                readyButton.textContent = 'READY';
+            if (currentPhase === 'placement') {
+                readyTitle.textContent = `PLAYER ${currentPlayer}`;
             } else {
-                readyTitle.textContent = `PLAYER ${gameState.currentPlayer}`;
-                readyButton.textContent = 'READY';
+                readyTitle.textContent = `PLAYER ${currentPlayer}'S TURN`;
             }
         }
 
@@ -576,6 +558,7 @@
         function updateGrids() {
             const playerGrid = document.getElementById('playerGrid');
             const attackGrid = document.getElementById('attackGrid');
+            const playerKey = `player${currentPlayer}`;
             
             // Clear grids
             for (let cell of playerGrid.children) {
@@ -588,48 +571,45 @@
                 cell.className = 'cell';
             }
             
-            if (gameState.phase === 'placement') {
+            if (currentPhase === 'placement') {
                 // Show current player's ships
-                const player = `player${gameState.currentPlacementPlayer}`;
-                gameState.ships[player].forEach(ship => {
-                    ship.cells.forEach(cellPos => {
-                        const index = cellPos.row * 10 + cellPos.col;
+                ships[playerKey].forEach(ship => {
+                    ship.cells.forEach(pos => {
+                        const index = pos.row * 10 + pos.col;
                         playerGrid.children[index].classList.add('ship');
                     });
                 });
                 
-                // Disable attack grid during placement
-                attackGrid.style.pointerEvents = 'none';
                 attackGrid.style.opacity = '0.5';
+                attackGrid.style.pointerEvents = 'none';
             } else {
-                // Battle phase - show current player's ships and attacks
-                const currentPlayer = `player${gameState.currentPlayer}`;
-                const enemyPlayer = `player${gameState.currentPlayer === 1 ? 2 : 1}`;
+                // Battle phase
+                const enemyKey = `player${currentPlayer === 1 ? 2 : 1}`;
                 
-                // Show current player's ships
-                gameState.ships[currentPlayer].forEach(ship => {
-                    ship.cells.forEach(cellPos => {
-                        const index = cellPos.row * 10 + cellPos.col;
+                // Show current player's ships with hits
+                ships[playerKey].forEach(ship => {
+                    ship.cells.forEach(pos => {
+                        const index = pos.row * 10 + pos.col;
                         playerGrid.children[index].classList.add('ship');
                         
-                        // Mark hits
-                        const attackKey = `${cellPos.row},${cellPos.col}`;
-                        if (gameState.attacks[enemyPlayer].has(attackKey)) {
+                        // Mark if hit by enemy
+                        const attackKey = `${pos.row},${pos.col}`;
+                        if (attacks[enemyKey].has(attackKey)) {
                             playerGrid.children[index].classList.add('hit');
                         }
                     });
                 });
                 
                 // Show current player's attacks
-                gameState.attacks[currentPlayer].forEach(attackKey => {
+                attacks[playerKey].forEach(attackKey => {
                     const [row, col] = attackKey.split(',').map(Number);
                     const index = row * 10 + col;
                     
-                    // Check if it was a hit
+                    // Check if hit
                     let hit = false;
-                    gameState.ships[enemyPlayer].forEach(ship => {
-                        ship.cells.forEach(cell => {
-                            if (cell.row === row && cell.col === col) {
+                    ships[enemyKey].forEach(ship => {
+                        ship.cells.forEach(pos => {
+                            if (pos.row === row && pos.col === col) {
                                 hit = true;
                             }
                         });
@@ -638,146 +618,63 @@
                     attackGrid.children[index].classList.add(hit ? 'hit' : 'miss');
                 });
                 
-                // Enable/disable attack grid based on turn
-                if (canAttack) {
-                    attackGrid.style.pointerEvents = 'auto';
-                    attackGrid.style.opacity = '1';
-                } else {
-                    attackGrid.style.pointerEvents = 'none';
-                    attackGrid.style.opacity = '0.7';
-                }
-            }
-        }
-
-        // Update ship status
-        function updateShipStatus() {
-            const shipStatus = document.getElementById('shipStatus');
-            shipStatus.innerHTML = '';
-            
-            if (gameState.phase === 'placement') {
-                // Show ships being placed
-                shipTypes.forEach((ship, index) => {
-                    const item = document.createElement('div');
-                    item.className = `ship-status-item ${index === currentShipIndex ? 'placing' : (ship.placed ? 'active' : '')}`;
-                    item.innerHTML = `${ship.placed ? '✅' : (index === currentShipIndex ? '🔄' : '📦')} ${ship.name} (${ship.size})`;
-                    shipStatus.appendChild(item);
-                });
-            } else {
-                // Show enemy ship status during battle
-                const enemyPlayer = `player${gameState.currentPlayer === 1 ? 2 : 1}`;
-                gameState.ships[enemyPlayer].forEach(ship => {
-                    const item = document.createElement('div');
-                    item.className = `ship-status-item ${ship.sunk ? 'sunk' : 'active'}`;
-                    item.innerHTML = `${ship.sunk ? '💀' : '🚢'} ${ship.name} ${ship.sunk ? 'SUNK!' : `(${ship.hits}/${ship.size})`}`;
-                    shipStatus.appendChild(item);
-                });
-            }
-        }
-
-        // Update current ship display
-        function updateCurrentShipDisplay() {
-            const display = document.getElementById('currentShipDisplay');
-            
-            if (gameState.phase === 'placement') {
-                if (currentShipIndex < shipTypes.length) {
-                    const ship = shipTypes[currentShipIndex];
-                    display.textContent = `Placing: ${ship.name} (${ship.size} cells) - ${isVertical ? 'Vertical' : 'Horizontal'}`;
-                } else {
-                    display.textContent = 'All ships placed! Ready for battle!';
-                }
-            } else {
-                display.textContent = `Player ${gameState.currentPlayer}'s Turn - Attack the enemy!`;
-            }
-        }
-
-        // Update message display
-        function updateMessageDisplay() {
-            const display = document.getElementById('messageDisplay');
-            
-            if (gameState.phase === 'placement') {
-                if (currentShipIndex < shipTypes.length) {
-                    display.textContent = `Click on your grid to place your ${shipTypes[currentShipIndex].name}. Press R to rotate.`;
-                } else {
-                    display.textContent = 'All ships placed! Click "Finish Placement" when ready.';
-                }
-            } else {
-                if (canAttack) {
-                    display.textContent = 'Click on the right grid to attack enemy positions!';
-                } else {
-                    display.textContent = 'Waiting for next turn...';
-                }
-            }
-        }
-
-        // Update controls visibility
-        function updateControls() {
-            const placementControls = document.getElementById('placementControls');
-            const gameControls = document.getElementById('gameControls');
-            const turnIndicator = document.getElementById('turnIndicator');
-            const playerTitle = document.getElementById('playerTitle');
-            
-            if (gameState.phase === 'placement') {
-                placementControls.classList.remove('hidden');
-                gameControls.classList.add('hidden');
-                turnIndicator.textContent = `Player ${gameState.currentPlacementPlayer}: Place Your Ships`;
-                playerTitle.textContent = `Player ${gameState.currentPlacementPlayer}`;
-            } else {
-                placementControls.classList.add('hidden');
-                gameControls.classList.remove('hidden');
-                turnIndicator.textContent = `Player ${gameState.currentPlayer}'s Turn`;
-                playerTitle.textContent = `Player ${gameState.currentPlayer}`;
+                attackGrid.style.opacity = '1';
+                attackGrid.style.pointerEvents = 'auto';
             }
         }
 
         // Handle placement click
         function handlePlacementClick(row, col) {
-            if (gameState.phase !== 'placement') return;
+            if (currentPhase !== 'placement') return;
             if (currentShipIndex >= shipTypes.length) return;
             
             const ship = shipTypes[currentShipIndex];
-            const player = `player${gameState.currentPlacementPlayer}`;
+            const playerKey = `player${currentPlayer}`;
             
-            if (canPlaceShip(row, col, ship.size, isVertical, player)) {
-                placeShip(row, col, ship.size, isVertical, ship, player);
-                ship.placed = true;
-                currentShipIndex++;
-                
-                if (currentShipIndex >= shipTypes.length) {
-                    // All ships placed for current player
-                    showMessage(`All ships placed! Player ${gameState.currentPlacementPlayer} ready.`);
+            if (canPlaceShip(row, col, ship.size, isVertical, playerKey)) {
+                // Place ship
+                const cells = [];
+                for (let i = 0; i < ship.size; i++) {
+                    const r = isVertical ? row + i : row;
+                    const c = isVertical ? col : col + i;
+                    cells.push({ row: r, col: c });
                 }
                 
+                ships[playerKey].push({
+                    ...ship,
+                    cells: cells,
+                    hits: 0,
+                    sunk: false
+                });
+                
+                currentShipIndex++;
+                showMessage(`${ship.name} placed!`);
                 updateDisplay();
+                
+                if (currentShipIndex >= shipTypes.length) {
+                    showMessage("All ships placed! Click 'Finish Placement' when ready.");
+                }
             } else {
-                showMessage("Cannot place ship there! Try a different location.");
+                showMessage("Cannot place ship there! Try another location.");
             }
         }
 
         // Handle placement hover
         function handlePlacementHover(row, col) {
-            if (gameState.phase !== 'placement') return;
+            if (currentPhase !== 'placement') return;
             if (currentShipIndex >= shipTypes.length) return;
             
             const ship = shipTypes[currentShipIndex];
-            const player = `player${gameState.currentPlacementPlayer}`;
-            const playerGrid = document.getElementById('playerGrid');
+            const playerKey = `player${currentPlayer}`;
+            clearPreview();
             
-            // Clear previous preview
-            for (let cell of playerGrid.children) {
-                if (!cell.classList.contains('ship')) {
-                    cell.style.backgroundColor = '';
-                    cell.style.opacity = '';
-                }
-            }
-            
-            // Show preview
-            if (canPlaceShip(row, col, ship.size, isVertical, player)) {
+            if (canPlaceShip(row, col, ship.size, isVertical, playerKey)) {
+                const playerGrid = document.getElementById('playerGrid');
                 for (let i = 0; i < ship.size; i++) {
-                    const previewRow = isVertical ? row + i : row;
-                    const previewCol = isVertical ? col : col + i;
-                    
-                    if (previewRow < 10 && previewCol < 10) {
-                        const index = previewRow * 10 + previewCol;
+                    const r = isVertical ? row + i : row;
+                    const c = isVertical ? col : col + i;
+                    if (r < 10 && c < 10) {
+                        const index = r * 10 + c;
                         playerGrid.children[index].style.backgroundColor = '#f39c12';
                         playerGrid.children[index].style.opacity = '0.7';
                     }
@@ -785,10 +682,8 @@
             }
         }
 
-        // Handle placement hover out
-        function handlePlacementHoverOut() {
-            if (gameState.phase !== 'placement') return;
-            
+        // Clear preview
+        function clearPreview() {
             const playerGrid = document.getElementById('playerGrid');
             for (let cell of playerGrid.children) {
                 if (!cell.classList.contains('ship')) {
@@ -799,7 +694,7 @@
         }
 
         // Check if ship can be placed
-        function canPlaceShip(startRow, startCol, size, vertical, player) {
+        function canPlaceShip(startRow, startCol, size, vertical, playerKey) {
             for (let i = 0; i < size; i++) {
                 const row = vertical ? startRow + i : startRow;
                 const col = vertical ? startCol : startCol + i;
@@ -807,31 +702,12 @@
                 if (row >= 10 || col >= 10) return false;
                 
                 // Check if overlapping existing ship
-                const existingShip = gameState.ships[player].find(ship => 
+                const existingShip = ships[playerKey].find(ship => 
                     ship.cells.some(cell => cell.row === row && cell.col === col)
                 );
                 if (existingShip) return false;
             }
             return true;
-        }
-
-        // Place a ship
-        function placeShip(startRow, startCol, size, vertical, shipType, player) {
-            const cells = [];
-            for (let i = 0; i < size; i++) {
-                const row = vertical ? startRow + i : startRow;
-                const col = vertical ? startCol : startCol + i;
-                cells.push({ row, col });
-            }
-            
-            gameState.ships[player].push({
-                ...shipType,
-                cells: cells,
-                hits: 0,
-                sunk: false
-            });
-            
-            showMessage(`${shipType.name} placed successfully!`);
         }
 
         // Rotate ship
@@ -842,12 +718,9 @@
 
         // Randomly place all ships
         function randomPlaceAll() {
-            const player = `player${gameState.currentPlacementPlayer}`;
+            const playerKey = `player${currentPlayer}`;
+            ships[playerKey] = [];
             
-            // Clear existing ships
-            gameState.ships[player] = [];
-            
-            // Place all ships randomly
             shipTypes.forEach(ship => {
                 let placed = false;
                 let attempts = 0;
@@ -860,9 +733,20 @@
                     const startRow = Math.floor(Math.random() * (maxRow + 1));
                     const startCol = Math.floor(Math.random() * (maxCol + 1));
                     
-                    if (canPlaceShip(startRow, startCol, ship.size, vertical, player)) {
-                        placeShip(startRow, startCol, ship.size, vertical, ship, player);
-                        ship.placed = true;
+                    if (canPlaceShip(startRow, startCol, ship.size, vertical, playerKey)) {
+                        const cells = [];
+                        for (let i = 0; i < ship.size; i++) {
+                            const r = vertical ? startRow + i : startRow;
+                            const c = vertical ? startCol : startCol + i;
+                            cells.push({ row: r, col: c });
+                        }
+                        
+                        ships[playerKey].push({
+                            ...ship,
+                            cells: cells,
+                            hits: 0,
+                            sunk: false
+                        });
                         placed = true;
                     }
                     attempts++;
@@ -870,8 +754,8 @@
             });
             
             currentShipIndex = shipTypes.length;
-            updateDisplay();
             showMessage("All ships randomly placed!");
+            updateDisplay();
         }
 
         // Finish placement
@@ -881,72 +765,48 @@
                 return;
             }
             
-            if (gameState.currentPlacementPlayer === 1) {
-                // Switch to player 2 placement
-                gameState.currentPlacementPlayer = 2;
+            if (currentPlayer === 1) {
+                // Switch to player 2
+                currentPlayer = 2;
                 currentShipIndex = 0;
-                isVertical = true;
-                shipTypes.forEach(ship => ship.placed = false);
                 
                 // Show ready screen for player 2
-                document.getElementById('readyScreen').classList.remove('hidden');
-                document.getElementById('gameScreen').classList.add('hidden');
+                document.getElementById('gameScreen').style.display = 'none';
+                document.getElementById('readyScreen').style.display = 'flex';
                 updateDisplay();
             } else {
-                // Start battle phase
-                gameState.phase = 'battle';
-                gameState.currentPlayer = 1;
-                canAttack = true;
-                
-                // Hide ready screen, show game screen
-                document.getElementById('readyScreen').classList.add('hidden');
-                document.getElementById('gameScreen').classList.remove('hidden');
+                // Both players placed ships, start battle
+                currentPhase = 'battle';
+                currentPlayer = 1; // Player 1 starts
                 updateDisplay();
                 showMessage("Battle begins! Player 1's turn to attack!");
             }
         }
 
-        // Start turn (from ready screen)
-        function startTurn() {
-            if (gameState.phase === 'placement') {
-                // Player is ready to place ships or continue placement
-                document.getElementById('readyScreen').classList.add('hidden');
-                document.getElementById('gameScreen').classList.remove('hidden');
-            } else {
-                // Battle phase - player ready for their turn
-                document.getElementById('readyScreen').classList.add('hidden');
-                document.getElementById('gameScreen').classList.remove('hidden');
-                canAttack = true;
-                updateDisplay();
-                showMessage(`Player ${gameState.currentPlayer}, attack the enemy!`);
-            }
-        }
-
-        // Handle attack click
-        function handleAttackClick(row, col) {
-            if (gameState.phase !== 'battle' || !canAttack) return;
+        // Handle attack
+        function handleAttack(row, col) {
+            if (currentPhase !== 'battle') return;
             
-            const currentPlayer = `player${gameState.currentPlayer}`;
-            const enemyPlayer = `player${gameState.currentPlayer === 1 ? 2 : 1}`;
+            const playerKey = `player${currentPlayer}`;
+            const enemyKey = `player${currentPlayer === 1 ? 2 : 1}`;
             const attackKey = `${row},${col}`;
             
             // Check if already attacked
-            if (gameState.attacks[currentPlayer].has(attackKey)) {
-                showMessage("You already attacked this location!");
+            if (attacks[playerKey].has(attackKey)) {
+                showMessage("You already attacked here!");
                 return;
             }
             
             // Register attack
-            gameState.attacks[currentPlayer].add(attackKey);
-            canAttack = false;
+            attacks[playerKey].add(attackKey);
             
             // Check for hit
             let hit = false;
             let shipHit = null;
             
-            gameState.ships[enemyPlayer].forEach(ship => {
-                ship.cells.forEach(cell => {
-                    if (cell.row === row && cell.col === col) {
+            ships[enemyKey].forEach(ship => {
+                ship.cells.forEach(pos => {
+                    if (pos.row === row && pos.col === col) {
                         hit = true;
                         ship.hits++;
                         shipHit = ship;
@@ -958,7 +818,7 @@
                 });
             });
             
-            // Update display immediately
+            // Update display
             updateDisplay();
             
             // Show result
@@ -969,9 +829,9 @@
             }
             
             // Check for win
-            if (checkWin(enemyPlayer)) {
+            if (checkWin(enemyKey)) {
                 setTimeout(() => {
-                    alert(`🎉 PLAYER ${gameState.currentPlayer} WINS! 🎉\nAll enemy ships have been sunk!`);
+                    alert(`🎉 PLAYER ${currentPlayer} WINS! 🎉`);
                     if (confirm('Play again?')) {
                         resetGame();
                     } else {
@@ -980,32 +840,97 @@
                 }, 1000);
                 return;
             }
-            
-            // Switch turns after delay
-            setTimeout(() => {
-                endTurn();
-            }, 2000);
         }
 
         // Check win condition
-        function checkWin(player) {
-            return gameState.ships[player].every(ship => ship.sunk);
+        function checkWin(playerKey) {
+            return ships[playerKey].every(ship => ship.sunk);
         }
 
-        // End turn
+        // End turn and switch player
         function endTurn() {
-            gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
             
             // Show ready screen for next player
-            document.getElementById('gameScreen').classList.add('hidden');
-            document.getElementById('readyScreen').classList.remove('hidden');
+            document.getElementById('gameScreen').style.display = 'none';
+            document.getElementById('readyScreen').style.display = 'flex';
             updateDisplay();
         }
 
-        // Return to menu
-        function returnToMenu() {
-            if (confirm('Are you sure you want to return to the menu? Current game will be lost.')) {
-                window.location.href = 'index.html';
+        // Update ship status
+        function updateShipStatus() {
+            const shipStatus = document.getElementById('shipStatus');
+            shipStatus.innerHTML = '';
+            
+            if (currentPhase === 'placement') {
+                // Show placement status
+                shipTypes.forEach((ship, index) => {
+                    const item = document.createElement('div');
+                    const placed = index < currentShipIndex;
+                    item.className = `ship-status-item ${placed ? 'active' : 'placing'}`;
+                    item.innerHTML = `${placed ? '✅' : '📦'} ${ship.name} (${ship.size})`;
+                    shipStatus.appendChild(item);
+                });
+            } else {
+                // Show enemy ship status
+                const enemyKey = `player${currentPlayer === 1 ? 2 : 1}`;
+                ships[enemyKey].forEach(ship => {
+                    const item = document.createElement('div');
+                    item.className = `ship-status-item ${ship.sunk ? 'sunk' : 'active'}`;
+                    item.innerHTML = `${ship.sunk ? '💀' : '🚢'} ${ship.name} ${ship.sunk ? 'SUNK!' : `(${ship.hits}/${ship.size})`}`;
+                    shipStatus.appendChild(item);
+                });
+            }
+        }
+
+        // Update current ship display
+        function updateCurrentShipDisplay() {
+            const display = document.getElementById('currentShipDisplay');
+            
+            if (currentPhase === 'placement') {
+                if (currentShipIndex < shipTypes.length) {
+                    const ship = shipTypes[currentShipIndex];
+                    display.textContent = `Placing: ${ship.name} (${ship.size} cells) - ${isVertical ? 'Vertical' : 'Horizontal'}`;
+                } else {
+                    display.textContent = 'All ships placed! Ready for battle!';
+                }
+            } else {
+                display.textContent = `Player ${currentPlayer}'s Turn - Attack the enemy!`;
+            }
+        }
+
+        // Update message display
+        function updateMessageDisplay() {
+            const display = document.getElementById('messageDisplay');
+            
+            if (currentPhase === 'placement') {
+                if (currentShipIndex < shipTypes.length) {
+                    display.textContent = `Click on your grid to place your ${shipTypes[currentShipIndex].name}. Press R to rotate.`;
+                } else {
+                    display.textContent = 'All ships placed! Click "Finish Placement" when ready.';
+                }
+            } else {
+                display.textContent = 'Click on the right grid to attack enemy positions!';
+            }
+        }
+
+        // Update controls visibility
+        function updateControls() {
+            const placementControls = document.getElementById('placementControls');
+            const gameControls = document.getElementById('gameControls');
+            const turnIndicator = document.getElementById('turnIndicator');
+            const playerTitle = document.getElementById('playerTitle');
+            
+            if (currentPhase === 'placement') {
+                placementControls.classList.remove('hidden');
+                gameControls.classList.add('hidden');
+                turnIndicator.textContent = `Player ${currentPlayer}: Place Your Ships`;
+                playerTitle.textContent = `Player ${currentPlayer}`;
+            } else {
+                placementControls.classList.add('hidden');
+                gameControls.classList.remove('hidden');
+                turnIndicator.textContent = `Player ${currentPlayer}'s Turn`;
+                playerTitle.textContent = `Player ${currentPlayer}`;
             }
         }
 
@@ -1013,39 +938,40 @@
         function showMessage(message) {
             const display = document.getElementById('messageDisplay');
             display.textContent = message;
-            display.style.animation = 'none';
-            setTimeout(() => {
-                display.style.animation = 'fadeIn 0.5s';
-            }, 10);
+        }
+
+        // Return to menu
+        function returnToMenu() {
+            if (confirm('Return to main menu? Game progress will be lost.')) {
+                window.location.href = 'index.html';
+            }
         }
 
         // Reset game
         function resetGame() {
-            gameState = {
-                phase: 'placement',
-                currentPlayer: 1,
-                currentPlacementPlayer: 1,
-                ships: { player1: [], player2: [] },
-                attacks: { player1: new Set(), player2: new Set() }
-            };
+            currentPhase = 'placement';
+            currentPlayer = 1;
             currentShipIndex = 0;
             isVertical = true;
-            canAttack = true;
-            shipTypes.forEach(ship => ship.placed = false);
             
-            document.getElementById('readyScreen').classList.remove('hidden');
-            document.getElementById('gameScreen').classList.add('hidden');
+            ships.player1 = [];
+            ships.player2 = [];
+            attacks.player1.clear();
+            attacks.player2.clear();
+            
+            document.getElementById('readyScreen').style.display = 'flex';
+            document.getElementById('gameScreen').style.display = 'none';
             initGame();
         }
 
-        // Keyboard shortcuts
+        // Keyboard shortcut
         document.addEventListener('keydown', (e) => {
-            if (e.key.toLowerCase() === 'r' && gameState.phase === 'placement') {
+            if (e.key.toLowerCase() === 'r' && currentPhase === 'placement') {
                 rotateShip();
             }
         });
 
-        // Initialize game on load
+        // Initialize
         window.onload = initGame;
     </script>
 </body>
