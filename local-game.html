@@ -562,8 +562,8 @@
                         <button class="control-btn back-btn" onclick="returnToMenu()">
                             🏠 Back to Menu
                         </button>
-                        <button class="control-btn start-btn" onclick="endTurn()">
-                            ⏭️ End Turn
+                        <button class="control-btn start-btn" id="endTurnBtn" onclick="endTurn()" disabled>
+                            ⏭️ End Turn (Make a move first)
                         </button>
                     </div>
                 </div>
@@ -592,7 +592,7 @@
         let currentPlayer = 1;
         let currentShipIndex = 0;
         let isVertical = true;
-        let isWaitingForReady = false;
+        let hasMadeMoveThisTurn = false;
         
         const ships = {
             player1: [],
@@ -635,14 +635,27 @@
             updateReadyTitle();
             document.getElementById('readyScreen').style.display = 'flex';
             document.getElementById('gameScreen').style.display = 'none';
-            isWaitingForReady = true;
         }
 
         // Start turn from ready screen
         function startTurn() {
             document.getElementById('readyScreen').style.display = 'none';
             document.getElementById('gameScreen').style.display = 'block';
-            isWaitingForReady = false;
+            
+            // Reset move flag for new turn
+            hasMadeMoveThisTurn = false;
+            
+            // Enable/disable attack grid based on phase
+            const attackGrid = document.getElementById('attackGrid');
+            if (currentPhase === 'battle') {
+                attackGrid.style.pointerEvents = 'auto';
+                attackGrid.style.opacity = '1';
+                document.getElementById('endTurnBtn').disabled = true;
+                document.getElementById('endTurnBtn').textContent = "⏭️ End Turn (Make a move first)";
+            } else {
+                attackGrid.style.pointerEvents = 'none';
+                attackGrid.style.opacity = '0.5';
+            }
             
             // Scroll to top on mobile
             window.scrollTo(0, 0);
@@ -797,8 +810,14 @@
                     attackGrid.children[index].classList.add(hit ? 'hit' : 'miss');
                 });
                 
-                attackGrid.style.opacity = '1';
-                attackGrid.style.pointerEvents = 'auto';
+                // Enable/disable attack grid based on whether player has moved
+                if (!hasMadeMoveThisTurn) {
+                    attackGrid.style.opacity = '1';
+                    attackGrid.style.pointerEvents = 'auto';
+                } else {
+                    attackGrid.style.opacity = '0.7';
+                    attackGrid.style.pointerEvents = 'none';
+                }
             }
         }
 
@@ -968,13 +987,14 @@
                 
                 // Show ready screen for player 2
                 showReadyScreen();
+                showMessage("Player 2, get ready to place your ships!");
             } else {
-                // Both players placed ships, start battle phase
+                // Both players placed ships
+                // Show ready screen before battle starts
                 currentPhase = 'battle';
-                currentPlayer = 1; // Player 1 starts first
-                
-                // Show ready screen for player 1's first turn
+                currentPlayer = 1; // Player 1 starts
                 showReadyScreen();
+                showMessage("Battle begins! Get ready Player 1!");
             }
             
             // Vibrate on mobile if supported
@@ -983,16 +1003,19 @@
             }
         }
 
-        // Handle attack
+        // Handle attack - ONE SHOT PER TURN
         function handleAttack(row, col) {
             if (currentPhase !== 'battle') return;
-            if (isWaitingForReady) return;
+            if (hasMadeMoveThisTurn) {
+                showMessage("You already made your move this turn!");
+                return;
+            }
             
             const playerKey = `player${currentPlayer}`;
             const enemyKey = `player${currentPlayer === 1 ? 2 : 1}`;
             const attackKey = `${row},${col}`;
             
-            // Check if already attacked
+            // Check if already attacked this spot
             if (attacks[playerKey].has(attackKey)) {
                 showMessage("You already attacked here!");
                 return;
@@ -1000,6 +1023,16 @@
             
             // Register attack
             attacks[playerKey].add(attackKey);
+            hasMadeMoveThisTurn = true;
+            
+            // Enable end turn button
+            document.getElementById('endTurnBtn').disabled = false;
+            document.getElementById('endTurnBtn').textContent = "⏭️ End Turn";
+            
+            // Disable attack grid for this turn
+            const attackGrid = document.getElementById('attackGrid');
+            attackGrid.style.pointerEvents = 'none';
+            attackGrid.style.opacity = '0.7';
             
             // Check for hit
             let hit = false;
@@ -1043,14 +1076,9 @@
                     } else {
                         window.location.href = 'index.html';
                     }
-                }, 1000);
+                }, 1500);
                 return;
             }
-            
-            // After attack, automatically switch to ready screen for next player
-            setTimeout(() => {
-                endTurn();
-            }, 1500);
         }
 
         // Check win condition
@@ -1060,8 +1088,14 @@
 
         // End turn and switch player
         function endTurn() {
+            if (!hasMadeMoveThisTurn) {
+                showMessage("You must make a move before ending your turn!");
+                return;
+            }
+            
             // Switch to other player
             currentPlayer = currentPlayer === 1 ? 2 : 1;
+            hasMadeMoveThisTurn = false;
             
             // Show ready screen for next player
             showReadyScreen();
@@ -1105,7 +1139,11 @@
                     display.textContent = 'All ships placed! Ready for battle!';
                 }
             } else {
-                display.textContent = `Player ${currentPlayer}'s Turn - Attack the enemy!`;
+                if (hasMadeMoveThisTurn) {
+                    display.textContent = `Player ${currentPlayer}'s Turn - Move made! Click "End Turn"`;
+                } else {
+                    display.textContent = `Player ${currentPlayer}'s Turn - Make your ONE attack!`;
+                }
             }
         }
 
@@ -1120,10 +1158,10 @@
                     display.textContent = 'All ships placed! Click "Finish Placement" when ready.';
                 }
             } else {
-                if (isWaitingForReady) {
-                    display.textContent = `Player ${currentPlayer}, get ready for your turn!`;
+                if (hasMadeMoveThisTurn) {
+                    display.textContent = 'You made your move! Click "End Turn" to switch players.';
                 } else {
-                    display.textContent = 'Click on the right grid to attack enemy positions!';
+                    display.textContent = 'Click on the right grid to make your ONE attack this turn!';
                 }
             }
         }
@@ -1173,7 +1211,7 @@
             currentPlayer = 1;
             currentShipIndex = 0;
             isVertical = true;
-            isWaitingForReady = false;
+            hasMadeMoveThisTurn = false;
             
             ships.player1 = [];
             ships.player2 = [];
