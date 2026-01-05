@@ -140,6 +140,89 @@
             line-height: 1.3;
         }
 
+        /* Ship Dock for Drag & Drop */
+        .ship-dock {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 20px auto;
+            padding: 20px;
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 15px;
+            max-width: 600px;
+        }
+
+        .ship-dock h3 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: clamp(1.2rem, 3vw, 1.5rem);
+        }
+
+        .ship-dock-items {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .ship-dock-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            background: #ecf0f1;
+            border-radius: 10px;
+            cursor: grab;
+            user-select: none;
+            touch-action: none;
+            transition: all 0.3s;
+            border: 2px dashed transparent;
+        }
+
+        .ship-dock-item:hover, .ship-dock-item.dragging {
+            background: #d6eaf8;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .ship-dock-item.placed {
+            background: #2ecc71;
+            color: white;
+            opacity: 0.7;
+            cursor: default;
+        }
+
+        .ship-dock-item.placed .ship-preview {
+            background: white;
+        }
+
+        .ship-preview {
+            display: flex;
+            gap: 2px;
+        }
+
+        .ship-cell {
+            width: 20px;
+            height: 20px;
+            background: #3498db;
+            border-radius: 3px;
+        }
+
+        .ship-cell.horizontal {
+            display: inline-flex;
+        }
+
+        .ship-cell.vertical {
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .ship-name {
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
         .grids-container {
             display: flex;
             flex-direction: column;
@@ -209,6 +292,11 @@
             -webkit-tap-highlight-color: transparent;
             min-height: 0;
             min-width: 0;
+        }
+
+        .cell.drag-over {
+            background-color: #f39c12 !important;
+            opacity: 0.7;
         }
 
         .cell:active {
@@ -462,6 +550,15 @@
                 min-width: 28px;
             }
             
+            .ship-dock-item {
+                padding: 10px 15px;
+            }
+            
+            .ship-cell {
+                width: 16px;
+                height: 16px;
+            }
+            
             /* Prevent text zoom on iOS */
             input, select, textarea, button {
                 font-size: 16px;
@@ -483,6 +580,11 @@
             .control-btn {
                 padding: 10px 15px;
                 font-size: 0.9rem;
+            }
+            
+            .ship-dock-items {
+                flex-direction: column;
+                align-items: center;
             }
         }
 
@@ -522,11 +624,19 @@
             <h2 class="player-title" id="playerTitle">Player 1</h2>
             
             <div class="message-display" id="messageDisplay">
-                Place your ships on the left grid. Click a cell to place your current ship.
+                Drag ships from the dock to your grid. Rotate with R or button.
+            </div>
+            
+            <!-- Ship Dock for Drag & Drop -->
+            <div class="ship-dock" id="shipDock">
+                <h3>Your Ships - Drag to Place</h3>
+                <div class="ship-dock-items" id="shipDockItems">
+                    <!-- Ships will be added here dynamically -->
+                </div>
             </div>
             
             <div class="current-ship-display" id="currentShipDisplay">
-                Placing: Carrier (5 cells) - Vertical
+                Drag ships to place them on your grid
             </div>
             
             <div class="grids-container">
@@ -544,7 +654,7 @@
                 <div class="placement-controls" id="placementControls">
                     <h3>Ship Placement Controls</h3>
                     <div class="control-buttons">
-                        <button class="control-btn rotate-btn" onclick="rotateShip()">
+                        <button class="control-btn rotate-btn" onclick="rotateSelectedShip()">
                             🔄 Rotate Ship (R)
                         </button>
                         <button class="control-btn random-btn" onclick="randomPlaceAll()">
@@ -590,9 +700,12 @@
         // GAME STATE
         let currentPhase = 'placement'; // 'placement' or 'battle'
         let currentPlayer = 1;
-        let currentShipIndex = 0;
         let isVertical = true;
         let hasMadeMoveThisTurn = false;
+        let selectedShipIndex = -1;
+        let isDragging = false;
+        let dragOffsetX = 0;
+        let dragOffsetY = 0;
         
         const ships = {
             player1: [],
@@ -605,16 +718,17 @@
         };
         
         const shipTypes = [
-            { name: "Carrier", size: 5, id: "carrier" },
-            { name: "Battleship", size: 4, id: "battleship" },
-            { name: "Cruiser", size: 3, id: "cruiser" },
-            { name: "Submarine", size: 3, id: "submarine" },
-            { name: "Destroyer", size: 2, id: "destroyer" }
+            { name: "Carrier", size: 5, id: "carrier", placed: false },
+            { name: "Battleship", size: 4, id: "battleship", placed: false },
+            { name: "Cruiser", size: 3, id: "cruiser", placed: false },
+            { name: "Submarine", size: 3, id: "submarine", placed: false },
+            { name: "Destroyer", size: 2, id: "destroyer", placed: false }
         ];
 
         // Initialize
         function initGame() {
             createGrids();
+            createShipDock();
             updateDisplay();
             setupTouchEvents();
             showReadyScreen();
@@ -628,6 +742,363 @@
                     e.preventDefault();
                 }, { passive: false });
             });
+        }
+
+        // Create ship dock for drag and drop
+        function createShipDock() {
+            const shipDockItems = document.getElementById('shipDockItems');
+            shipDockItems.innerHTML = '';
+            
+            shipTypes.forEach((ship, index) => {
+                const shipItem = document.createElement('div');
+                shipItem.className = 'ship-dock-item';
+                shipItem.dataset.shipIndex = index;
+                shipItem.draggable = true;
+                
+                // Create ship preview
+                const shipPreview = document.createElement('div');
+                shipPreview.className = 'ship-preview';
+                
+                for (let i = 0; i < ship.size; i++) {
+                    const shipCell = document.createElement('div');
+                    shipCell.className = `ship-cell ${isVertical ? 'vertical' : 'horizontal'}`;
+                    shipPreview.appendChild(shipCell);
+                }
+                
+                const shipName = document.createElement('span');
+                shipName.className = 'ship-name';
+                shipName.textContent = `${ship.name} (${ship.size})`;
+                
+                shipItem.appendChild(shipPreview);
+                shipItem.appendChild(shipName);
+                
+                // Add drag events
+                shipItem.addEventListener('dragstart', handleDragStart);
+                shipItem.addEventListener('dragend', handleDragEnd);
+                
+                // Add touch events for mobile
+                shipItem.addEventListener('touchstart', handleTouchStart);
+                shipItem.addEventListener('touchmove', handleTouchMove);
+                shipItem.addEventListener('touchend', handleTouchEnd);
+                
+                shipDockItems.appendChild(shipItem);
+            });
+        }
+
+        // Update ship dock
+        function updateShipDock() {
+            const shipItems = document.querySelectorAll('.ship-dock-item');
+            shipItems.forEach((item, index) => {
+                const ship = shipTypes[index];
+                if (ship.placed) {
+                    item.classList.add('placed');
+                    item.draggable = false;
+                } else {
+                    item.classList.remove('placed');
+                    item.draggable = true;
+                }
+                
+                // Update preview orientation
+                const shipPreview = item.querySelector('.ship-preview');
+                shipPreview.innerHTML = '';
+                for (let i = 0; i < ship.size; i++) {
+                    const shipCell = document.createElement('div');
+                    shipCell.className = `ship-cell ${isVertical ? 'vertical' : 'horizontal'}`;
+                    shipPreview.appendChild(shipCell);
+                }
+            });
+        }
+
+        // Handle drag start
+        function handleDragStart(e) {
+            if (currentPhase !== 'placement') return;
+            
+            const shipIndex = parseInt(e.target.dataset.shipIndex);
+            const ship = shipTypes[shipIndex];
+            
+            if (ship.placed) {
+                e.preventDefault();
+                return;
+            }
+            
+            selectedShipIndex = shipIndex;
+            e.target.classList.add('dragging');
+            e.dataTransfer.setData('text/plain', shipIndex.toString());
+            e.dataTransfer.effectAllowed = 'move';
+            
+            // Add visual feedback
+            setTimeout(() => {
+                e.target.style.opacity = '0.4';
+            }, 0);
+        }
+
+        // Handle drag end
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            e.target.style.opacity = '';
+            selectedShipIndex = -1;
+            
+            // Clear drag-over classes from all cells
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => cell.classList.remove('drag-over'));
+        }
+
+        // Handle touch start for mobile
+        function handleTouchStart(e) {
+            if (currentPhase !== 'placement') return;
+            
+            const shipItem = e.target.closest('.ship-dock-item');
+            if (!shipItem) return;
+            
+            const shipIndex = parseInt(shipItem.dataset.shipIndex);
+            const ship = shipTypes[shipIndex];
+            
+            if (ship.placed) {
+                e.preventDefault();
+                return;
+            }
+            
+            selectedShipIndex = shipIndex;
+            isDragging = true;
+            shipItem.classList.add('dragging');
+            
+            // Calculate touch position
+            const touch = e.touches[0];
+            const rect = shipItem.getBoundingClientRect();
+            dragOffsetX = touch.clientX - rect.left;
+            dragOffsetY = touch.clientY - rect.top;
+            
+            // Create ghost element for dragging
+            const ghost = shipItem.cloneNode(true);
+            ghost.id = 'drag-ghost';
+            ghost.style.position = 'fixed';
+            ghost.style.left = (touch.clientX - dragOffsetX) + 'px';
+            ghost.style.top = (touch.clientY - dragOffsetY) + 'px';
+            ghost.style.zIndex = '1000';
+            ghost.style.pointerEvents = 'none';
+            ghost.style.opacity = '0.8';
+            document.body.appendChild(ghost);
+            
+            e.preventDefault();
+        }
+
+        // Handle touch move for mobile
+        function handleTouchMove(e) {
+            if (!isDragging) return;
+            
+            const touch = e.touches[0];
+            const ghost = document.getElementById('drag-ghost');
+            if (ghost) {
+                ghost.style.left = (touch.clientX - dragOffsetX) + 'px';
+                ghost.style.top = (touch.clientY - dragOffsetY) + 'px';
+            }
+            
+            // Check if over grid cell
+            const cells = document.querySelectorAll('#playerGrid .cell');
+            const playerGrid = document.getElementById('playerGrid');
+            const gridRect = playerGrid.getBoundingClientRect();
+            
+            // Clear previous drag-over classes
+            cells.forEach(cell => cell.classList.remove('drag-over'));
+            
+            if (touch.clientX >= gridRect.left && touch.clientX <= gridRect.right &&
+                touch.clientY >= gridRect.top && touch.clientY <= gridRect.bottom) {
+                
+                // Calculate grid position
+                const cellSize = gridRect.width / 10;
+                const col = Math.floor((touch.clientX - gridRect.left) / cellSize);
+                const row = Math.floor((touch.clientY - gridRect.top) / cellSize);
+                
+                if (row >= 0 && row < 10 && col >= 0 && col < 10) {
+                    const index = row * 10 + col;
+                    if (cells[index]) {
+                        // Highlight cells where ship can be placed
+                        const ship = shipTypes[selectedShipIndex];
+                        if (canPlaceShip(row, col, ship.size, isVertical, `player${currentPlayer}`)) {
+                            for (let i = 0; i < ship.size; i++) {
+                                const r = isVertical ? row + i : row;
+                                const c = isVertical ? col : col + i;
+                                if (r < 10 && c < 10) {
+                                    const cellIndex = r * 10 + c;
+                                    cells[cellIndex].classList.add('drag-over');
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            e.preventDefault();
+        }
+
+        // Handle touch end for mobile
+        function handleTouchEnd(e) {
+            if (!isDragging) return;
+            
+            const touch = e.changedTouches[0];
+            const shipItem = document.querySelector('.ship-dock-item.dragging');
+            
+            if (shipItem) {
+                shipItem.classList.remove('dragging');
+            }
+            
+            // Remove ghost
+            const ghost = document.getElementById('drag-ghost');
+            if (ghost) {
+                ghost.remove();
+            }
+            
+            // Check if dropped on grid
+            const playerGrid = document.getElementById('playerGrid');
+            const gridRect = playerGrid.getBoundingClientRect();
+            
+            if (touch.clientX >= gridRect.left && touch.clientX <= gridRect.right &&
+                touch.clientY >= gridRect.top && touch.clientY <= gridRect.bottom) {
+                
+                // Calculate grid position
+                const cellSize = gridRect.width / 10;
+                const col = Math.floor((touch.clientX - gridRect.left) / cellSize);
+                const row = Math.floor((touch.clientY - gridRect.top) / cellSize);
+                
+                if (row >= 0 && row < 10 && col >= 0 && col < 10) {
+                    placeShipByDrag(row, col);
+                }
+            }
+            
+            isDragging = false;
+            selectedShipIndex = -1;
+            
+            // Clear drag-over classes
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => cell.classList.remove('drag-over'));
+            
+            e.preventDefault();
+        }
+
+        // Place ship using drag and drop
+        function placeShipByDrag(row, col) {
+            if (selectedShipIndex === -1) return;
+            
+            const ship = shipTypes[selectedShipIndex];
+            const playerKey = `player${currentPlayer}`;
+            
+            if (canPlaceShip(row, col, ship.size, isVertical, playerKey)) {
+                // Place ship
+                const cells = [];
+                for (let i = 0; i < ship.size; i++) {
+                    const r = isVertical ? row + i : row;
+                    const c = isVertical ? col : col + i;
+                    cells.push({ row: r, col: c });
+                }
+                
+                ships[playerKey].push({
+                    ...ship,
+                    cells: cells,
+                    hits: 0,
+                    sunk: false
+                });
+                
+                ship.placed = true;
+                showMessage(`${ship.name} placed!`);
+                updateDisplay();
+                
+                // Check if all ships placed
+                const allPlaced = shipTypes.every(s => s.placed);
+                if (allPlaced) {
+                    showMessage("All ships placed! Click 'Finish Placement' when ready.");
+                }
+                
+                // Vibrate on mobile if supported
+                if (navigator.vibrate) {
+                    navigator.vibrate(50);
+                }
+            } else {
+                showMessage("Cannot place ship there! Try another location.");
+            }
+        }
+
+        // Setup grid drag and drop
+        function setupGridDragAndDrop() {
+            const playerGrid = document.getElementById('playerGrid');
+            const cells = playerGrid.children;
+            
+            // Clear previous event listeners
+            for (let cell of cells) {
+                cell.removeEventListener('dragover', handleDragOver);
+                cell.removeEventListener('drop', handleDrop);
+                cell.removeEventListener('dragenter', handleDragEnter);
+                cell.removeEventListener('dragleave', handleDragLeave);
+            }
+            
+            // Add new event listeners
+            for (let cell of cells) {
+                cell.addEventListener('dragover', handleDragOver);
+                cell.addEventListener('drop', handleDrop);
+                cell.addEventListener('dragenter', handleDragEnter);
+                cell.addEventListener('dragleave', handleDragLeave);
+            }
+        }
+
+        // Handle drag over
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+        }
+
+        // Handle drop
+        function handleDrop(e) {
+            e.preventDefault();
+            
+            const row = parseInt(e.target.dataset.row);
+            const col = parseInt(e.target.dataset.col);
+            
+            if (isNaN(row) || isNaN(col)) return;
+            
+            const shipIndex = parseInt(e.dataTransfer.getData('text/plain'));
+            if (isNaN(shipIndex)) return;
+            
+            selectedShipIndex = shipIndex;
+            placeShipByDrag(row, col);
+            
+            // Clear drag-over classes
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => cell.classList.remove('drag-over'));
+        }
+
+        // Handle drag enter
+        function handleDragEnter(e) {
+            e.preventDefault();
+            
+            const row = parseInt(e.target.dataset.row);
+            const col = parseInt(e.target.dataset.col);
+            
+            if (isNaN(row) || isNaN(col)) return;
+            
+            if (selectedShipIndex !== -1) {
+                const ship = shipTypes[selectedShipIndex];
+                const playerKey = `player${currentPlayer}`;
+                const cells = document.querySelectorAll('#playerGrid .cell');
+                
+                // Clear previous highlights
+                cells.forEach(cell => cell.classList.remove('drag-over'));
+                
+                // Highlight cells where ship can be placed
+                if (canPlaceShip(row, col, ship.size, isVertical, playerKey)) {
+                    for (let i = 0; i < ship.size; i++) {
+                        const r = isVertical ? row + i : row;
+                        const c = isVertical ? col : col + i;
+                        if (r < 10 && c < 10) {
+                            const index = r * 10 + c;
+                            cells[index].classList.add('drag-over');
+                        }
+                    }
+                }
+            }
+        }
+
+        // Handle drag leave
+        function handleDragLeave(e) {
+            // Don't clear highlights immediately to allow for smooth transitions
         }
 
         // Show ready screen
@@ -655,6 +1126,7 @@
             } else {
                 attackGrid.style.pointerEvents = 'none';
                 attackGrid.style.opacity = '0.5';
+                setupGridDragAndDrop();
             }
             
             // Scroll to top on mobile
@@ -684,14 +1156,11 @@
                     cell.dataset.col = col;
                     
                     // Use touch events for mobile
-                    cell.addEventListener('click', () => handlePlacementClick(row, col));
+                    cell.addEventListener('click', () => handleGridClick(row, col));
                     cell.addEventListener('touchstart', (e) => {
                         e.preventDefault();
-                        handlePlacementClick(row, col);
+                        handleGridClick(row, col);
                     }, { passive: false });
-                    
-                    cell.addEventListener('mouseover', () => handlePlacementHover(row, col));
-                    cell.addEventListener('mouseout', clearPreview);
                     
                     playerGrid.appendChild(cell);
                 }
@@ -716,10 +1185,23 @@
             }
         }
 
+        // Handle grid click (for click placement if still needed)
+        function handleGridClick(row, col) {
+            if (currentPhase !== 'placement') return;
+            
+            // Find first unplaced ship
+            const unplacedShipIndex = shipTypes.findIndex(ship => !ship.placed);
+            if (unplacedShipIndex === -1) return;
+            
+            selectedShipIndex = unplacedShipIndex;
+            placeShipByDrag(row, col);
+        }
+
         // Update everything
         function updateDisplay() {
             updateReadyTitle();
             updateGrids();
+            updateShipDock();
             updateShipStatus();
             updateCurrentShipDisplay();
             updateMessageDisplay();
@@ -821,81 +1303,6 @@
             }
         }
 
-        // Handle placement click
-        function handlePlacementClick(row, col) {
-            if (currentPhase !== 'placement') return;
-            if (currentShipIndex >= shipTypes.length) return;
-            
-            const ship = shipTypes[currentShipIndex];
-            const playerKey = `player${currentPlayer}`;
-            
-            if (canPlaceShip(row, col, ship.size, isVertical, playerKey)) {
-                // Place ship
-                const cells = [];
-                for (let i = 0; i < ship.size; i++) {
-                    const r = isVertical ? row + i : row;
-                    const c = isVertical ? col : col + i;
-                    cells.push({ row: r, col: c });
-                }
-                
-                ships[playerKey].push({
-                    ...ship,
-                    cells: cells,
-                    hits: 0,
-                    sunk: false
-                });
-                
-                currentShipIndex++;
-                showMessage(`${ship.name} placed!`);
-                updateDisplay();
-                
-                if (currentShipIndex >= shipTypes.length) {
-                    showMessage("All ships placed! Click 'Finish Placement' when ready.");
-                }
-            } else {
-                showMessage("Cannot place ship there! Try another location.");
-            }
-            
-            // Vibrate on mobile if supported
-            if (navigator.vibrate) {
-                navigator.vibrate(50);
-            }
-        }
-
-        // Handle placement hover
-        function handlePlacementHover(row, col) {
-            if (currentPhase !== 'placement') return;
-            if (currentShipIndex >= shipTypes.length) return;
-            
-            const ship = shipTypes[currentShipIndex];
-            const playerKey = `player${currentPlayer}`;
-            clearPreview();
-            
-            if (canPlaceShip(row, col, ship.size, isVertical, playerKey)) {
-                const playerGrid = document.getElementById('playerGrid');
-                for (let i = 0; i < ship.size; i++) {
-                    const r = isVertical ? row + i : row;
-                    const c = isVertical ? col : col + i;
-                    if (r < 10 && c < 10) {
-                        const index = r * 10 + c;
-                        playerGrid.children[index].style.backgroundColor = '#f39c12';
-                        playerGrid.children[index].style.opacity = '0.7';
-                    }
-                }
-            }
-        }
-
-        // Clear preview
-        function clearPreview() {
-            const playerGrid = document.getElementById('playerGrid');
-            for (let cell of playerGrid.children) {
-                if (!cell.classList.contains('ship')) {
-                    cell.style.backgroundColor = '';
-                    cell.style.opacity = '';
-                }
-            }
-        }
-
         // Check if ship can be placed
         function canPlaceShip(startRow, startCol, size, vertical, playerKey) {
             for (let i = 0; i < size; i++) {
@@ -913,11 +1320,11 @@
             return true;
         }
 
-        // Rotate ship
-        function rotateShip() {
+        // Rotate selected ship
+        function rotateSelectedShip() {
             isVertical = !isVertical;
             showMessage(`Ship orientation: ${isVertical ? 'Vertical' : 'Horizontal'}`);
-            updateDisplay();
+            updateShipDock();
             
             // Vibrate on mobile if supported
             if (navigator.vibrate) {
@@ -929,6 +1336,9 @@
         function randomPlaceAll() {
             const playerKey = `player${currentPlayer}`;
             ships[playerKey] = [];
+            
+            // Reset all ships to unplaced
+            shipTypes.forEach(ship => ship.placed = false);
             
             shipTypes.forEach(ship => {
                 let placed = false;
@@ -956,13 +1366,13 @@
                             hits: 0,
                             sunk: false
                         });
+                        ship.placed = true;
                         placed = true;
                     }
                     attempts++;
                 }
             });
             
-            currentShipIndex = shipTypes.length;
             showMessage("All ships randomly placed!");
             updateDisplay();
             
@@ -974,7 +1384,9 @@
 
         // Finish placement
         function finishPlacement() {
-            if (currentShipIndex < shipTypes.length) {
+            // Check if all ships placed
+            const allPlaced = shipTypes.every(ship => ship.placed);
+            if (!allPlaced) {
                 showMessage("Please place all ships first!");
                 return;
             }
@@ -982,8 +1394,10 @@
             if (currentPlayer === 1) {
                 // Switch to player 2 placement
                 currentPlayer = 2;
-                currentShipIndex = 0;
                 isVertical = true;
+                
+                // Reset ships for player 2
+                shipTypes.forEach(ship => ship.placed = false);
                 
                 // Show ready screen for player 2
                 showReadyScreen();
@@ -1110,7 +1524,7 @@
                 // Show placement status
                 shipTypes.forEach((ship, index) => {
                     const item = document.createElement('div');
-                    const placed = index < currentShipIndex;
+                    const placed = ship.placed;
                     item.className = `ship-status-item ${placed ? 'active' : 'placing'}`;
                     item.innerHTML = `${placed ? '✅' : '📦'} ${ship.name} (${ship.size})`;
                     shipStatus.appendChild(item);
@@ -1132,9 +1546,9 @@
             const display = document.getElementById('currentShipDisplay');
             
             if (currentPhase === 'placement') {
-                if (currentShipIndex < shipTypes.length) {
-                    const ship = shipTypes[currentShipIndex];
-                    display.textContent = `Placing: ${ship.name} (${ship.size} cells) - ${isVertical ? 'Vertical' : 'Horizontal'}`;
+                const unplacedShips = shipTypes.filter(ship => !ship.placed).length;
+                if (unplacedShips > 0) {
+                    display.textContent = `Drag and drop ${unplacedShips} ships to place them on your grid`;
                 } else {
                     display.textContent = 'All ships placed! Ready for battle!';
                 }
@@ -1152,8 +1566,9 @@
             const display = document.getElementById('messageDisplay');
             
             if (currentPhase === 'placement') {
-                if (currentShipIndex < shipTypes.length) {
-                    display.textContent = `Click on your grid to place your ${shipTypes[currentShipIndex].name}. Press R to rotate.`;
+                const unplacedShips = shipTypes.filter(ship => !ship.placed).length;
+                if (unplacedShips > 0) {
+                    display.textContent = 'Drag ships from the dock to your grid. Rotate with R or button.';
                 } else {
                     display.textContent = 'All ships placed! Click "Finish Placement" when ready.';
                 }
@@ -1209,14 +1624,16 @@
         function resetGame() {
             currentPhase = 'placement';
             currentPlayer = 1;
-            currentShipIndex = 0;
             isVertical = true;
             hasMadeMoveThisTurn = false;
+            selectedShipIndex = -1;
+            isDragging = false;
             
             ships.player1 = [];
             ships.player2 = [];
             attacks.player1.clear();
             attacks.player2.clear();
+            shipTypes.forEach(ship => ship.placed = false);
             
             showReadyScreen();
             updateDisplay();
@@ -1233,7 +1650,7 @@
         // Keyboard shortcut
         document.addEventListener('keydown', (e) => {
             if (e.key.toLowerCase() === 'r' && currentPhase === 'placement') {
-                rotateShip();
+                rotateSelectedShip();
             }
         });
 
