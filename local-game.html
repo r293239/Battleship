@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>Local Multiplayer - Battleship</title>
     <style>
         * {
@@ -10,12 +10,21 @@
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
+            position: relative;
         }
 
         body {
             background: #000000;
             min-height: 100vh;
-            overflow: hidden;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         /* Ready Screen - Pure Black with ONLY Ready Button */
@@ -33,18 +42,22 @@
             z-index: 1000;
             color: white;
             text-align: center;
+            padding: 20px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         #readyScreen h2 {
-            font-size: 3rem;
-            margin-bottom: 40px;
+            font-size: clamp(2rem, 8vw, 3rem);
+            margin-bottom: 30px;
             color: #3498db;
             text-shadow: 0 0 20px rgba(52, 152, 219, 0.5);
+            line-height: 1.2;
         }
 
         #readyButton {
-            padding: 25px 80px;
-            font-size: 2.5rem;
+            padding: clamp(15px, 5vw, 25px) clamp(40px, 10vw, 80px);
+            font-size: clamp(1.5rem, 6vw, 2.5rem);
             font-weight: bold;
             border: none;
             border-radius: 50px;
@@ -52,14 +65,16 @@
             background: linear-gradient(to right, #2ecc71, #27ae60);
             color: white;
             text-transform: uppercase;
-            letter-spacing: 3px;
+            letter-spacing: 2px;
             box-shadow: 0 0 40px rgba(46, 204, 113, 0.7);
             animation: pulse 2s infinite;
             transition: all 0.3s;
+            touch-action: manipulation;
+            width: min(90%, 400px);
         }
 
-        #readyButton:hover {
-            transform: scale(1.1);
+        #readyButton:hover, #readyButton:active {
+            transform: scale(1.05);
             box-shadow: 0 0 60px rgba(46, 204, 113, 1);
         }
 
@@ -74,78 +89,109 @@
             display: none;
             min-height: 100vh;
             background: linear-gradient(135deg, #1a2980, #26d0ce);
-            padding: 20px;
+            padding: 15px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .header {
             text-align: center;
             color: white;
-            margin-bottom: 30px;
-            padding: 20px;
+            margin-bottom: 20px;
+            padding: 15px;
         }
 
         .header h1 {
-            font-size: 2.5rem;
+            font-size: clamp(1.5rem, 6vw, 2.5rem);
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
             margin-bottom: 10px;
+            line-height: 1.2;
         }
 
         .player-turn {
-            font-size: 1.8rem;
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
             font-weight: bold;
             background: rgba(255, 255, 255, 0.2);
-            padding: 15px 40px;
+            padding: clamp(10px, 3vw, 15px) clamp(20px, 5vw, 40px);
             border-radius: 50px;
             display: inline-block;
             margin-top: 10px;
+            max-width: 90%;
+            word-break: break-word;
         }
 
         .game-container {
-            max-width: 1000px;
-            margin: 0 auto;
+            max-width: 1200px;
+            margin: 0 auto 30px;
             background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
-            padding: 30px;
+            padding: clamp(15px, 3vw, 30px);
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
         }
 
         .player-title {
             color: #2c3e50;
             text-align: center;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
             border-bottom: 4px solid #3498db;
-            font-size: 2.2rem;
+            font-size: clamp(1.5rem, 5vw, 2.2rem);
+            line-height: 1.3;
         }
 
         .grids-container {
             display: flex;
-            justify-content: center;
-            gap: 40px;
-            margin: 30px 0;
+            flex-direction: column;
+            gap: 30px;
+            margin: 20px 0;
+        }
+
+        @media (min-width: 768px) {
+            .grids-container {
+                flex-direction: row;
+                justify-content: center;
+                gap: 40px;
+            }
         }
 
         .grid-wrapper {
             text-align: center;
+            width: 100%;
+        }
+
+        @media (min-width: 768px) {
+            .grid-wrapper {
+                width: auto;
+            }
         }
 
         .grid-wrapper h3 {
             color: #34495e;
-            margin-bottom: 15px;
-            font-size: 1.5rem;
+            margin-bottom: 10px;
+            font-size: clamp(1.1rem, 3vw, 1.5rem);
             font-weight: bold;
+            line-height: 1.3;
         }
 
         .grid {
             display: grid;
             grid-template-columns: repeat(10, 1fr);
             grid-template-rows: repeat(10, 1fr);
-            gap: 2px;
-            width: 350px;
-            height: 350px;
-            border: 4px solid #2c3e50;
+            gap: 1px;
+            width: min(95vw, 350px);
+            height: min(95vw, 350px);
+            border: 3px solid #2c3e50;
             background-color: #3498db;
             margin: 0 auto;
+            touch-action: manipulation;
+        }
+
+        @media (max-width: 480px) {
+            .grid {
+                width: min(95vw, 320px);
+                height: min(95vw, 320px);
+            }
         }
 
         .cell {
@@ -159,22 +205,27 @@
             transition: all 0.2s;
             user-select: none;
             position: relative;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            min-height: 0;
+            min-width: 0;
         }
 
-        .cell:hover {
+        .cell:active {
             background-color: #d6eaf8;
+            transform: scale(0.95);
         }
 
         .cell.hit::after {
             content: "💥";
-            font-size: 1.8rem;
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
             animation: hitEffect 0.5s;
         }
 
         .cell.miss::after {
             content: "●";
             color: #7f8c8d;
-            font-size: 1.8rem;
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
             animation: missEffect 0.5s;
         }
 
@@ -188,7 +239,7 @@
 
         .cell.ship.hit::after {
             content: "💥";
-            font-size: 1.8rem;
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
             animation: hitEffect 0.5s;
         }
 
@@ -204,8 +255,8 @@
         }
 
         .controls-container {
-            margin-top: 30px;
-            padding: 25px;
+            margin-top: 25px;
+            padding: clamp(15px, 3vw, 25px);
             background: rgba(236, 240, 241, 0.9);
             border-radius: 15px;
         }
@@ -218,25 +269,48 @@
         .placement-controls h3, .game-controls h3 {
             color: #2c3e50;
             margin-bottom: 15px;
-            font-size: 1.4rem;
+            font-size: clamp(1.1rem, 3vw, 1.4rem);
+            line-height: 1.3;
         }
 
         .control-buttons {
             display: flex;
-            justify-content: center;
-            gap: 15px;
-            flex-wrap: wrap;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+        }
+
+        @media (min-width: 600px) {
+            .control-buttons {
+                flex-direction: row;
+                justify-content: center;
+                flex-wrap: wrap;
+                gap: 15px;
+            }
         }
 
         .control-btn {
-            padding: 12px 25px;
-            font-size: 1.1rem;
+            padding: clamp(10px, 2vw, 12px) clamp(15px, 3vw, 25px);
+            font-size: clamp(0.9rem, 2.5vw, 1.1rem);
             font-weight: bold;
             border: none;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s;
-            min-width: 160px;
+            width: min(100%, 250px);
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        @media (min-width: 600px) {
+            .control-btn {
+                width: auto;
+                min-width: 160px;
+            }
+        }
+
+        .control-btn:active {
+            transform: translateY(-2px);
         }
 
         .rotate-btn {
@@ -259,7 +333,7 @@
             color: white;
         }
 
-        .control-btn:hover {
+        .control-btn:hover, .control-btn:active {
             transform: translateY(-3px);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
@@ -267,34 +341,53 @@
         .ship-status-container {
             background: rgba(255, 255, 255, 0.9);
             border-radius: 10px;
-            padding: 20px;
-            margin-top: 25px;
+            padding: clamp(15px, 3vw, 20px);
+            margin-top: 20px;
         }
 
         .ship-status-container h3 {
             color: #2c3e50;
             text-align: center;
             margin-bottom: 15px;
-            font-size: 1.4rem;
+            font-size: clamp(1.1rem, 3vw, 1.4rem);
+            line-height: 1.3;
         }
 
         .ship-status {
             display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 12px;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+        }
+
+        @media (min-width: 600px) {
+            .ship-status {
+                flex-direction: row;
+                justify-content: center;
+                flex-wrap: wrap;
+                gap: 12px;
+            }
         }
 
         .ship-status-item {
             background: #ecf0f1;
-            padding: 10px 20px;
+            padding: clamp(8px, 2vw, 10px) clamp(15px, 3vw, 20px);
             border-radius: 25px;
-            font-size: 1rem;
+            font-size: clamp(0.85rem, 2.5vw, 1rem);
             display: flex;
             align-items: center;
-            gap: 8px;
-            min-width: 180px;
+            gap: 6px;
+            width: min(100%, 200px);
             justify-content: center;
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        @media (min-width: 600px) {
+            .ship-status-item {
+                width: auto;
+                min-width: 180px;
+            }
         }
 
         .ship-status-item.placing {
@@ -317,75 +410,97 @@
 
         .current-ship-display {
             text-align: center;
-            font-size: 1.4rem;
+            font-size: clamp(1rem, 3vw, 1.4rem);
             color: #f39c12;
             font-weight: bold;
-            margin: 20px 0;
-            padding: 15px;
+            margin: 15px 0;
+            padding: clamp(10px, 2vw, 15px);
             background: rgba(243, 156, 18, 0.1);
             border-radius: 10px;
             border: 2px solid #f39c12;
+            line-height: 1.4;
+            word-break: break-word;
         }
 
         .message-display {
             text-align: center;
-            font-size: 1.3rem;
+            font-size: clamp(1rem, 3vw, 1.3rem);
             color: #2c3e50;
-            margin: 20px 0;
-            padding: 15px;
+            margin: 15px 0;
+            padding: clamp(10px, 2vw, 15px);
             background: rgba(52, 152, 219, 0.1);
             border-radius: 10px;
             min-height: 60px;
             display: flex;
             align-items: center;
             justify-content: center;
+            line-height: 1.4;
+            word-break: break-word;
         }
 
         .hidden {
             display: none !important;
         }
 
-        @media (max-width: 900px) {
-            .grids-container {
-                flex-direction: column;
-                align-items: center;
-                gap: 30px;
+        /* Mobile-specific optimizations */
+        @media (max-width: 767px) {
+            body {
+                overflow-y: auto;
             }
             
-            .grid {
-                width: 320px;
-                height: 320px;
+            #gameScreen {
+                padding-bottom: 80px; /* Space for scrolling on mobile */
             }
             
-            #readyButton {
-                padding: 20px 60px;
-                font-size: 2rem;
+            .game-container {
+                margin-bottom: 80px;
             }
             
-            .control-buttons {
-                flex-direction: column;
-                align-items: center;
+            /* Better touch targets for mobile */
+            .cell {
+                min-height: 28px;
+                min-width: 28px;
             }
             
-            .control-btn {
-                width: 250px;
+            /* Prevent text zoom on iOS */
+            input, select, textarea, button {
+                font-size: 16px;
             }
         }
 
-        @media (max-width: 480px) {
+        /* Very small screens */
+        @media (max-width: 360px) {
             .grid {
-                width: 280px;
-                height: 280px;
+                width: min(95vw, 280px);
+                height: min(95vw, 280px);
             }
             
-            #readyButton {
-                padding: 18px 50px;
-                font-size: 1.8rem;
+            .cell {
+                min-height: 24px;
+                min-width: 24px;
             }
             
-            .player-title {
-                font-size: 1.8rem;
+            .control-btn {
+                padding: 10px 15px;
+                font-size: 0.9rem;
             }
+        }
+
+        /* Large screens */
+        @media (min-width: 1200px) {
+            .grid {
+                width: 400px;
+                height: 400px;
+            }
+            
+            .game-container {
+                padding: 40px;
+            }
+        }
+
+        /* Prevent pull-to-refresh on mobile */
+        body {
+            overscroll-behavior-y: contain;
         }
     </style>
 </head>
@@ -462,6 +577,16 @@
     </div>
 
     <script>
+        // Prevent double-tap zoom on mobile
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(event) {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+
         // SIMPLE GAME STATE
         let currentPhase = 'placement'; // 'placement' or 'battle'
         let currentPlayer = 1;
@@ -490,6 +615,20 @@
         function initGame() {
             createGrids();
             updateDisplay();
+            
+            // Add touch event listeners for better mobile support
+            setupTouchEvents();
+        }
+
+        // Setup touch events for better mobile support
+        function setupTouchEvents() {
+            // Prevent scrolling when touching game elements
+            const gameElements = document.querySelectorAll('.grid, .control-btn, #readyButton');
+            gameElements.forEach(element => {
+                element.addEventListener('touchmove', function(e) {
+                    e.preventDefault();
+                }, { passive: false });
+            });
         }
 
         // Create grids
@@ -507,9 +646,17 @@
                     cell.className = 'cell';
                     cell.dataset.row = row;
                     cell.dataset.col = col;
+                    
+                    // Use touch events for mobile
                     cell.addEventListener('click', () => handlePlacementClick(row, col));
+                    cell.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        handlePlacementClick(row, col);
+                    }, { passive: false });
+                    
                     cell.addEventListener('mouseover', () => handlePlacementHover(row, col));
                     cell.addEventListener('mouseout', clearPreview);
+                    
                     playerGrid.appendChild(cell);
                 }
             }
@@ -521,7 +668,13 @@
                     cell.className = 'cell';
                     cell.dataset.row = row;
                     cell.dataset.col = col;
+                    
                     cell.addEventListener('click', () => handleAttack(row, col));
+                    cell.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        handleAttack(row, col);
+                    }, { passive: false });
+                    
                     attackGrid.appendChild(cell);
                 }
             }
@@ -531,6 +684,9 @@
         function startGame() {
             document.getElementById('readyScreen').style.display = 'none';
             document.getElementById('gameScreen').style.display = 'block';
+            
+            // Scroll to top on mobile when game starts
+            window.scrollTo(0, 0);
             updateDisplay();
         }
 
@@ -542,6 +698,19 @@
             updateCurrentShipDisplay();
             updateMessageDisplay();
             updateControls();
+            
+            // Ensure viewport is properly sized on mobile
+            resizeViewport();
+        }
+
+        // Resize viewport for mobile
+        function resizeViewport() {
+            // Force layout recalculation on mobile
+            setTimeout(() => {
+                document.body.style.height = 'auto';
+                const vh = window.innerHeight * 0.01;
+                document.documentElement.style.setProperty('--vh', `${vh}px`);
+            }, 100);
         }
 
         // Update ready screen title
@@ -657,6 +826,11 @@
             } else {
                 showMessage("Cannot place ship there! Try another location.");
             }
+            
+            // Vibrate on mobile if supported
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
         }
 
         // Handle placement hover
@@ -713,7 +887,13 @@
         // Rotate ship
         function rotateShip() {
             isVertical = !isVertical;
+            showMessage(`Ship orientation: ${isVertical ? 'Vertical' : 'Horizontal'}`);
             updateDisplay();
+            
+            // Vibrate on mobile if supported
+            if (navigator.vibrate) {
+                navigator.vibrate(30);
+            }
         }
 
         // Randomly place all ships
@@ -756,6 +936,11 @@
             currentShipIndex = shipTypes.length;
             showMessage("All ships randomly placed!");
             updateDisplay();
+            
+            // Vibrate on mobile if supported
+            if (navigator.vibrate) {
+                navigator.vibrate(100);
+            }
         }
 
         // Finish placement
@@ -773,6 +958,9 @@
                 // Show ready screen for player 2
                 document.getElementById('gameScreen').style.display = 'none';
                 document.getElementById('readyScreen').style.display = 'flex';
+                
+                // Scroll to top for next player
+                window.scrollTo(0, 0);
                 updateDisplay();
             } else {
                 // Both players placed ships, start battle
@@ -780,6 +968,11 @@
                 currentPlayer = 1; // Player 1 starts
                 updateDisplay();
                 showMessage("Battle begins! Player 1's turn to attack!");
+            }
+            
+            // Vibrate on mobile if supported
+            if (navigator.vibrate) {
+                navigator.vibrate(100);
             }
         }
 
@@ -828,6 +1021,11 @@
                 showMessage("MISS!");
             }
             
+            // Vibrate on mobile if supported
+            if (navigator.vibrate) {
+                navigator.vibrate(hit ? 200 : 100);
+            }
+            
             // Check for win
             if (checkWin(enemyKey)) {
                 setTimeout(() => {
@@ -854,7 +1052,15 @@
             // Show ready screen for next player
             document.getElementById('gameScreen').style.display = 'none';
             document.getElementById('readyScreen').style.display = 'flex';
+            
+            // Scroll to top for next player
+            window.scrollTo(0, 0);
             updateDisplay();
+            
+            // Vibrate on mobile if supported
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
         }
 
         // Update ship status
@@ -938,6 +1144,12 @@
         function showMessage(message) {
             const display = document.getElementById('messageDisplay');
             display.textContent = message;
+            
+            // Add animation for message
+            display.style.animation = 'none';
+            setTimeout(() => {
+                display.style.animation = 'fadeIn 0.5s';
+            }, 10);
         }
 
         // Return to menu
@@ -961,8 +1173,19 @@
             
             document.getElementById('readyScreen').style.display = 'flex';
             document.getElementById('gameScreen').style.display = 'none';
+            
+            // Scroll to top
+            window.scrollTo(0, 0);
             initGame();
         }
+
+        // Handle orientation change on mobile
+        window.addEventListener('orientationchange', function() {
+            setTimeout(resizeViewport, 100);
+        });
+
+        // Handle resize
+        window.addEventListener('resize', resizeViewport);
 
         // Keyboard shortcut
         document.addEventListener('keydown', (e) => {
@@ -972,7 +1195,18 @@
         });
 
         // Initialize
-        window.onload = initGame;
+        window.onload = function() {
+            // Set initial viewport height
+            resizeViewport();
+            initGame();
+            
+            // Prevent iOS rubber band effect
+            document.body.addEventListener('touchmove', function(e) {
+                if (e.target === document.body || e.target === document.documentElement) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+        };
     </script>
 </body>
 </html>
