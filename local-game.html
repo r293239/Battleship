@@ -508,7 +508,7 @@
     <!-- Ready Screen - PURE BLACK with ONLY Ready Button -->
     <div id="readyScreen">
         <h2 id="readyTitle">PLAYER 1</h2>
-        <button id="readyButton" onclick="startGame()">READY</button>
+        <button id="readyButton" onclick="startTurn()">READY</button>
     </div>
 
     <!-- Game Screen - ALL game controls here -->
@@ -563,7 +563,7 @@
                             🏠 Back to Menu
                         </button>
                         <button class="control-btn start-btn" onclick="endTurn()">
-                            ⏭️ End Turn & Switch Player
+                            ⏭️ End Turn
                         </button>
                     </div>
                 </div>
@@ -587,11 +587,12 @@
             lastTouchEnd = now;
         }, false);
 
-        // SIMPLE GAME STATE
+        // GAME STATE
         let currentPhase = 'placement'; // 'placement' or 'battle'
         let currentPlayer = 1;
         let currentShipIndex = 0;
         let isVertical = true;
+        let isWaitingForReady = false;
         
         const ships = {
             player1: [],
@@ -615,20 +616,42 @@
         function initGame() {
             createGrids();
             updateDisplay();
-            
-            // Add touch event listeners for better mobile support
             setupTouchEvents();
+            showReadyScreen();
         }
 
         // Setup touch events for better mobile support
         function setupTouchEvents() {
-            // Prevent scrolling when touching game elements
             const gameElements = document.querySelectorAll('.grid, .control-btn, #readyButton');
             gameElements.forEach(element => {
                 element.addEventListener('touchmove', function(e) {
                     e.preventDefault();
                 }, { passive: false });
             });
+        }
+
+        // Show ready screen
+        function showReadyScreen() {
+            updateReadyTitle();
+            document.getElementById('readyScreen').style.display = 'flex';
+            document.getElementById('gameScreen').style.display = 'none';
+            isWaitingForReady = true;
+        }
+
+        // Start turn from ready screen
+        function startTurn() {
+            document.getElementById('readyScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
+            isWaitingForReady = false;
+            
+            // Scroll to top on mobile
+            window.scrollTo(0, 0);
+            updateDisplay();
+            
+            // Vibrate on mobile if supported
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
         }
 
         // Create grids
@@ -680,16 +703,6 @@
             }
         }
 
-        // Start game from ready screen
-        function startGame() {
-            document.getElementById('readyScreen').style.display = 'none';
-            document.getElementById('gameScreen').style.display = 'block';
-            
-            // Scroll to top on mobile when game starts
-            window.scrollTo(0, 0);
-            updateDisplay();
-        }
-
         // Update everything
         function updateDisplay() {
             updateReadyTitle();
@@ -698,14 +711,11 @@
             updateCurrentShipDisplay();
             updateMessageDisplay();
             updateControls();
-            
-            // Ensure viewport is properly sized on mobile
             resizeViewport();
         }
 
         // Resize viewport for mobile
         function resizeViewport() {
-            // Force layout recalculation on mobile
             setTimeout(() => {
                 document.body.style.height = 'auto';
                 const vh = window.innerHeight * 0.01;
@@ -951,23 +961,20 @@
             }
             
             if (currentPlayer === 1) {
-                // Switch to player 2
+                // Switch to player 2 placement
                 currentPlayer = 2;
                 currentShipIndex = 0;
+                isVertical = true;
                 
                 // Show ready screen for player 2
-                document.getElementById('gameScreen').style.display = 'none';
-                document.getElementById('readyScreen').style.display = 'flex';
-                
-                // Scroll to top for next player
-                window.scrollTo(0, 0);
-                updateDisplay();
+                showReadyScreen();
             } else {
-                // Both players placed ships, start battle
+                // Both players placed ships, start battle phase
                 currentPhase = 'battle';
-                currentPlayer = 1; // Player 1 starts
-                updateDisplay();
-                showMessage("Battle begins! Player 1's turn to attack!");
+                currentPlayer = 1; // Player 1 starts first
+                
+                // Show ready screen for player 1's first turn
+                showReadyScreen();
             }
             
             // Vibrate on mobile if supported
@@ -979,6 +986,7 @@
         // Handle attack
         function handleAttack(row, col) {
             if (currentPhase !== 'battle') return;
+            if (isWaitingForReady) return;
             
             const playerKey = `player${currentPlayer}`;
             const enemyKey = `player${currentPlayer === 1 ? 2 : 1}`;
@@ -1038,6 +1046,11 @@
                 }, 1000);
                 return;
             }
+            
+            // After attack, automatically switch to ready screen for next player
+            setTimeout(() => {
+                endTurn();
+            }, 1500);
         }
 
         // Check win condition
@@ -1047,20 +1060,11 @@
 
         // End turn and switch player
         function endTurn() {
+            // Switch to other player
             currentPlayer = currentPlayer === 1 ? 2 : 1;
             
             // Show ready screen for next player
-            document.getElementById('gameScreen').style.display = 'none';
-            document.getElementById('readyScreen').style.display = 'flex';
-            
-            // Scroll to top for next player
-            window.scrollTo(0, 0);
-            updateDisplay();
-            
-            // Vibrate on mobile if supported
-            if (navigator.vibrate) {
-                navigator.vibrate(50);
-            }
+            showReadyScreen();
         }
 
         // Update ship status
@@ -1116,7 +1120,11 @@
                     display.textContent = 'All ships placed! Click "Finish Placement" when ready.';
                 }
             } else {
-                display.textContent = 'Click on the right grid to attack enemy positions!';
+                if (isWaitingForReady) {
+                    display.textContent = `Player ${currentPlayer}, get ready for your turn!`;
+                } else {
+                    display.textContent = 'Click on the right grid to attack enemy positions!';
+                }
             }
         }
 
@@ -1165,18 +1173,15 @@
             currentPlayer = 1;
             currentShipIndex = 0;
             isVertical = true;
+            isWaitingForReady = false;
             
             ships.player1 = [];
             ships.player2 = [];
             attacks.player1.clear();
             attacks.player2.clear();
             
-            document.getElementById('readyScreen').style.display = 'flex';
-            document.getElementById('gameScreen').style.display = 'none';
-            
-            // Scroll to top
-            window.scrollTo(0, 0);
-            initGame();
+            showReadyScreen();
+            updateDisplay();
         }
 
         // Handle orientation change on mobile
