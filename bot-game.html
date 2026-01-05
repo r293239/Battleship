@@ -1344,20 +1344,39 @@
                 attackGrid.style.pointerEvents = 'none';
             } else {
                 // Battle phase
-                // Show player's ships with bot's hits
+                
+                // Show player's ships
                 ships.player.forEach(ship => {
                     ship.cells.forEach(pos => {
                         const index = pos.row * 10 + pos.col;
                         playerGrid.children[index].classList.add('ship');
-                        
-                        const attackKey = `${pos.row},${pos.col}`;
-                        if (attacks.bot.has(attackKey)) {
-                            playerGrid.children[index].classList.add('hit');
-                        }
                     });
                 });
                 
-                // Show player's attacks on bot
+                // Show bot's attacks on player's grid (BOTH HITS AND MISSES)
+                attacks.bot.forEach(attackKey => {
+                    const [row, col] = attackKey.split(',').map(Number);
+                    const index = row * 10 + col;
+                    
+                    // Check if it was a hit
+                    let hit = false;
+                    ships.player.forEach(ship => {
+                        ship.cells.forEach(pos => {
+                            if (pos.row === row && pos.col === col) {
+                                hit = true;
+                            }
+                        });
+                    });
+                    
+                    // Mark on player's grid
+                    if (hit) {
+                        playerGrid.children[index].classList.add('hit');
+                    } else {
+                        playerGrid.children[index].classList.add('miss');
+                    }
+                });
+                
+                // Show player's attacks on bot (on attack grid)
                 attacks.player.forEach(attackKey => {
                     const [row, col] = attackKey.split(',').map(Number);
                     const index = row * 10 + col;
