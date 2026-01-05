@@ -298,44 +298,11 @@
         .mode-card:nth-child(1) { animation-delay: 0.1s; }
         .mode-card:nth-child(2) { animation-delay: 0.2s; }
         .mode-card:nth-child(3) { animation-delay: 0.3s; }
-
-        /* Status indicator */
-        .status-indicator {
-            position: absolute;
-            top: 30px;
-            right: 30px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 8px 16px;
-            border-radius: 50px;
-            font-size: 0.9rem;
-            backdrop-filter: blur(5px);
-        }
-
-        .status-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background-color: #10b981;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <div class="status-indicator">
-                <div class="status-dot"></div>
-                <span>Live • Players Online: 1,247</span>
-            </div>
             <h1>BATTLESHIP COMMAND</h1>
             <p class="subtitle">Deploy your fleet, outmaneuver your opponent, and dominate the naval battlefield in this classic strategy game.</p>
         </header>
@@ -415,16 +382,17 @@
 
         <footer>
             <p class="copyright">© 2023 Battleship Command. All Rights Reserved.</p>
-            <p class="tagline">A premium naval strategy experience. Engage in tactical warfare across three distinct game modes. <span class="highlight">No registration required.</span></p>
+            <p class="tagline">A premium naval strategy experience. Engage in tactical warfare across three distinct game modes.</p>
         </footer>
     </div>
 
     <script>
         // Game mode selection functions
         function startLocalGame() {
-            showLoadingMessage("Initializing Local Battle", "Prepare to face your opponent on the same device.");
-            // In a real implementation, this would redirect to the local game page
-            // window.location.href = "local-game.html";
+            // Simple confirmation before redirecting
+            if (confirm("Start Local Game?\n\nYou and a friend will share this device, taking turns to place ships and attack.\n\nClick OK to proceed to the game.")) {
+                window.location.href = "local-game.html";
+            }
         }
 
         function startBotGame() {
@@ -435,74 +403,19 @@
                 if (difficulty === "1") difficultyText = "Easy";
                 if (difficulty === "3") difficultyText = "Hard";
                 
-                showLoadingMessage(`Engaging ${difficultyText} AI`, "The computer opponent is preparing its strategy.");
-                // In a real implementation, this would redirect to the bot game page
-                // window.location.href = `bot-game.html?difficulty=${difficulty}`;
+                if (confirm(`Starting ${difficultyText} AI Battle!\n\nYou will face a computer opponent with ${difficultyText.toLowerCase()} level intelligence.\n\nClick OK to proceed.`)) {
+                    window.location.href = `bot-game.html?difficulty=${difficulty}`;
+                }
             }
         }
 
         function startOnlineGame() {
-            showLoadingMessage("Connecting to Battle Network", "Searching for a worthy opponent...");
-            // Simulate finding an opponent
-            setTimeout(() => {
-                alert("Opponent found! Lieutenant 'SeaWolf' has accepted your challenge.\n\nPrepare for battle!");
-                // In a real implementation, this would redirect to the online game page
-                // window.location.href = "online-game.html";
-            }, 2000);
+            alert("Finding an opponent...\n\nYou will be matched with a player of similar skill level.\n\nPlease wait while we connect you.");
+            // In a real implementation, this would redirect to the online game page
+            window.location.href = "online-game.html";
         }
 
-        function showLoadingMessage(title, message) {
-            // Create a modal for loading/progress indication
-            const modal = document.createElement('div');
-            modal.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.85);
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                z-index: 1000;
-                color: white;
-                text-align: center;
-                flex-direction: column;
-                gap: 30px;
-            `;
-            
-            modal.innerHTML = `
-                <div style="font-size: 3rem;">🚢</div>
-                <div>
-                    <h2 style="font-size: 2.5rem; margin-bottom: 15px;">${title}</h2>
-                    <p style="font-size: 1.2rem; opacity: 0.9; max-width: 500px;">${message}</p>
-                </div>
-                <div class="loading-spinner" style="width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.2); border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-                <button onclick="this.parentElement.remove()" style="background: transparent; border: 2px solid white; color: white; padding: 12px 30px; border-radius: 50px; cursor: pointer; margin-top: 20px;">Cancel</button>
-            `;
-            
-            // Add keyframes for spinner
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes spin {
-                    to { transform: rotate(360deg); }
-                }
-            `;
-            document.head.appendChild(style);
-            
-            document.body.appendChild(modal);
-            
-            // Auto-remove after 5 seconds for demo purposes
-            setTimeout(() => {
-                if (document.body.contains(modal)) {
-                    modal.remove();
-                    // In a real app, this is where redirection would happen
-                    alert("Game loaded! In a full implementation, you would now be redirected to the game interface.");
-                }
-            }, 5000);
-        }
-
-        // Add hover effects with more professional touch
+        // Add hover effects
         document.querySelectorAll('.mode-card').forEach(card => {
             card.addEventListener('mouseenter', function() {
                 this.style.zIndex = '10';
@@ -513,16 +426,15 @@
             });
         });
 
-        // Update player count periodically (simulated)
-        function updatePlayerCount() {
-            const baseCount = 1247;
-            const randomChange = Math.floor(Math.random() * 21) - 10; // -10 to +10
-            const newCount = baseCount + randomChange;
-            document.querySelector('.status-indicator span').textContent = `Live • Players Online: ${newCount.toLocaleString()}`;
-        }
-        
-        // Update player count every 30 seconds
-        setInterval(updatePlayerCount, 30000);
+        // Add click animation to buttons
+        document.querySelectorAll('.play-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                this.style.transform = 'scale(0.98)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 150);
+            });
+        });
     </script>
 </body>
 </html>
