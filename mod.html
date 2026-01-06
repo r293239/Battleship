@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>BATTLESHIP: Tactical Warfare</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a2a, #1a1a40);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Ready Screen */
+        #readyScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+            text-align: center;
+        }
+
+        #readyTitle {
+            font-size: clamp(2.5rem, 8vw, 4rem);
+            margin-bottom: 20px;
+            color: #00ffff;
+            text-shadow: 0 0 20px rgba(0, 255, 255, 0.7);
+        }
+
+        .ready-subtitle {
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
+            margin-bottom: 40px;
+            color: #ffcc00;
+            max-width: 600px;
+            line-height: 1.4;
+        }
+
+        #readyButton {
+            padding: 20px 60px;
+            font-size: clamp(1.5rem, 6vw, 2.5rem);
+            font-weight: bold;
+            background: linear-gradient(45deg, #ff3366, #ff0066);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 0 40px rgba(255, 51, 102, 0.7);
+            animation: pulse 2s infinite;
+            transition: all 0.3s;
+        }
+
+        #readyButton:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 60px rgba(255, 51, 102, 1);
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Main Game */
+        #gameScreen {
+            display: none;
+            padding: 15px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 2px solid #00ffff;
+        }
+
+        .header h1 {
+            font-size: clamp(1.8rem, 6vw, 2.8rem);
+            color: #00ffff;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .turn-display {
+            font-size: clamp(1.3rem, 4vw, 1.8rem);
+            font-weight: bold;
+            background: linear-gradient(45deg, #ff3366, #ff0066);
+            padding: 15px 30px;
+            border-radius: 50px;
+            display: inline-block;
+            margin: 10px 0;
+        }
+
+        .turn-counter {
+            font-size: clamp(1rem, 3vw, 1.3rem);
+            color: #ffcc00;
+            margin-top: 5px;
+        }
+
+        .action-points {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .ap-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            border: 3px solid #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        .ap-circle.used {
+            background: linear-gradient(45deg, #7f8c8d, #95a5a6);
+            border-color: #999;
+            opacity: 0.5;
+        }
+
+        /* SHARED MAIN GRID */
+        .main-grid-container {
+            background: rgba(0, 20, 40, 0.8);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 3px solid #3498db;
+            box-shadow: 0 0 30px rgba(52, 152, 219, 0.3);
+        }
+
+        .grid-title {
+            text-align: center;
+            font-size: clamp(1.5rem, 4vw, 2rem);
+            color: #ffcc00;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ffcc00;
+        }
+
+        #mainGrid {
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            grid-template-rows: repeat(15, 1fr);
+            gap: 2px;
+            width: min(95vw, 700px);
+            height: min(95vw, 700px);
+            margin: 0 auto;
+            border: 3px solid #00ffff;
+            background: linear-gradient(45deg, #1a2980, #26d0ce);
+            position: relative;
+        }
+
+        .cell {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cell:hover {
+            background: rgba(0, 255, 255, 0.2);
+        }
+
+        /* Ship Colors by Player */
+        .cell.ship-p1 { background: #3498db; border-color: #2980b9; }
+        .cell.ship-p2 { background: #e74c3c; border-color: #c0392b; }
+        
+        /* Ship Damage States */
+        .cell.ship-p1.damaged { background: linear-gradient(45deg, #3498db, #e67e22); }
+        .cell.ship-p2.damaged { background: linear-gradient(45deg, #e74c3c, #e67e22); }
+        .cell.ship-p1.critical { background: linear-gradient(45deg, #3498db, #e74c3c); }
+        .cell.ship-p2.critical { background: linear-gradient(45deg, #e74c3c, #c0392b); }
+        
+        /* Special Effects */
+        .cell.mine::before {
+            content: "💣";
+            position: absolute;
+            font-size: 1.2rem;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: float 2s infinite;
+        }
+
+        .cell.scan-area {
+            background: rgba(255, 255, 0, 0.3);
+            border-color: yellow;
+            animation: pulse-glow 1s infinite;
+        }
+
+        .cell.explosion {
+            background: radial-gradient(circle, #ff9900, #ff3300);
+            animation: explode 0.5s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.2); }
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 5px yellow; }
+            50% { box-shadow: 0 0 20px yellow; }
+        }
+
+        @keyframes explode {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+
+        /* Ships Panel */
+        .ships-panel {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 2px solid #ffcc00;
+        }
+
+        .ships-title {
+            text-align: center;
+            font-size: clamp(1.3rem, 4vw, 1.8rem);
+            color: #ffcc00;
+            margin-bottom: 20px;
+        }
+
+        .ships-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .ship-card {
+            background: rgba(52, 152, 219, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            border: 2px solid #3498db;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .ship-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(52, 152, 219, 0.3);
+        }
+
+        .ship-card.selected {
+            background: rgba(255, 204, 0, 0.3);
+            border-color: #ffcc00;
+            animation: selected-pulse 1s infinite;
+        }
+
+        @keyframes selected-pulse {
+            0%, 100% { border-color: #ffcc00; }
+            50% { border-color: #ff9900; }
+        }
+
+        .ship-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .ship-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #00ffff;
+        }
+
+        .ship-player {
+            font-size: 0.9rem;
+            padding: 3px 10px;
+            border-radius: 15px;
+            background: #3498db;
+            color: white;
+        }
+
+        .ship-player.p2 { background: #e74c3c; }
+
+        .ship-health {
+            height: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .health-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #2ecc71, #27ae60);
+            transition: width 0.5s;
+        }
+
+        .health-bar.damaged { background: linear-gradient(90deg, #e67e22, #d35400); }
+        .health-bar.critical { background: linear-gradient(90deg, #e74c3c, #c0392b); }
+
+        .ship-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: #bbb;
+            margin-bottom: 10px;
+        }
+
+        .ship-ability {
+            background: rgba(155, 89, 182, 0.3);
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            text-align: center;
+            border: 1px solid #9b59b6;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.3s;
+        }
+
+        .ship-ability:hover {
+            background: rgba(155, 89, 182, 0.5);
+            transform: scale(1.05);
+        }
+
+        .ship-ability.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Controls Panel */
+        .controls-panel {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            border: 2px solid #9b59b6;
+        }
+
+        .controls-title {
+            text-align: center;
+            font-size: clamp(1.3rem, 4vw, 1.8rem);
+            color: #9b59b6;
+            margin-bottom: 20px;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .control-btn {
+            padding: 15px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-align: center;
+        }
+
+        .control-btn.primary {
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+            color: white;
+        }
+
+        .control-btn.secondary {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .control-btn.danger {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        .control-btn.special {
+            background: linear-gradient(45deg, #9b59b6, #8e44ad);
+            color: white;
+        }
+
+        .control-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .turn-summary {
+            text-align: center;
+            font-size: 1.1rem;
+            color: #ffcc00;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 204, 0, 0.1);
+            border-radius: 10px;
+        }
+
+        /* Message Display */
+        #messageDisplay {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            text-align: center;
+            border: 2px solid #00ffff;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
+            z-index: 100;
+            max-width: 90%;
+            animation: slideUp 0.3s;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(100px); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: linear-gradient(45deg, #1a2980, #26d0ce);
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            border: 3px solid #00ffff;
+        }
+
+        .modal h2 {
+            color: #ffcc00;
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+
+        .modal p {
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            line-height: 1.5;
+        }
+
+        .modal-btn {
+            padding: 15px 40px;
+            font-size: 1.3rem;
+            background: linear-gradient(45deg, #ff3366, #ff0066);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 10px;
+        }
+
+        .modal-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            #mainGrid {
+                grid-template-columns: repeat(15, 1fr);
+                grid-template-rows: repeat(15, 1fr);
+                width: min(95vw, 600px);
+                height: min(95vw, 600px);
+            }
+            
+            .ships-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .cell {
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #mainGrid {
+                width: min(95vw, 400px);
+                height: min(95vw, 400px);
+            }
+            
+            .cell {
+                font-size: 0.7rem;
+            }
+            
+            .control-btn {
+                padding: 12px;
+                font-size: 1rem;
+            }
+        }
+
+        /* Utility Classes */
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.5s; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Ready Screen -->
+    <div id="readyScreen">
+        <h1 id="readyTitle">BATTLESHIP: TACTICAL WARFARE</h1>
+        <div class="ready-subtitle">Each turn: Use Ability • Move • Attack • Special Actions</div>
+        <button id="readyButton" onclick="startGame()">DEPLOY FLEET</button>
+        <div id="rulesModal" class="modal">
+            <div class="modal-content">
+                <h2>⚔️ GAME RULES ⚔️</h2>
+                <p>1. SHARED BATTLEFIELD: Both players fight on the same 15x15 grid</p>
+                <p>2. EACH TURN: Use 1 Ability OR Move 1 Ship OR Attack Once</p>
+                <p>3. SHIP ABILITIES: Each ship has unique special abilities</p>
+                <p>4. DAMAGE SYSTEM: Ships over 50% damaged cannot move</p>
+                <p>5. EXPLOSIONS: Sunk ships create explosions (3x3 area)</p>
+                <p>6. NO STACKING: Only one ship per cell</p>
+                <button class="modal-btn" onclick="closeRules()">UNDERSTOOD</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Game Screen -->
+    <div id="gameScreen">
+        <!-- Game Header -->
+        <div class="header">
+            <h1>⚔️ TACTICAL BATTLESHIP WARFARE ⚔️</h1>
+            <div class="turn-display" id="turnIndicator">PLAYER 1'S TURN</div>
+            <div class="turn-counter" id="turnCounter">Turn: 1</div>
+            
+            <div class="action-points">
+                <div class="ap-circle" id="ap1">①</div>
+                <div class="ap-circle" id="ap2">②</div>
+                <div class="ap-circle" id="ap3">③</div>
+                <div class="turn-summary" id="actionSummary">Choose an action: Ability • Move • Attack</div>
+            </div>
+        </div>
+
+        <!-- Shared Main Grid -->
+        <div class="main-grid-container">
+            <h2 class="grid-title">SHARED BATTLEFIELD ZONE</h2>
+            <div id="mainGrid"></div>
+            <div class="grid-legend">
+                <div style="text-align: center; margin-top: 15px; color: #bbb;">
+                    <span style="color: #3498db;">■ Player 1 Ships</span> • 
+                    <span style="color: #e74c3c;">■ Player 2 Ships</span> • 
+                    <span style="color: yellow;">■ Scan Area</span> • 
+                    <span>💣 Mines</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ships Panel -->
+        <div class="ships-panel">
+            <h2 class="ships-title">ACTIVE FLEET</h2>
+            <div class="ships-container" id="shipsContainer">
+                <!-- Ships will be dynamically added here -->
+            </div>
+            <div id="selectedShipInfo" class="hidden">
+                <div style="text-align: center; padding: 15px; background: rgba(255,204,0,0.1); border-radius: 10px;">
+                    <h3 style="color: #ffcc00;">SELECTED: <span id="selectedShipName">None</span></h3>
+                    <div style="display: flex; justify-content: center; gap: 20px; margin-top: 10px;">
+                        <button class="control-btn secondary" onclick="moveSelectedShip()">🚢 MOVE SHIP</button>
+                        <button class="control-btn danger" onclick="attackWithSelectedShip()">💥 ATTACK</button>
+                        <button class="control-btn special" onclick="useShipAbility()">✨ USE ABILITY</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Panel -->
+        <div class="controls-panel">
+            <h2 class="controls-title">COMMAND CENTER</h2>
+            <div class="controls-grid">
+                <button class="control-btn primary" onclick="endTurn()">
+                    ⏭️ END TURN
+                </button>
+                <button class="control-btn secondary" onclick="showRules()">
+                    📖 RULES
+                </button>
+                <button class="control-btn danger" onclick="surrender()">
+                    🏳️ SURRENDER
+                </button>
+                <button class="control-btn special" onclick="useSpecialAction()">
+                    ⚡ SPECIAL ACTION
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Display -->
+    <div id="messageDisplay" class="hidden"></div>
+
+    <script>
+        // GAME STATE
+        let currentPlayer = 1;
+        let currentTurn = 1;
+        let actionPoints = 3;
+        let selectedShipId = null;
+        let gamePhase = 'select'; // select, moving, attacking, ability
+        let scanAreas = []; // {player, cells, turnsRemaining}
+        let mines = []; // {player, cell, active}
+        let explosions = []; // {cell, turnsRemaining}
+        
+        // Ship Definitions with Abilities
+        const shipTypes = {
+            destroyer: {
+                name: "Destroyer",
+                size: 2,
+                health: 100,
+                maxHealth: 100,
+                ability: "mine",
+                abilityCooldown: 0,
+                abilityName: "Deploy Mine",
+                abilityDesc: "Place a mine that damages enemy ships",
+                player: 0,
+                cells: [],
+                canMove: true,
+                damageLevel: 0 // 0=none, 1=damaged(>50%), 2=critical(>75%)
+            },
+            submarine: {
+                name: "Submarine",
+                size: 3,
+                health: 150,
+                maxHealth: 150,
+                ability: "sonar",
+                abilityCooldown: 0,
+                abilityName: "Sonar Pulse",
+                abilityDesc: "Reveal ships in 3x3 area for 2 turns",
+                player: 0,
+                cells: [],
+                canMove: true,
+                damageLevel: 0
+            },
+            cruiser: {
+                name: "Cruiser",
+                size: 3,
+                health: 200,
+                maxHealth: 200,
+                ability: "repair",
+                abilityCooldown: 2,
+                abilityName: "Emergency Repair",
+                abilityDesc: "Repair 50 health to self or adjacent ship",
+                player: 0,
+                cells: [],
+                canMove: true,
+                damageLevel: 0
+            },
+            battleship: {
+                name: "Battleship",
+                size: 4,
+                health: 300,
+                maxHealth: 300,
+                ability: "barrage",
+                abilityCooldown: 3,
+                abilityName: "Barrage Fire",
+                abilityDesc: "Attack all adjacent cells",
+                player: 0,
+                cells: [],
+                canMove: true,
+                damageLevel: 0
+            },
+            carrier: {
+                name: "Aircraft Carrier",
+                size: 5,
+                health: 400,
+                maxHealth: 400,
+                ability: "recon",
+                abilityCooldown: 0,
+                abilityName: "Aerial Recon",
+                abilityDesc: "Scan 5x5 area for 3 turns",
+                player: 0,
+                cells: [],
+                canMove: true,
+                damageLevel: 0
+            }
+        };
+
+        // All ships in game
+        let ships = [];
+
+        // Initialize Game
+        function initGame() {
+            createGrid();
+            setupPlayers();
+            updateDisplay();
+            showMessage("Welcome to Tactical Battleship! Deploy your fleet.");
+        }
+
+        // Create 15x15 shared grid
+        function createGrid() {
+            const grid = document.getElementById('mainGrid');
+            grid.innerHTML = '';
+            
+            for (let row = 0; row < 15; row++) {
+                for (let col = 0; col < 15; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    
+                    cell.addEventListener('click', () => handleCellClick(row, col));
+                    cell.addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        handleCellClick(row, col);
+                    }, { passive: false });
+                    
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        // Setup players with ships
+        function setupPlayers() {
+            ships = [];
+            
+            // Player 1 ships
+            const p1Ships = [
+                { ...shipTypes.destroyer, id: 'p1-destroyer', player: 1, cells: [{row: 1, col: 1}, {row: 1, col: 2}] },
+                { ...shipTypes.submarine, id: 'p1-submarine', player: 1, cells: [{row: 3, col: 1}, {row: 3, col: 2}, {row: 3, col: 3}] },
+                { ...shipTypes.cruiser, id: 'p1-cruiser', player: 1, cells: [{row: 5, col: 1}, {row: 5, col: 2}, {row: 5, col: 3}] },
+                { ...shipTypes.battleship, id: 'p1-battleship', player: 1, cells: [{row: 7, col: 1}, {row: 7, col: 2}, {row: 7, col: 3}, {row: 7, col: 4}] },
+                { ...shipTypes.carrier, id: 'p1-carrier', player: 1, cells: [{row: 9, col: 1}, {row: 9, col: 2}, {row: 9, col: 3}, {row: 9, col: 4}, {row: 9, col: 5}] }
+            ];
+            
+            // Player 2 ships (opposite side)
+            const p2Ships = [
+                { ...shipTypes.destroyer, id: 'p2-destroyer', player: 2, cells: [{row: 13, col: 13}, {row: 13, col: 12}] },
+                { ...shipTypes.submarine, id: 'p2-submarine', player: 2, cells: [{row: 11, col: 13}, {row: 11, col: 12}, {row: 11, col: 11}] },
+                { ...shipTypes.cruiser, id: 'p2-cruiser', player: 2, cells: [{row: 9, col: 13}, {row: 9, col: 12}, {row: 9, col: 11}] },
+                { ...shipTypes.battleship, id: 'p2-battleship', player: 2, cells: [{row: 7, col: 13}, {row: 7, col: 12}, {row: 7, col: 11}, {row: 7, col: 10}] },
+                { ...shipTypes.carrier, id: 'p2-carrier', player: 2, cells: [{row: 5, col: 13}, {row: 5, col: 12}, {row: 5, col: 11}, {row: 5, col: 10}, {row: 5, col: 9}] }
+            ];
+            
+            ships = [...p1Ships, ...p2Ships];
+        }
+
+        // Handle cell click based on game phase
+        function handleCellClick(row, col) {
+            if (actionPoints <= 0) {
+                showMessage("No action points remaining!");
+                return;
+            }
+            
+            switch(gamePhase) {
+                case 'select':
+                    // Select a ship
+                    const ship = getShipAt(row, col);
+                    if (ship && ship.player === currentPlayer) {
+                        selectShip(ship.id);
+                    } else {
+                        showMessage("Select one of your ships first!");
+                    }
+                    break;
+                    
+                case 'moving':
+                    // Move selected ship
+                    moveShipTo(selectedShipId, row, col);
+                    break;
+                    
+                case 'attacking':
+                    // Attack target
+                    attackTarget(row, col);
+                    break;
+                    
+                case 'ability_mine':
+                    // Place mine
+                    placeMine(row, col);
+                    break;
+                    
+                case 'ability_sonar':
+                    // Use sonar
+                    useSonar(row, col);
+                    break;
+                    
+                case 'ability_recon':
+                    // Use recon
+                    useRecon(row, col);
+                    break;
+                    
+                case 'ability_repair':
+                    // Repair target
+                    repairTarget(row, col);
+                    break;
+                    
+                case 'ability_barrage':
+                    // Use barrage
+                    useBarrage(row, col);
+                    break;
+            }
+        }
+
+        // Get ship at position
+        function getShipAt(row, col) {
+            return ships.find(ship => 
+                ship.cells.some(cell => cell.row === row && cell.col === col)
+            );
+        }
+
+        // Select a ship
+        function selectShip(shipId) {
+            selectedShipId = shipId;
+            gamePhase = 'select';
+            updateDisplay();
+            showMessage(`Selected ${getShipById(shipId).name}. Choose: Move, Attack, or Use Ability.`);
+        }
+
+        // Move selected ship
+        function moveSelectedShip() {
+            const ship = getShipById(selectedShipId);
+            
+            if (!ship) {
+                showMessage("No ship selected!");
+                return;
+            }
+            
+            if (ship.damageLevel >= 1) {
+                showMessage(`${ship.name} is too damaged to move! (>50% damage)`);
+                return;
+            }
+            
+            if (ship.player !== currentPlayer) {
+                showMessage("You can only move your own ships!");
+                return;
+            }
+            
+            if (actionPoints <= 0) {
+                showMessage("No action points remaining!");
+                return;
+            }
+            
+            gamePhase = 'moving';
+            showMessage(`Select destination for ${ship.name}. Ships cannot overlap.`);
+        }
+
+        // Move ship to new position
+        function moveShipTo(shipId, targetRow, targetCol) {
+            const ship = getShipById(shipId);
+            
+            if (!ship) return;
+            
+            // Check if destination is valid (within bounds, not occupied)
+            const cells = [];
+            const isVertical = Math.random() > 0.5; // Random orientation for now
+            
+            for (let i = 0; i < ship.size; i++) {
+                const row = isVertical ? targetRow + i : targetRow;
+                const col = isVertical ? targetCol : targetCol + i;
+                
+                if (row >= 15 || col >= 15) {
+                    showMessage("Cannot move outside grid!");
+                    return;
+                }
+                
+                // Check if cell is occupied by another ship
+                const existingShip = getShipAt(row, col);
+                if (existingShip && existingShip.id !== shipId) {
+                    showMessage("Cannot move onto another ship!");
+                    return;
+                }
+                
+                cells.push({row, col});
+            }
+            
+            // Move ship
+            ship.cells = cells;
+            actionPoints--;
+            gamePhase = 'select';
+            updateDisplay();
+            showMessage(`${ship.name} moved! Action points remaining: ${actionPoints}`);
+        }
+
+        // Attack with selected ship
+        function attackWithSelectedShip() {
+            const ship = getShipById(selectedShipId);
+            
+            if (!ship) {
+                showMessage("No ship selected!");
+                return;
+            }
+            
+            if (ship.player !== currentPlayer) {
+                showMessage("You can only attack with your own ships!");
+                return;
+            }
+            
+            if (actionPoints <= 0) {
+                showMessage("No action points remaining!");
+                return;
+            }
+            
+            gamePhase = 'attacking';
+            showMessage(`Select target to attack with ${ship.name}. Range: adjacent cells.`);
+        }
+
+        // Attack target
+        function attackTarget(row, col) {
+            const attacker = getShipById(selectedShipId);
+            const targetShip = getShipAt(row, col);
+            
+            if (!attacker) return;
+            
+            // Check if target is in range (adjacent)
+            const inRange = attacker.cells.some(cell => 
+                Math.abs(cell.row - row) <= 1 && Math.abs(cell.col - col) <= 1
+            );
+            
+            if (!inRange) {
+                showMessage("Target out of range! Must be adjacent.");
+                return;
+            }
+            
+            if (targetShip && targetShip.player !== currentPlayer) {
+                // Damage enemy ship
+                const damage = 50; // Base damage
+                targetShip.health = Math.max(0, targetShip.health - damage);
+                
+                // Update damage level
+                const healthPercent = (targetShip.health / targetShip.maxHealth) * 100;
+                if (healthPercent <= 25) targetShip.damageLevel = 2;
+                else if (healthPercent <= 50) targetShip.damageLevel = 1;
+                else targetShip.damageLevel = 0;
+                
+                // Check if sunk
+                if (targetShip.health <= 0) {
+                    sinkShip(targetShip.id);
+                }
+                
+                showMessage(`Hit! ${targetShip.name} took ${damage} damage!`);
+            } else {
+                showMessage("Miss! No enemy ship at target.");
+            }
+            
+            actionPoints--;
+            gamePhase = 'select';
+            updateDisplay();
+        }
+
+        // Use ship ability
+        function useShipAbility() {
+            const ship = getShipById(selectedShipId);
+            
+            if (!ship) {
+                showMessage("No ship selected!");
+                return;
+            }
+            
+            if (ship.player !== currentPlayer) {
+                showMessage("You can only use your own ship's abilities!");
+                return;
+            }
+            
+            if (actionPoints <= 0) {
+                showMessage("No action points remaining!");
+                return;
+            }
+            
+            if (ship.abilityCooldown > 0) {
+                showMessage(`Ability on cooldown! ${ship.abilityCooldown} turns remaining.`);
+                return;
+            }
+            
+            switch(ship.ability) {
+                case 'mine':
+                    gamePhase = 'ability_mine';
+                    showMessage("Select location to place mine. Mines damage enemy ships that move over them.");
+                    break;
+                    
+                case 'sonar':
+                    gamePhase = 'ability_sonar';
+                    showMessage("Select center of 3x3 area to scan for enemy ships for 2 turns.");
+                    break;
+                    
+                case 'recon':
+                    gamePhase = 'ability_recon';
+                    showMessage("Select center of 5x5 area for aerial reconnaissance for 3 turns.");
+                    break;
+                    
+                case 'repair':
+                    gamePhase = 'ability_repair';
+                    showMessage("Select ship to repair (yourself or adjacent ally).");
+                    break;
+                    
+                case 'barrage':
+                    gamePhase = 'ability_barrage';
+                    showMessage("Select center of barrage attack (damages all adjacent cells).");
+                    break;
+            }
+        }
+
+        // Place mine
+        function placeMine(row, col) {
+            // Check if cell is empty
+            if (getShipAt(row, col)) {
+                showMessage("Cannot place mine on a ship!");
+                return;
+            }
+            
+            mines.push({
+                player: currentPlayer,
+                row: row,
+                col: col,
+                active: true
+            });
+            
+            const ship = getShipById(selectedShipId);
+            ship.abilityCooldown = 3; // 3 turn cooldown
+            
+            actionPoints--;
+            gamePhase = 'select';
+            updateDisplay();
+            showMessage(`Mine placed at (${row}, ${col})!`);
+        }
+
+        // Use sonar
+        function useSonar(row, col) {
+            // Create 3x3 scan area
+            const cells = [];
+            for (let r = Math.max(0, row-1); r <= Math.min(14, row+1); r++) {
+                for (let c = Math.max(0, col-1); c <= Math.min(14, col+1); c++) {
+                    cells.push({row: r, col: c});
+                }
+            }
+            
+            scanAreas.push({
+                player: currentPlayer,
+                cells: cells,
+                turnsRemaining: 2
+            });
+            
+            const ship = getShipById(selectedShipId);
+            ship.abilityCooldown = 2;
+            
+            actionPoints--;
+            gamePhase = 'select';
+            updateDisplay();
+            showMessage(`Sonar active for 2 turns!`);
+        }
+
+        // Use recon (carrier)
+        function useRecon(row, col) {
+            // Create 5x5 scan area
+            const cells = [];
+            for (let r = Math.max(0, row-2); r <= Math.min(14, row+2); r++) {
+                for (let c = Math.max(0, col-2); c <= Math.min(14, col+2); c++) {
+                    cells.push({row: r, col: c});
+                }
+            }
+            
+            scanAreas.push({
+                player: currentPlayer,
+                cells: cells,
+                turnsRemaining: 3
+            });
+            
+            const ship = getShipById(selectedShipId);
+            ship.abilityCooldown = 4;
+            
+            actionPoints--;
+            gamePhase = 'select';
+            updateDisplay();
+            showMessage(`Aerial reconnaissance active for 3 turns!`);
+        }
+
+        // Repair target
+        function repairTarget(row, col) {
+            const targetShip = getShipAt(row, col);
+            const repairer = getShipById(selectedShipId);
+            
+            if (!targetShip) {
+                showMessage("No ship to repair at that location!");
+                return;
+            }
+            
+            // Check if adjacent or self
+            const isAdjacentOrSelf = repairer.cells.some(cell =>
+                Math.abs(cell.row - row) <= 1 && Math.abs(cell.col - col) <= 1
+            );
+            
+            if (!isAdjacentOrSelf) {
+                showMessage("Can only repair adjacent ships or yourself!");
+                return;
+            }
+            
+            if (targetShip.player !== currentPlayer) {
+                showMessage("Can only repair your own ships!");
+                return;
+            }
+            
+            // Repair
+            const repairAmount = 50;
+            targetShip.health = Math.min(targetShip.maxHealth, targetShip.health + repairAmount);
+            
+            // Update damage level
+            const healthPercent = (targetShip.health / targetShip.maxHealth) * 100;
+            if (healthPercent <= 25) targetShip.damageLevel = 2;
+            else if (healthPercent <= 50) targetShip.damageLevel = 1;
+            else targetShip.damageLevel = 0;
+            
+            repairer.abilityCooldown = 2;
+            
+            actionPoints--;
+            gamePhase = 'select';
+            updateDisplay();
+            showMessage(`${targetShip.name} repaired for ${repairAmount} health!`);
+        }
+
+        // Use barrage (battleship)
+        function useBarrage(row, col) {
+            const attacker = getShipById(selectedShipId);
+            let hits = 0;
+            
+            // Damage all ships in 3x3 area
+            for (let r = Math.max(0, row-1); r <= Math.min(14, row+1); r++) {
+                for (let c = Math.max(0, col-1); c <= Math.min(14, col+1); c++) {
+                    const targetShip = getShipAt(r, c);
+                    if (targetShip && targetShip.player !== currentPlayer) {
+                        targetShip.health = Math.max(0, targetShip.health - 30);
+                        hits++;
+                        
+                        // Check if sunk
+                        if (targetShip.health <= 0) {
+                            sinkShip(targetShip.id);
+                        }
+                    }
+                }
+            }
+            
+            attacker.abilityCooldown = 3;
+            
+            actionPoints--;
+            gamePhase = 'select';
+            updateDisplay();
+            showMessage(`Barrage hit ${hits} targets!`);
+        }
+
+        // Sink ship (with explosion)
+        function sinkShip(shipId) {
+            const ship = getShipById(shipId);
+            
+            // Create explosion in 3x3 area around ship
+            ship.cells.forEach(cell => {
+                for (let r = Math.max(0, cell.row-1); r <= Math.min(14, cell.row+1); r++) {
+                    for (let c = Math.max(0, cell.col-1); c <= Math.min(14, cell.col+1); c++) {
+                        explosions.push({
+                            row: r,
+                            col: c,
+                            turnsRemaining: 1
+                        });
+                        
+                        // Damage any ships in explosion area
+                        const nearbyShip = getShipAt(r, c);
+                        if (nearbyShip && nearbyShip.id !== shipId) {
+                            nearbyShip.health = Math.max(0, nearbyShip.health - 25);
+                            if (nearbyShip.health <= 0) {
+                                sinkShip(nearbyShip.id);
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Remove ship
+            ships = ships.filter(s => s.id !== shipId);
+            
+            showMessage(`💥 ${ship.name} EXPLODED! Damaging nearby area!`);
+            
+            // Check win condition
+            checkWin();
+        }
+
+        // Check win condition
+        function checkWin() {
+            const p1Ships = ships.filter(s => s.player === 1);
+            const p2Ships = ships.filter(s => s.player === 2);
+            
+            if (p1Ships.length === 0) {
+                endGame(2);
+            } else if (p2Ships.length === 0) {
+                endGame(1);
+            }
+        }
+
+        // End game
+        function endGame(winner) {
+            setTimeout(() => {
+                alert(`🎉 PLAYER ${winner} WINS THE BATTLE! 🎉`);
+                if (confirm('Play again?')) {
+                    resetGame();
+                }
+            }, 1000);
+        }
+
+        // End turn
+        function endTurn() {
+            if (actionPoints > 0) {
+                if (!confirm(`You still have ${actionPoints} action points. End turn anyway?`)) {
+                    return;
+                }
+            }
+            
+            // Switch player
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            currentTurn++;
+            actionPoints = 3;
+            selectedShipId = null;
+            gamePhase = 'select';
+            
+            // Update scan areas
+            scanAreas = scanAreas.filter(area => {
+                area.turnsRemaining--;
+                return area.turnsRemaining > 0;
+            });
+            
+            // Update explosions
+            explosions = explosions.filter(exp => {
+                exp.turnsRemaining--;
+                return exp.turnsRemaining > 0;
+            });
+            
+            // Update ability cooldowns
+            ships.forEach(ship => {
+                if (ship.abilityCooldown > 0) {
+                    ship.abilityCooldown--;
+                }
+            });
+            
+            // Show ready screen
+            showReadyScreen();
+        }
+
+        // Update display
+        function updateDisplay() {
+            // Update UI elements
+            document.getElementById('turnIndicator').textContent = `PLAYER ${currentPlayer}'S TURN`;
+            document.getElementById('turnCounter').textContent = `Turn: ${currentTurn}`;
+            
+            // Update action points
+            document.getElementById('ap1').className = `ap-circle ${actionPoints < 1 ? 'used' : ''}`;
+            document.getElementById('ap2').className = `ap-circle ${actionPoints < 2 ? 'used' : ''}`;
+            document.getElementById('ap3').className = `ap-circle ${actionPoints < 3 ? 'used' : ''}`;
+            
+            // Update selected ship info
+            const selectedShip = getShipById(selectedShipId);
+            if (selectedShip) {
+                document.getElementById('selectedShipInfo').classList.remove('hidden');
+                document.getElementById('selectedShipName').textContent = `${selectedShip.name} (${selectedShip.player === 1 ? 'P1' : 'P2'})`;
+            } else {
+                document.getElementById('selectedShipInfo').classList.add('hidden');
+            }
+            
+            // Update ships display
+            updateShipsDisplay();
+            
+            // Update grid
+            updateGrid();
+            
+            // Update action summary
+            let summary = '';
+            if (selectedShip) {
+                summary = `${selectedShip.name} selected. `;
+            }
+            summary += `Action points: ${actionPoints}`;
+            document.getElementById('actionSummary').textContent = summary;
+        }
+
+        // Update ships display
+        function updateShipsDisplay() {
+            const container = document.getElementById('shipsContainer');
+            container.innerHTML = '';
+            
+            ships.forEach(ship => {
+                const card = document.createElement('div');
+                card.className = `ship-card ${ship.id === selectedShipId ? 'selected' : ''}`;
+                card.onclick = () => selectShip(ship.id);
+                
+                const healthPercent = (ship.health / ship.maxHealth) * 100;
+                const healthColor = healthPercent <= 25 ? 'critical' : healthPercent <= 50 ? 'damaged' : '';
+                
+                card.innerHTML = `
+                    <div class="ship-header">
+                        <div class="ship-name">${ship.name}</div>
+                        <div class="ship-player ${ship.player === 2 ? 'p2' : ''}">P${ship.player}</div>
+                    </div>
+                    <div class="ship-health">
+                        <div class="health-bar ${healthColor}" style="width: ${healthPercent}%"></div>
+                    </div>
+                    <div class="ship-stats">
+                        <span>HP: ${ship.health}/${ship.maxHealth}</span>
+                        <span>Size: ${ship.size}</span>
+                        <span>${ship.damageLevel >= 1 ? '🚫' : '✅'}</span>
+                    </div>
+                    <div class="ship-ability ${ship.abilityCooldown > 0 ? 'disabled' : ''}" 
+                         onclick="event.stopPropagation(); selectShip('${ship.id}'); useShipAbility();">
+                        ✨ ${ship.abilityName}
+                        ${ship.abilityCooldown > 0 ? ` (CD: ${ship.abilityCooldown})` : ''}
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        // Update grid
+        function updateGrid() {
+            const cells = document.querySelectorAll('#mainGrid .cell');
+            cells.forEach(cell => {
+                cell.className = 'cell';
+                
+                const row = parseInt(cell.dataset.row);
+                const col = parseInt(cell.dataset.col);
+                
+                // Check for ship
+                const ship = getShipAt(row, col);
+                if (ship) {
+                    cell.classList.add(`ship-p${ship.player}`);
+                    
+                    // Add damage state
+                    const healthPercent = (ship.health / ship.maxHealth) * 100;
+                    if (healthPercent <= 50) cell.classList.add('damaged');
+                    if (healthPercent <= 25) cell.classList.add('critical');
+                }
+                
+                // Check for scan areas
+                scanAreas.forEach(area => {
+                    if (area.cells.some(c => c.row === row && c.col === col)) {
+                        cell.classList.add('scan-area');
+                    }
+                });
+                
+                // Check for mines
+                const mine = mines.find(m => m.row === row && m.col === col);
+                if (mine) {
+                    cell.classList.add('mine');
+                }
+                
+                // Check for explosions
+                const explosion = explosions.find(e => e.row === row && e.col === col);
+                if (explosion) {
+                    cell.classList.add('explosion');
+                }
+            });
+        }
+
+        // Get ship by ID
+        function getShipById(id) {
+            return ships.find(ship => ship.id === id);
+        }
+
+        // Show message
+        function showMessage(message) {
+            const display = document.getElementById('messageDisplay');
+            display.textContent = message;
+            display.classList.remove('hidden');
+            
+            setTimeout(() => {
+                display.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Show rules
+        function showRules() {
+            document.getElementById('rulesModal').style.display = 'flex';
+        }
+
+        // Close rules
+        function closeRules() {
+            document.getElementById('rulesModal').style.display = 'none';
+        }
+
+        // Surrender
+        function surrender() {
+            if (confirm('Are you sure you want to surrender?')) {
+                endGame(currentPlayer === 1 ? 2 : 1);
+            }
+        }
+
+        // Use special action
+        function useSpecialAction() {
+            if (actionPoints < 2) {
+                showMessage("Need 2 action points for special action!");
+                return;
+            }
+            
+            // Example special action: Radar sweep
+            showMessage("Radar sweep activated! Revealing all ships for 1 turn.");
+            
+            // Create scan area over entire grid
+            const allCells = [];
+            for (let r = 0; r < 15; r++) {
+                for (let c = 0; c < 15; c++) {
+                    allCells.push({row: r, col: c});
+                }
+            }
+            
+            scanAreas.push({
+                player: currentPlayer,
+                cells: allCells,
+                turnsRemaining: 1
+            });
+            
+            actionPoints -= 2;
+            updateDisplay();
+        }
+
+        // Start game
+        function startGame() {
+            document.getElementById('readyScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
+            initGame();
+        }
+
+        // Show ready screen
+        function showReadyScreen() {
+            document.getElementById('readyScreen').style.display = 'flex';
+            document.getElementById('readyTitle').textContent = `PLAYER ${currentPlayer}'S TURN`;
+            document.getElementById('readyButton').textContent = 'BEGIN TURN';
+        }
+
+        // Reset game
+        function resetGame() {
+            currentPlayer = 1;
+            currentTurn = 1;
+            actionPoints = 3;
+            selectedShipId = null;
+            gamePhase = 'select';
+            scanAreas = [];
+            mines = [];
+            explosions = [];
+            
+            document.getElementById('readyScreen').style.display = 'flex';
+            document.getElementById('gameScreen').style.display = 'none';
+            document.getElementById('readyTitle').textContent = 'BATTLESHIP: TACTICAL WARFARE';
+            document.getElementById('readyButton').textContent = 'DEPLOY FLEET';
+            
+            setupPlayers();
+        }
+
+        // Initialize on load
+        window.onload = function() {
+            showRules(); // Show rules first
+        };
+    </script>
+</body>
+</html>
