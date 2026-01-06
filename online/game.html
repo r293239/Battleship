@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>Battleship - Online Multiplayer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        body {
+            background: #000000;
+            min-height: 100vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Matchmaking Screen */
+        #matchmakingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a2980, #26d0ce);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        #matchmakingScreen h1 {
+            font-size: clamp(2.5rem, 8vw, 4rem);
+            margin-bottom: 20px;
+            color: white;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+        }
+
+        #matchmakingScreen h2 {
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
+            margin-bottom: 30px;
+            color: #3498db;
+        }
+
+        #playerCount {
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
+            margin-bottom: 40px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px 30px;
+            border-radius: 50px;
+        }
+
+        .searching-dots {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 30px 0;
+        }
+
+        .searching-dots .dot {
+            width: 20px;
+            height: 20px;
+            background: #2ecc71;
+            border-radius: 50%;
+            animation: searching 1.4s infinite;
+        }
+
+        .searching-dots .dot:nth-child(2) { animation-delay: 0.2s; }
+        .searching-dots .dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes searching {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.6; }
+            30% { transform: translateY(-15px); opacity: 1; }
+        }
+
+        .btn {
+            padding: 18px 50px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 10px;
+            min-width: 250px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(to right, #2ecc71, #27ae60);
+            color: white;
+            box-shadow: 0 0 30px rgba(46, 204, 113, 0.5);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(to right, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 40px rgba(255, 255, 255, 0.3);
+        }
+
+        /* Game Screen */
+        #gameScreen {
+            display: none;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a2980, #26d0ce);
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+            padding: 15px;
+        }
+
+        .header h1 {
+            font-size: clamp(1.5rem, 6vw, 2.5rem);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            margin-bottom: 10px;
+        }
+
+        .player-turn {
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 12px 30px;
+            border-radius: 50px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        /* Game Container */
+        .game-container {
+            max-width: 1200px;
+            margin: 0 auto 30px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+        }
+
+        .player-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 15px;
+        }
+
+        .player-info-item {
+            text-align: center;
+        }
+
+        .player-info-item h3 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+            font-size: 1.2rem;
+        }
+
+        .player-info-item p {
+            color: #3498db;
+            font-size: 1.4rem;
+            font-weight: bold;
+        }
+
+        /* Grids */
+        .grids-container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            margin: 25px 0;
+        }
+
+        @media (min-width: 768px) {
+            .grids-container {
+                flex-direction: row;
+                justify-content: center;
+                gap: 40px;
+            }
+        }
+
+        .grid-wrapper {
+            text-align: center;
+        }
+
+        .grid-wrapper h3 {
+            color: #34495e;
+            margin-bottom: 12px;
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            grid-template-rows: repeat(10, 1fr);
+            gap: 1px;
+            width: min(95vw, 350px);
+            height: min(95vw, 350px);
+            border: 3px solid #2c3e50;
+            background-color: #3498db;
+            margin: 0 auto;
+        }
+
+        .cell {
+            background-color: #ecf0f1;
+            border: 1px solid #bdc3c7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+            position: relative;
+        }
+
+        .cell:hover {
+            background-color: #d6eaf8;
+        }
+
+        .cell.hit::after {
+            content: "💥";
+            font-size: 1.5rem;
+            animation: hitEffect 0.5s;
+        }
+
+        .cell.miss::after {
+            content: "●";
+            color: #7f8c8d;
+            font-size: 1.5rem;
+            animation: missEffect 0.5s;
+        }
+
+        .cell.ship {
+            background-color: #2c3e50;
+        }
+
+        .cell.ship.hit {
+            background-color: #c0392b;
+        }
+
+        @keyframes hitEffect {
+            0% { transform: scale(0); }
+            70% { transform: scale(1.5); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes missEffect {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+
+        /* Controls */
+        .controls {
+            text-align: center;
+            margin-top: 25px;
+            padding: 20px;
+            background: rgba(236, 240, 241, 0.9);
+            border-radius: 15px;
+        }
+
+        .controls h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .control-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        /* Ship Status */
+        .ship-status {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+        }
+
+        .ship-status-item {
+            background: #ecf0f1;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .ship-status-item.sunk {
+            background: #e74c3c;
+            color: white;
+        }
+
+        /* Chat */
+        .chat-container {
+            margin-top: 25px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .chat-messages {
+            height: 150px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .grid {
+                width: min(95vw, 320px);
+                height: min(95vw, 320px);
+            }
+            
+            .btn {
+                padding: 15px 30px;
+                font-size: 1.2rem;
+                min-width: 200px;
+            }
+        }
+    </style>
+    <!-- Back4App Parse SDK -->
+    <script src="https://npmcdn.com/parse/dist/parse.min.js"></script>
+</head>
+<body>
+    <!-- Matchmaking Screen -->
+    <div id="matchmakingScreen">
+        <h1>🌐 ONLINE BATTLE</h1>
+        <h2 id="matchmakingStatus">Finding Opponent...</h2>
+        <div id="playerCount">Players online: <span id="onlineCount">0</span></div>
+        
+        <div class="searching-dots">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+        
+        <div id="queueStatus" class="hidden">
+            <p>You are in queue. Waiting for opponent...</p>
+            <p>Estimated wait: <span id="waitTime">30</span> seconds</p>
+        </div>
+        
+        <div id="roomStatus" class="hidden">
+            <p>✅ Room created! Waiting for player 2...</p>
+            <p>Room ID: <span id="roomId">---</span></p>
+        </div>
+        
+        <div id="foundOpponent" class="hidden">
+            <p>🎮 Opponent found!</p>
+            <p>Starting game in <span id="countdown">3</span>...</p>
+        </div>
+        
+        <div class="control-buttons">
+            <button class="btn btn-primary" onclick="startMatchmaking()" id="findBtn">
+                🔍 Find Match
+            </button>
+            <button class="btn btn-secondary" onclick="cancelMatchmaking()" id="cancelBtn" class="hidden">
+                ❌ Cancel
+            </button>
+            <button class="btn btn-secondary" onclick="exitToMenu()">
+                🏠 Exit to Menu
+            </button>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="gameScreen">
+        <div class="header">
+            <h1>🚢 ONLINE BATTLE</h1>
+            <div class="player-turn" id="turnIndicator">Setting up game...</div>
+        </div>
+
+        <div class="game-container">
+            <!-- Player Info -->
+            <div class="player-info">
+                <div class="player-info-item">
+                    <h3>You</h3>
+                    <p id="playerName">Player 1</p>
+                </div>
+                <div class="player-info-item">
+                    <h3>VS</h3>
+                    <p style="color: #e74c3c;">ONLINE</p>
+                </div>
+                <div class="player-info-item">
+                    <h3>Opponent</h3>
+                    <p id="opponentName">Waiting...</p>
+                </div>
+            </div>
+
+            <!-- Game Grids -->
+            <div class="grids-container">
+                <div class="grid-wrapper">
+                    <h3>Your Fleet</h3>
+                    <div class="grid" id="playerGrid"></div>
+                </div>
+                <div class="grid-wrapper">
+                    <h3>Attack Enemy</h3>
+                    <div class="grid" id="attackGrid"></div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="controls">
+                <h3>Game Controls</h3>
+                <div class="control-buttons">
+                    <button class="btn btn-secondary" onclick="surrenderGame()">
+                        🏳️ Surrender
+                    </button>
+                    <button class="btn btn-secondary" onclick="exitGame()">
+                        🚪 Exit Game
+                    </button>
+                </div>
+            </div>
+
+            <!-- Ship Status -->
+            <div class="ship-status" id="shipStatus">
+                <!-- Ships will be shown here -->
+            </div>
+
+            <!-- Simple Chat -->
+            <div class="chat-container">
+                <h3>💬 Quick Chat</h3>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message">System: Game started!</div>
+                </div>
+                <div class="chat-input">
+                    <input type="text" id="chatInput" placeholder="Type a message..." 
+                           onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                    <button class="btn btn-primary" onclick="sendChatMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backend Logic -->
+    <script src="backend.js"></script>
+    
+    <script>
+        // Frontend functions
+        function startMatchmaking() {
+            onlineBackend.startMatchmaking();
+            document.getElementById('findBtn').classList.add('hidden');
+            document.getElementById('cancelBtn').classList.remove('hidden');
+            document.getElementById('queueStatus').classList.remove('hidden');
+        }
+        
+        function cancelMatchmaking() {
+            onlineBackend.cancelMatchmaking();
+            document.getElementById('findBtn').classList.remove('hidden');
+            document.getElementById('cancelBtn').classList.add('hidden');
+            document.getElementById('queueStatus').classList.add('hidden');
+        }
+        
+        function exitToMenu() {
+            if (confirm('Return to main menu?')) {
+                window.location.href = '../index.html';
+            }
+        }
+        
+        function surrenderGame() {
+            if (confirm('Are you sure you want to surrender?')) {
+                onlineBackend.surrenderGame();
+            }
+        }
+        
+        function exitGame() {
+            if (confirm('Exit this game? Your opponent will win.')) {
+                onlineBackend.leaveGame();
+                window.location.href = '../index.html';
+            }
+        }
+        
+        function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (message) {
+                onlineBackend.sendChatMessage(message);
+                input.value = '';
+            }
+        }
+        
+        // Initialize when page loads
+        window.onload = function() {
+            onlineBackend.initialize();
+        };
+    </script>
+</body>
+</html>
