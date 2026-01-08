@@ -2,23 +2,22 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Battleship - Online Multiplayer</title>
     <style>
+        /* Reset and Base Styles */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-            -webkit-text-size-adjust: 100%;
         }
 
         body {
-            background: #000000;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
             min-height: 100vh;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
+            color: white;
+            overflow-x: hidden;
         }
 
         /* Matchmaking Screen */
@@ -30,47 +29,73 @@
             height: 100%;
             background: linear-gradient(135deg, #1a2980, #26d0ce);
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            color: white;
+            transition: opacity 0.5s;
+        }
+
+        .matchmaking-container {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 20px;
+            padding: 40px;
+            width: 90%;
+            max-width: 600px;
             text-align: center;
-            padding: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        #matchmakingScreen h1 {
-            font-size: clamp(2.5rem, 8vw, 4rem);
+        h1 {
+            font-size: 3rem;
             margin-bottom: 20px;
-            color: white;
-            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            color: #4FC3F7;
+            text-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
         }
 
-        #matchmakingScreen h2 {
-            font-size: clamp(1.5rem, 5vw, 2.5rem);
+        h2 {
+            font-size: 1.8rem;
             margin-bottom: 30px;
-            color: #3498db;
+            color: #81D4FA;
         }
 
-        #playerCount {
-            font-size: clamp(1.2rem, 4vw, 1.8rem);
-            margin-bottom: 40px;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 15px 30px;
-            border-radius: 50px;
+        h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #B3E5FC;
+        }
+
+        .player-info-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        #playerIdDisplay {
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-size: 1.1rem;
+            word-break: break-all;
+            color: #4FC3F7;
         }
 
         .searching-dots {
             display: flex;
             justify-content: center;
-            gap: 12px;
+            gap: 15px;
             margin: 30px 0;
         }
 
         .searching-dots .dot {
             width: 20px;
             height: 20px;
-            background: #2ecc71;
+            background: #00E676;
             border-radius: 50%;
             animation: searching 1.4s infinite;
         }
@@ -83,285 +108,485 @@
             30% { transform: translateY(-15px); opacity: 1; }
         }
 
+        /* Buttons */
         .btn {
-            padding: 18px 50px;
-            font-size: 1.5rem;
+            padding: 15px 30px;
+            font-size: 1.2rem;
             font-weight: bold;
             border: none;
             border-radius: 50px;
             cursor: pointer;
             transition: all 0.3s;
             margin: 10px;
-            min-width: 250px;
+            min-width: 200px;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .btn-primary {
-            background: linear-gradient(to right, #2ecc71, #27ae60);
+            background: linear-gradient(45deg, #00C853, #64DD17);
             color: white;
-            box-shadow: 0 0 30px rgba(46, 204, 113, 0.5);
+            box-shadow: 0 5px 15px rgba(0, 200, 83, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 200, 83, 0.6);
         }
 
         .btn-secondary {
-            background: linear-gradient(to right, #e74c3c, #c0392b);
+            background: linear-gradient(45deg, #FF3D00, #FF9100);
             color: white;
+            box-shadow: 0 5px 15px rgba(255, 61, 0, 0.4);
         }
 
-        .btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 40px rgba(255, 255, 255, 0.3);
+        .btn-secondary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(255, 61, 0, 0.6);
+        }
+
+        /* Room Status */
+        .room-creator {
+            background: rgba(0, 230, 118, 0.2);
+            border: 2px solid #00E676;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 230, 118, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(0, 230, 118, 0.8); }
+        }
+
+        #roomId {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #00E676;
+            margin: 10px 0;
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 5px;
+            display: inline-block;
+        }
+
+        #countdown {
+            font-size: 4rem;
+            font-weight: bold;
+            color: #FFEA00;
+            animation: countdownPulse 1s infinite;
+            display: inline-block;
+            margin: 0 10px;
+        }
+
+        @keyframes countdownPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
         }
 
         /* Game Screen */
         #gameScreen {
             display: none;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #1a2980, #26d0ce);
-            padding: 15px;
-            overflow-y: auto;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
-        .header {
+        .game-header {
             text-align: center;
-            color: white;
-            margin-bottom: 20px;
-            padding: 15px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            border: 2px solid rgba(79, 195, 247, 0.3);
         }
 
-        .header h1 {
-            font-size: clamp(1.5rem, 6vw, 2.5rem);
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        .game-title {
+            font-size: 2.5rem;
+            color: #4FC3F7;
             margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(79, 195, 247, 0.5);
         }
 
-        .player-turn {
-            font-size: clamp(1.2rem, 4vw, 1.8rem);
+        #turnIndicator {
+            font-size: 1.8rem;
             font-weight: bold;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 12px 30px;
+            padding: 15px 30px;
             border-radius: 50px;
             display: inline-block;
             margin-top: 10px;
+            background: linear-gradient(45deg, #2979FF, #00B0FF);
+            box-shadow: 0 5px 15px rgba(41, 121, 255, 0.4);
         }
 
-        /* Game Container */
-        .game-container {
-            max-width: 1200px;
-            margin: 0 auto 30px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 25px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
-        }
-
-        .player-info {
+        .player-info-container {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding: 15px;
-            background: rgba(52, 152, 219, 0.1);
+            justify-content: space-around;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .player-card {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
             border-radius: 15px;
-        }
-
-        .player-info-item {
             text-align: center;
+            min-width: 200px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
         }
 
-        .player-info-item h3 {
-            color: #2c3e50;
-            margin-bottom: 5px;
-            font-size: 1.2rem;
+        .player-card h3 {
+            color: #81D4FA;
+            margin-bottom: 10px;
         }
 
-        .player-info-item p {
-            color: #3498db;
-            font-size: 1.4rem;
+        .player-card p {
+            font-size: 1.5rem;
             font-weight: bold;
+            color: #4FC3F7;
         }
 
-        /* Grids */
-        .grids-container {
+        /* Game Grids */
+        .game-grids {
             display: flex;
-            flex-direction: column;
-            gap: 30px;
-            margin: 25px 0;
+            justify-content: center;
+            gap: 40px;
+            margin: 30px 0;
+            flex-wrap: wrap;
         }
 
-        @media (min-width: 768px) {
-            .grids-container {
-                flex-direction: row;
-                justify-content: center;
-                gap: 40px;
-            }
-        }
-
-        .grid-wrapper {
+        .grid-section {
             text-align: center;
         }
 
-        .grid-wrapper h3 {
-            color: #34495e;
-            margin-bottom: 12px;
-            font-size: 1.3rem;
-            font-weight: bold;
+        .grid-section h3 {
+            margin-bottom: 15px;
+            color: #B3E5FC;
         }
 
         .grid {
             display: grid;
             grid-template-columns: repeat(10, 1fr);
             grid-template-rows: repeat(10, 1fr);
-            gap: 1px;
-            width: min(95vw, 350px);
-            height: min(95vw, 350px);
-            border: 3px solid #2c3e50;
-            background-color: #3498db;
-            margin: 0 auto;
+            gap: 2px;
+            width: 400px;
+            height: 400px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 3px solid #4FC3F7;
+            border-radius: 5px;
+            padding: 5px;
+        }
+
+        @media (max-width: 900px) {
+            .grid {
+                width: 320px;
+                height: 320px;
+            }
+        }
+
+        @media (max-width: 700px) {
+            .grid {
+                width: 280px;
+                height: 280px;
+            }
         }
 
         .cell {
-            background-color: #ecf0f1;
-            border: 1px solid #bdc3c7;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-            user-select: none;
+            font-size: 0.8rem;
             position: relative;
         }
 
         .cell:hover {
-            background-color: #d6eaf8;
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .cell.ship {
+            background: rgba(41, 121, 255, 0.5);
+            border-color: #2979FF;
+        }
+
+        .cell.hit {
+            background: #FF3D00;
+            animation: hitAnimation 0.5s;
         }
 
         .cell.hit::after {
             content: "💥";
-            font-size: 1.5rem;
-            animation: hitEffect 0.5s;
+            font-size: 1.2rem;
+        }
+
+        .cell.miss {
+            background: rgba(255, 255, 255, 0.3);
         }
 
         .cell.miss::after {
-            content: "●";
-            color: #7f8c8d;
-            font-size: 1.5rem;
-            animation: missEffect 0.5s;
+            content: "○";
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 1rem;
         }
 
-        .cell.ship {
-            background-color: #2c3e50;
-        }
-
-        .cell.ship.hit {
-            background-color: #c0392b;
-        }
-
-        @keyframes hitEffect {
-            0% { transform: scale(0); }
-            70% { transform: scale(1.5); }
+        @keyframes hitAnimation {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
             100% { transform: scale(1); }
         }
 
-        @keyframes missEffect {
-            0% { transform: scale(0); }
-            100% { transform: scale(1); }
-        }
-
-        /* Controls */
-        .controls {
+        /* Game Controls */
+        .game-controls {
             text-align: center;
-            margin-top: 25px;
+            margin: 30px 0;
             padding: 20px;
-            background: rgba(236, 240, 241, 0.9);
+            background: rgba(0, 0, 0, 0.5);
             border-radius: 15px;
+            border: 2px solid rgba(255, 61, 0, 0.3);
         }
 
-        .controls h3 {
-            color: #2c3e50;
-            margin-bottom: 15px;
-            font-size: 1.3rem;
-        }
-
-        .control-buttons {
+        .controls-row {
             display: flex;
             justify-content: center;
-            gap: 15px;
+            gap: 20px;
+            margin-top: 20px;
             flex-wrap: wrap;
         }
 
         /* Ship Status */
-        .ship-status {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
+        .ship-status-container {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 2px solid rgba(0, 230, 118, 0.3);
+        }
+
+        .ship-status-container h3 {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .ship-status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 10px;
-            margin-top: 20px;
-            padding: 15px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 10px;
+            margin-top: 15px;
         }
 
         .ship-status-item {
-            background: #ecf0f1;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 0.9rem;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 10px;
+            transition: all 0.3s;
         }
 
         .ship-status-item.sunk {
-            background: #e74c3c;
-            color: white;
+            background: rgba(255, 61, 0, 0.3);
+            text-decoration: line-through;
+            opacity: 0.7;
         }
 
-        /* Chat */
+        /* Chat System */
         .chat-container {
-            margin-top: 25px;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(0, 0, 0, 0.5);
             border-radius: 15px;
             padding: 20px;
+            margin-top: 30px;
+            border: 2px solid rgba(255, 193, 7, 0.3);
+        }
+
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
         }
 
         .chat-messages {
-            height: 150px;
+            height: 200px;
             overflow-y: auto;
-            margin-bottom: 15px;
-            padding: 10px;
-            background: #f8f9fa;
+            background: rgba(0, 0, 0, 0.3);
             border-radius: 10px;
-            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .chat-input {
+        .message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 3px solid #4FC3F7;
+        }
+
+        .message.system {
+            border-left-color: #00E676;
+            font-style: italic;
+        }
+
+        .message.player {
+            border-left-color: #FF9100;
+        }
+
+        .message.opponent {
+            border-left-color: #FF3D00;
+        }
+
+        .chat-input-container {
             display: flex;
             gap: 10px;
         }
 
-        .chat-input input {
+        #chatInput {
             flex: 1;
-            padding: 12px;
-            border: 2px solid #3498db;
-            border-radius: 10px;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
             font-size: 1rem;
         }
 
+        #chatInput:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Game Over Overlay */
+        #gameOverOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .game-over-content {
+            background: linear-gradient(135deg, #1a2980, #26d0ce);
+            padding: 50px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            animation: gameOverEnter 0.5s;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+        }
+
+        @keyframes gameOverEnter {
+            from {
+                opacity: 0;
+                transform: scale(0.5) rotate(-5deg);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) rotate(0deg);
+            }
+        }
+
+        #gameOverTitle {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            color: #FFEA00;
+            text-shadow: 0 0 20px rgba(255, 234, 0, 0.5);
+        }
+
+        #gameOverMessage {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .game-over-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Hidden Class */
         .hidden {
             display: none !important;
         }
 
-        /* Mobile */
+        /* Responsive Design */
         @media (max-width: 768px) {
-            .grid {
-                width: min(95vw, 320px);
-                height: min(95vw, 320px);
+            .matchmaking-container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            h2 {
+                font-size: 1.5rem;
             }
             
             .btn {
-                padding: 15px 30px;
+                min-width: 160px;
+                padding: 12px 20px;
+                font-size: 1rem;
+            }
+            
+            .grid-section h3 {
                 font-size: 1.2rem;
-                min-width: 200px;
+            }
+            
+            .game-title {
+                font-size: 2rem;
+            }
+            
+            #turnIndicator {
+                font-size: 1.3rem;
+                padding: 10px 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .matchmaking-container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .player-card {
+                min-width: 150px;
+                padding: 15px;
+            }
+            
+            .grid {
+                width: 250px;
+                height: 250px;
+            }
+            
+            .game-over-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .game-over-buttons .btn {
+                width: 100%;
+                max-width: 200px;
             }
         }
     </style>
@@ -371,109 +596,176 @@
 <body>
     <!-- Matchmaking Screen -->
     <div id="matchmakingScreen">
-        <h1>🌐 ONLINE BATTLE</h1>
-        <h2 id="matchmakingStatus">Finding Opponent...</h2>
-        <div id="playerCount">Players online: <span id="onlineCount">0</span></div>
-        
-        <div class="searching-dots">
-            <div class="dot"></div>
-            <div class="dot"></div>
-            <div class="dot"></div>
-        </div>
-        
-        <div id="queueStatus" class="hidden">
-            <p>You are in queue. Waiting for opponent...</p>
-            <p>Estimated wait: <span id="waitTime">30</span> seconds</p>
-        </div>
-        
-        <div id="roomStatus" class="hidden">
-            <p>✅ Room created! Waiting for player 2...</p>
-            <p>Room ID: <span id="roomId">---</span></p>
-        </div>
-        
-        <div id="foundOpponent" class="hidden">
-            <p>🎮 Opponent found!</p>
-            <p>Starting game in <span id="countdown">3</span>...</p>
-        </div>
-        
-        <div class="control-buttons">
-            <button class="btn btn-primary" onclick="startMatchmaking()" id="findBtn">
-                🔍 Find Match
-            </button>
-            <button class="btn btn-secondary" onclick="cancelMatchmaking()" id="cancelBtn" class="hidden">
-                ❌ Cancel
-            </button>
-            <button class="btn btn-secondary" onclick="exitToMenu()">
-                🏠 Exit to Menu
-            </button>
+        <div class="matchmaking-container">
+            <h1>🚢 BATTLESHIP ONLINE</h1>
+            
+            <!-- Player Info -->
+            <div class="player-info-card">
+                <h3>YOUR PLAYER ID</h3>
+                <p id="playerIdDisplay">Loading...</p>
+            </div>
+            
+            <!-- Matchmaking Status -->
+            <h2 id="matchmakingStatus">READY FOR BATTLE?</h2>
+            
+            <!-- Searching Animation -->
+            <div class="searching-dots hidden" id="searchingDots">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+            
+            <!-- Quick Match Section -->
+            <div id="quickMatch">
+                <h3>⚡ QUICK MATCH</h3>
+                <p>Find an opponent instantly</p>
+                <button class="btn btn-primary" onclick="startQuickMatch()" id="findBtn">
+                    FIND MATCH
+                </button>
+            </div>
+            
+            <!-- Queue Status (hidden initially) -->
+            <div id="queueStatus" class="hidden">
+                <h3>🔍 CREATING GAME ROOM...</h3>
+                <p>Please wait while we set up your game</p>
+            </div>
+            
+            <!-- Room Created Status (hidden initially) -->
+            <div id="roomStatus" class="hidden">
+                <div class="room-creator">
+                    <h3>✅ ROOM CREATED!</h3>
+                    <p>Share this Room ID with a friend:</p>
+                    <div id="roomId">---</div>
+                    <p>Waiting for opponent to join...</p>
+                </div>
+            </div>
+            
+            <!-- Opponent Found Status (hidden initially) -->
+            <div id="foundOpponent" class="hidden">
+                <h3>🎮 OPPONENT FOUND!</h3>
+                <p>Starting game in <span id="countdown">3</span></p>
+                <div class="room-creator">
+                    <p>Playing against: <span id="roomCreator">Opponent</span></p>
+                </div>
+            </div>
+            
+            <!-- Control Buttons -->
+            <div class="controls-row">
+                <button class="btn btn-secondary" onclick="cancelMatchmaking()" id="cancelBtn" class="hidden">
+                    ❌ CANCEL
+                </button>
+                <button class="btn btn-secondary" onclick="exitToMenu()">
+                    🏠 MAIN MENU
+                </button>
+            </div>
         </div>
     </div>
 
     <!-- Game Screen -->
     <div id="gameScreen">
-        <div class="header">
-            <h1>🚢 ONLINE BATTLE</h1>
-            <div class="player-turn" id="turnIndicator">Setting up game...</div>
+        <!-- Game Header -->
+        <div class="game-header">
+            <h1 class="game-title">🚢 NAVAL BATTLE</h1>
+            <div id="turnIndicator">SETTING UP GAME...</div>
         </div>
 
-        <div class="game-container">
-            <!-- Player Info -->
-            <div class="player-info">
-                <div class="player-info-item">
-                    <h3>You</h3>
-                    <p id="playerName">Player 1</p>
-                </div>
-                <div class="player-info-item">
-                    <h3>VS</h3>
-                    <p style="color: #e74c3c;">ONLINE</p>
-                </div>
-                <div class="player-info-item">
-                    <h3>Opponent</h3>
-                    <p id="opponentName">Waiting...</p>
-                </div>
+        <!-- Player Info -->
+        <div class="player-info-container">
+            <div class="player-card">
+                <h3>YOU</h3>
+                <p id="playerName">Player 1</p>
+            </div>
+            <div class="player-card">
+                <h3>STATUS</h3>
+                <p style="color: #00E676;">ONLINE</p>
+            </div>
+            <div class="player-card">
+                <h3>OPPONENT</h3>
+                <p id="opponentName">Waiting...</p>
+            </div>
+        </div>
+
+        <!-- Game Grids -->
+        <div class="game-grids">
+            <!-- Player's Fleet Grid -->
+            <div class="grid-section">
+                <h3>YOUR FLEET</h3>
+                <div class="grid" id="playerGrid"></div>
+                <p style="margin-top: 10px; color: #81D4FA;">
+                    <small>Click to place ships during setup</small>
+                </p>
             </div>
 
-            <!-- Game Grids -->
-            <div class="grids-container">
-                <div class="grid-wrapper">
-                    <h3>Your Fleet</h3>
-                    <div class="grid" id="playerGrid"></div>
-                </div>
-                <div class="grid-wrapper">
-                    <h3>Attack Enemy</h3>
-                    <div class="grid" id="attackGrid"></div>
+            <!-- Attack Grid -->
+            <div class="grid-section">
+                <h3>ATTACK ZONE</h3>
+                <div class="grid" id="attackGrid"></div>
+                <p style="margin-top: 10px; color: #81D4FA;">
+                    <small>Click to attack during battle</small>
+                </p>
+            </div>
+        </div>
+
+        <!-- Game Controls -->
+        <div class="game-controls">
+            <h3>GAME CONTROLS</h3>
+            <div class="controls-row">
+                <button class="btn btn-secondary" onclick="surrenderGame()">
+                    🏳️ SURRENDER
+                </button>
+                <button class="btn btn-secondary" onclick="exitGame()">
+                    🚪 LEAVE GAME
+                </button>
+                <button class="btn btn-primary" onclick="toggleOrientation()" id="orientationBtn">
+                    🔄 VERTICAL
+                </button>
+            </div>
+        </div>
+
+        <!-- Ship Status -->
+        <div class="ship-status-container">
+            <h3>ENEMY FLEET STATUS</h3>
+            <div class="ship-status-grid" id="shipStatus">
+                <!-- Ships will be displayed here -->
+                <div class="ship-status-item">🚢 Carrier (0/5)</div>
+                <div class="ship-status-item">🚢 Battleship (0/4)</div>
+                <div class="ship-status-item">🚢 Cruiser (0/3)</div>
+                <div class="ship-status-item">🚢 Submarine (0/3)</div>
+                <div class="ship-status-item">🚢 Destroyer (0/2)</div>
+            </div>
+        </div>
+
+        <!-- Chat System -->
+        <div class="chat-container">
+            <div class="chat-header">
+                <h3>💬 BATTLE CHAT</h3>
+                <div style="color: #81D4FA;">Online</div>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message system">
+                    <strong>System:</strong> Welcome to Battleship! Place your ships to begin.
                 </div>
             </div>
-
-            <!-- Controls -->
-            <div class="controls">
-                <h3>Game Controls</h3>
-                <div class="control-buttons">
-                    <button class="btn btn-secondary" onclick="surrenderGame()">
-                        🏳️ Surrender
-                    </button>
-                    <button class="btn btn-secondary" onclick="exitGame()">
-                        🚪 Exit Game
-                    </button>
-                </div>
+            <div class="chat-input-container">
+                <input type="text" id="chatInput" placeholder="Type your message here..." 
+                       onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                <button class="btn btn-primary" onclick="sendChatMessage()">Send</button>
             </div>
+        </div>
+    </div>
 
-            <!-- Ship Status -->
-            <div class="ship-status" id="shipStatus">
-                <!-- Ships will be shown here -->
-            </div>
-
-            <!-- Simple Chat -->
-            <div class="chat-container">
-                <h3>💬 Quick Chat</h3>
-                <div class="chat-messages" id="chatMessages">
-                    <div class="message">System: Game started!</div>
-                </div>
-                <div class="chat-input">
-                    <input type="text" id="chatInput" placeholder="Type a message..." 
-                           onkeypress="if(event.key === 'Enter') sendChatMessage()">
-                    <button class="btn btn-primary" onclick="sendChatMessage()">Send</button>
-                </div>
+    <!-- Game Over Overlay -->
+    <div id="gameOverOverlay" class="hidden">
+        <div class="game-over-content">
+            <h1 id="gameOverTitle">VICTORY!</h1>
+            <p id="gameOverMessage">Congratulations! You have won the battle!</p>
+            <div class="game-over-buttons">
+                <button class="btn btn-primary" onclick="rematch()" id="rematchBtn">
+                    PLAY AGAIN
+                </button>
+                <button class="btn btn-secondary" onclick="goToMenu()" id="menuBtn">
+                    MAIN MENU
+                </button>
             </div>
         </div>
     </div>
@@ -482,23 +774,38 @@
     <script src="backend.js"></script>
     
     <script>
+        // Global orientation state
+        let shipOrientation = 'vertical';
+        
         // Frontend functions
-        function startMatchmaking() {
+        function startQuickMatch() {
             onlineBackend.startMatchmaking();
             document.getElementById('findBtn').classList.add('hidden');
             document.getElementById('cancelBtn').classList.remove('hidden');
             document.getElementById('queueStatus').classList.remove('hidden');
+            document.getElementById('searchingDots').classList.remove('hidden');
+            document.getElementById('quickMatch').classList.add('hidden');
         }
         
         function cancelMatchmaking() {
             onlineBackend.cancelMatchmaking();
+            resetMatchmakingUI();
+        }
+        
+        function resetMatchmakingUI() {
             document.getElementById('findBtn').classList.remove('hidden');
             document.getElementById('cancelBtn').classList.add('hidden');
             document.getElementById('queueStatus').classList.add('hidden');
+            document.getElementById('roomStatus').classList.add('hidden');
+            document.getElementById('foundOpponent').classList.add('hidden');
+            document.getElementById('searchingDots').classList.add('hidden');
+            document.getElementById('quickMatch').classList.remove('hidden');
+            document.getElementById('matchmakingStatus').textContent = 'READY FOR BATTLE?';
         }
         
         function exitToMenu() {
             if (confirm('Return to main menu?')) {
+                onlineBackend.cleanup();
                 window.location.href = '../index.html';
             }
         }
@@ -510,7 +817,7 @@
         }
         
         function exitGame() {
-            if (confirm('Exit this game? Your opponent will win.')) {
+            if (confirm('Exit this game?')) {
                 onlineBackend.leaveGame();
                 window.location.href = '../index.html';
             }
@@ -522,13 +829,59 @@
             if (message) {
                 onlineBackend.sendChatMessage(message);
                 input.value = '';
+                input.focus();
             }
         }
+        
+        function toggleOrientation() {
+            shipOrientation = shipOrientation === 'vertical' ? 'horizontal' : 'vertical';
+            document.getElementById('orientationBtn').textContent = 
+                shipOrientation === 'vertical' ? '🔄 VERTICAL' : '🔄 HORIZONTAL';
+            
+            // Update backend orientation if needed
+            if (onlineBackend.state && onlineBackend.state.orientation !== undefined) {
+                onlineBackend.state.orientation = shipOrientation;
+            }
+        }
+        
+        function rematch() {
+            document.getElementById('gameOverOverlay').classList.add('hidden');
+            onlineBackend.rematch();
+        }
+        
+        function goToMenu() {
+            window.location.href = '../index.html';
+        }
+        
+        // Handle Enter key in chat
+        document.getElementById('chatInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendChatMessage();
+            }
+        });
+        
+        // Expose functions to backend
+        window.showGameOver = function(message, isWin) {
+            const overlay = document.getElementById('gameOverOverlay');
+            const title = document.getElementById('gameOverTitle');
+            const messageEl = document.getElementById('gameOverMessage');
+            
+            title.textContent = isWin ? '🎉 VICTORY! 🎉' : '💀 DEFEAT! 💀';
+            title.style.color = isWin ? '#00E676' : '#FF3D00';
+            messageEl.textContent = message;
+            
+            overlay.classList.remove('hidden');
+        };
         
         // Initialize when page loads
         window.onload = function() {
             onlineBackend.initialize();
         };
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            onlineBackend.cleanup();
+        });
     </script>
 </body>
 </html>
