@@ -771,7 +771,12 @@
             possibleDirections: ['up', 'down', 'left', 'right'],
             huntingShipCells: [],
             lastMissedDirection: null,
-            smartTargets: []
+            smartTargets: [],
+            knownSunkShips: new Set(),
+            searchPattern: [], // For pattern-based searching
+            patternIndex: 0,
+            targetingMode: 'search', // 'search', 'hunt', 'destroy'
+            probabilityMap: null // For Hard difficulty
         };
         
         const ships = {
@@ -806,6 +811,11 @@
             setupTouchEvents();
             showReadyScreen();
             
+            // Initialize search patterns for Hard difficulty
+            if (difficulty === 3) {
+                initializeSearchPatterns();
+            }
+            
             // Bot places ships immediately (random placement)
             placeBotShips();
         }
@@ -836,6 +846,106 @@
             
             difficultyDisplay.textContent = `Difficulty: ${difficultyText}`;
             playerTitle.textContent = titleText;
+        }
+
+        // Initialize search patterns for Hard difficulty
+        function initializeSearchPatterns() {
+            // Create multiple search patterns
+            botState.searchPattern = [];
+            
+            // Pattern 1: Checkerboard (2x2) - for finding ships
+            const checkerboard2x2 = [];
+            for (let row = 0; row < 10; row++) {
+                for (let col = (row % 2); col < 10; col += 2) {
+                    checkerboard2x2.push([row, col]);
+                }
+            }
+            
+            // Pattern 2: Denser checkerboard (3x3) - faster coverage after destroyer is sunk
+            const checkerboard3x3 = [];
+            for (let row = 0; row < 10; row++) {
+                for (let col = 0; col < 10; col++) {
+                    if ((row + col) % 3 === 0) {
+                        checkerboard3x3.push([row, col]);
+                    }
+                }
+            }
+            
+            // Pattern 3: Spiral from center
+            const spiral = [];
+            const center = [4.5, 4.5];
+            let radius = 0;
+            while (spiral.length < 100) {
+                for (let angle = 0; angle < Math.PI * 2; angle += 0.1) {
+                    const row = Math.floor(center[0] + radius * Math.cos(angle));
+                    const col = Math.floor(center[1] + radius * Math.sin(angle));
+                    if (row >= 0 && row < 10 && col >= 0 && col < 10) {
+                        const pos = [row, col];
+                        if (!spiral.some(p => p[0] === pos[0] && p[1] === pos[1])) {
+                            spiral.push(pos);
+                        }
+                    }
+                }
+                radius += 0.5;
+            }
+            
+            // Combine patterns strategically
+            botState.searchPattern = [...checkerboard2x2, ...checkerboard3x3, ...spiral];
+            
+            // Initialize probability map for Hard difficulty
+            botState.probabilityMap = createProbabilityMap();
+        }
+
+        // Create probability map for Hard difficulty
+        function createProbabilityMap() {
+            const map = Array(10).fill().map(() => Array(10).fill(0));
+            
+            // Initial probability based on ship placement tendencies
+            for (let row = 0; row < 10; row++) {
+                for (let col = 0; col < 10; col++) {
+                    // Center has higher probability (people tend to place ships near center)
+                    const centerDist = Math.abs(row - 4.5) + Math.abs(col - 4.5);
+                    map[row][col] = 10 - centerDist;
+                    
+                    // Edges have slightly lower probability
+                    if (row === 0 || row === 9 || col === 0 || col === 9) {
+                        map[row][col] *= 0.7;
+                    }
+                }
+            }
+            
+            return map;
+        }
+
+        // Update probability map based on hits and misses
+        function updateProbabilityMap(row, col, hit) {
+            if (difficulty !== 3 || !botState.probabilityMap) return;
+            
+            if (hit) {
+                // Increase probability around hits
+                for (let dr = -2; dr <= 2; dr++) {
+                    for (let dc = -2; dc <= 2; dc++) {
+                        const nr = row + dr;
+                        const nc = col + dc;
+                        if (nr >= 0 && nr < 10 && nc >= 0 && nc < 10) {
+                            const distance = Math.abs(dr) + Math.abs(dc);
+                            const boost = 5 / (distance + 1);
+                            botState.probabilityMap[nr][nc] += boost;
+                        }
+                    }
+                }
+            } else {
+                // Decrease probability around misses (but not too much for adjacent cells)
+                for (let dr = -1; dr <= 1; dr++) {
+                    for (let dc = -1; dc <= 1; dc++) {
+                        const nr = row + dr;
+                        const nc = col + dc;
+                        if (nr >= 0 && nr < 10 && nc >= 0 && nc < 10) {
+                            botState.probabilityMap[nr][nc] *= 0.8;
+                        }
+                    }
+                }
+            }
         }
 
         // Bot places ships randomly
@@ -1649,7 +1759,7 @@
             }, 1500);
         }
 
-        // Bot attacks player - IMPROVED AI for Medium/Hard difficulty
+        // Bot attacks player - ENHANCED AI for all difficulties
         function botAttack() {
             if (gamePhase !== 'battle') return;
             if (currentTurn !== 'bot') return;
@@ -1672,7 +1782,7 @@
                     // MEDIUM: Hunt mode - when hit, try surrounding cells
                     [row, col] = getMediumAttack();
                 } else {
-                    // HARD: Improved hunt mode with pattern recognition
+                    // HARD: Advanced AI with pattern recognition and adaptive strategies
                     [row, col] = getHardAttack();
                 }
                 
@@ -1699,6 +1809,7 @@
                             
                             if (ship.hits === ship.size) {
                                 ship.sunk = true;
+                                botState.knownSunkShips.add(ship.id);
                             }
                         }
                     });
@@ -1706,6 +1817,11 @@
                 
                 // Update bot AI state based on result
                 updateBotState(row, col, hit, shipHit);
+                
+                // Update probability map for Hard difficulty
+                if (difficulty === 3) {
+                    updateProbabilityMap(row, col, hit);
+                }
                 
                 // Update display
                 updateDisplay();
@@ -1840,100 +1956,195 @@
             return getRandomAttack();
         }
 
-        // Get hard difficulty attack (improved pattern recognition)
+        // Get hard difficulty attack - ENHANCED with multiple strategies
         function getHardAttack() {
-            // First, try to continue any ongoing hunt
+            // STRATEGY 1: Continue ongoing hunt if we have one
             if (botState.huntMode && botState.lastHit) {
                 const [lastRow, lastCol] = botState.lastHit;
                 
                 // If we have multiple hits in a line, continue in that direction
                 if (botState.huntingShipCells.length >= 2) {
-                    // Determine ship orientation
+                    // Determine ship orientation and size
                     const firstHit = botState.huntingShipCells[0];
-                    const secondHit = botState.huntingShipCells[1];
+                    const lastHit = botState.huntingShipCells[botState.huntingShipCells.length - 1];
                     
                     let direction;
-                    if (firstHit[0] === secondHit[0]) {
-                        direction = firstHit[1] < secondHit[1] ? 'right' : 'left';
+                    if (firstHit[0] === lastHit[0]) {
+                        direction = firstHit[1] < lastHit[1] ? 'right' : 'left';
                     } else {
-                        direction = firstHit[0] < secondHit[0] ? 'down' : 'up';
+                        direction = firstHit[0] < lastHit[0] ? 'down' : 'up';
                     }
                     
-                    // Try to continue in that direction from the last hit
-                    const lastHit = botState.huntingShipCells[botState.huntingShipCells.length - 1];
-                    const nextPos = getNextPositionInDirection(lastHit[0], lastHit[1], direction);
+                    // Calculate estimated ship size
+                    const estimatedSize = botState.huntingShipCells.length;
                     
+                    // Try to continue in that direction from the last hit
+                    const nextPos = getNextPositionInDirection(lastHit[0], lastHit[1], direction);
                     if (nextPos && !attacks.bot.has(`${nextPos.row},${nextPos.col}`)) {
                         return [nextPos.row, nextPos.col];
                     }
                     
                     // If can't continue, try the opposite direction from the first hit
                     const oppositeDir = getOppositeDirection(direction);
-                    const firstPos = botState.huntingShipCells[0];
-                    const prevPos = getNextPositionInDirection(firstPos[0], firstPos[1], oppositeDir);
-                    
+                    const prevPos = getNextPositionInDirection(firstHit[0], firstHit[1], oppositeDir);
                     if (prevPos && !attacks.bot.has(`${prevPos.row},${prevPos.col}`)) {
                         return [prevPos.row, prevPos.col];
                     }
                 }
                 
-                // Fall back to medium strategy
-                return getMediumAttack();
+                // Try perpendicular directions if straight line is blocked
+                const directions = [
+                    { dir: 'up', row: -1, col: 0 },
+                    { dir: 'down', row: 1, col: 0 },
+                    { dir: 'left', row: 0, col: -1 },
+                    { dir: 'right', row: 0, col: 1 }
+                ];
+                
+                for (let dir of directions) {
+                    const newRow = lastRow + dir.row;
+                    const newCol = lastCol + dir.col;
+                    const attackKey = `${newRow},${newCol}`;
+                    
+                    if (isPositionValid(newRow, newCol) && 
+                        !attacks.bot.has(attackKey) && 
+                        botState.possibleDirections.includes(dir.dir)) {
+                        botState.huntDirection = dir.dir;
+                        return [newRow, newCol];
+                    }
+                }
             }
             
-            // Look for any hit that might be part of an unsunk ship
+            // STRATEGY 2: Look for any hit that might be part of an unsunk ship
             for (let attackKey of attacks.bot) {
-                if (attackKey.includes('hit')) {
-                    const [row, col] = attackKey.split(',').map(Number);
-                    
-                    // Check if this hit is part of a sunk ship
-                    let isPartOfSunkShip = false;
-                    ships.player.forEach(ship => {
-                        if (ship.sunk) {
-                            ship.cells.forEach(pos => {
-                                if (pos.row === row && pos.col === col) {
-                                    isPartOfSunkShip = true;
-                                }
-                            });
+                const [row, col] = attackKey.split(',').map(Number);
+                
+                // Skip if this is a miss
+                let isHit = false;
+                ships.player.forEach(ship => {
+                    ship.cells.forEach(pos => {
+                        if (pos.row === row && pos.col === col) {
+                            isHit = true;
                         }
                     });
-                    
-                    if (!isPartOfSunkShip) {
-                        // This hit belongs to an unsunk ship, hunt around it
-                        const adjacentCells = [
-                            [row-1, col], [row+1, col], [row, col-1], [row, col+1]
-                        ];
-                        
-                        for (let [adjRow, adjCol] of adjacentCells) {
-                            if (isPositionValid(adjRow, adjCol) && 
-                                !attacks.bot.has(`${adjRow},${adjCol}`)) {
-                                botState.huntMode = true;
-                                botState.lastHit = [row, col];
-                                botState.huntingShipCells.push([row, col]);
-                                return [adjRow, adjCol];
+                });
+                
+                if (!isHit) continue;
+                
+                // Check if this hit is part of a sunk ship
+                let isPartOfSunkShip = false;
+                ships.player.forEach(ship => {
+                    if (ship.sunk) {
+                        ship.cells.forEach(pos => {
+                            if (pos.row === row && pos.col === col) {
+                                isPartOfSunkShip = true;
                             }
+                        });
+                    }
+                });
+                
+                if (!isPartOfSunkShip) {
+                    // This hit belongs to an unsunk ship, hunt around it
+                    const adjacentCells = [
+                        [row-1, col], [row+1, col], [row, col-1], [row, col+1]
+                    ];
+                    
+                    for (let [adjRow, adjCol] of adjacentCells) {
+                        if (isPositionValid(adjRow, adjCol) && 
+                            !attacks.bot.has(`${adjRow},${adjCol}`)) {
+                            botState.huntMode = true;
+                            botState.lastHit = [row, col];
+                            botState.huntingShipCells.push([row, col]);
+                            return [adjRow, adjCol];
                         }
                     }
                 }
             }
             
-            // If no ongoing hunts, use checkerboard pattern for efficiency
-            const availableAttacks = [];
-            for (let row = 0; row < 10; row++) {
-                for (let col = 0; col < 10; col++) {
-                    // Checkerboard pattern (every other cell)
-                    if ((row + col) % 2 === 0) {
+            // STRATEGY 3: Adaptive search pattern based on remaining ships
+            if (difficulty === 3 && botState.searchPattern.length > 0) {
+                // Check which ships are still afloat
+                const remainingShips = ships.player.filter(ship => !ship.sunk);
+                const smallestRemainingShip = remainingShips.reduce((min, ship) => 
+                    ship.size < min.size ? ship : min, remainingShips[0]);
+                
+                // Choose search pattern based on smallest remaining ship
+                let patternSpacing;
+                if (smallestRemainingShip.size === 2) {
+                    // Destroyer is smallest - use 3x3 pattern for faster coverage
+                    patternSpacing = 3;
+                } else if (smallestRemainingShip.size === 3) {
+                    // Cruiser/Submarine smallest - use 2x2 pattern
+                    patternSpacing = 2;
+                } else {
+                    // Larger ships - use mixed pattern
+                    patternSpacing = 2;
+                }
+                
+                // Try pattern-based search
+                const patternPositions = [];
+                for (let row = 0; row < 10; row++) {
+                    for (let col = 0; col < 10; col++) {
+                        if ((row + col) % patternSpacing === 0) {
+                            patternPositions.push([row, col]);
+                        }
+                    }
+                }
+                
+                // Shuffle and try pattern positions
+                const shuffledPattern = [...patternPositions].sort(() => Math.random() - 0.5);
+                for (let [patternRow, patternCol] of shuffledPattern) {
+                    const attackKey = `${patternRow},${patternCol}`;
+                    if (!attacks.bot.has(attackKey)) {
+                        return [patternRow, patternCol];
+                    }
+                }
+            }
+            
+            // STRATEGY 4: Probability-based targeting (Hard difficulty only)
+            if (difficulty === 3 && botState.probabilityMap) {
+                const availableAttacks = [];
+                const probabilities = [];
+                
+                for (let row = 0; row < 10; row++) {
+                    for (let col = 0; col < 10; col++) {
                         const attackKey = `${row},${col}`;
                         if (!attacks.bot.has(attackKey)) {
                             availableAttacks.push([row, col]);
+                            probabilities.push(botState.probabilityMap[row][col]);
+                        }
+                    }
+                }
+                
+                if (availableAttacks.length > 0) {
+                    // Select attack based on probability (weighted random)
+                    const totalProbability = probabilities.reduce((a, b) => a + b, 0);
+                    let random = Math.random() * totalProbability;
+                    
+                    for (let i = 0; i < availableAttacks.length; i++) {
+                        random -= probabilities[i];
+                        if (random <= 0) {
+                            return availableAttacks[i];
                         }
                     }
                 }
             }
             
-            if (availableAttacks.length > 0) {
-                const randomIndex = Math.floor(Math.random() * availableAttacks.length);
-                return availableAttacks[randomIndex];
+            // STRATEGY 5: Edge hunting (ships often touch edges)
+            const edgeCells = [];
+            for (let i = 0; i < 10; i++) {
+                edgeCells.push([0, i], [9, i], [i, 0], [i, 9]);
+            }
+            
+            const uniqueEdgeCells = [...new Set(edgeCells.map(c => c.join(',')))].map(s => 
+                s.split(',').map(Number)
+            );
+            
+            const availableEdgeCells = uniqueEdgeCells.filter(([r, c]) => 
+                !attacks.bot.has(`${r},${c}`)
+            );
+            
+            if (availableEdgeCells.length > 0) {
+                return availableEdgeCells[Math.floor(Math.random() * availableEdgeCells.length)];
             }
             
             // Fallback to random
@@ -1955,13 +2166,32 @@
                 }
                 
                 if (shipHit && shipHit.sunk) {
-                    // Ship sunk! Reset hunt state
+                    // Ship sunk! Update strategy
+                    botState.knownSunkShips.add(shipHit.id);
+                    
+                    // Clear hunt state for this ship
                     botState.huntMode = false;
                     botState.lastHit = null;
                     botState.huntDirection = null;
                     botState.huntingShipCells = [];
                     botState.possibleDirections = ['up', 'down', 'left', 'right'];
                     botState.lastMissedDirection = null;
+                    
+                    // For Hard difficulty, update probability map
+                    if (difficulty === 3 && botState.probabilityMap) {
+                        // Reduce probability around sunk ship (it's gone)
+                        shipHit.cells.forEach(pos => {
+                            for (let dr = -2; dr <= 2; dr++) {
+                                for (let dc = -2; dc <= 2; dc++) {
+                                    const nr = pos.row + dr;
+                                    const nc = pos.col + dc;
+                                    if (nr >= 0 && nr < 10 && nc >= 0 && nc < 10) {
+                                        botState.probabilityMap[nr][nc] *= 0.5;
+                                    }
+                                }
+                            }
+                        });
+                    }
                 }
             } else {
                 // Missed - update direction tracking
@@ -2138,7 +2368,12 @@
                 possibleDirections: ['up', 'down', 'left', 'right'],
                 huntingShipCells: [],
                 lastMissedDirection: null,
-                smartTargets: []
+                smartTargets: [],
+                knownSunkShips: new Set(),
+                searchPattern: [],
+                patternIndex: 0,
+                targetingMode: 'search',
+                probabilityMap: null
             };
             
             ships.player = [];
@@ -2155,6 +2390,11 @@
             
             // Re-initialize bot ships
             placeBotShips();
+            
+            // Re-initialize search patterns if Hard difficulty
+            if (difficulty === 3) {
+                initializeSearchPatterns();
+            }
             
             showReadyScreen();
             updateDisplay();
