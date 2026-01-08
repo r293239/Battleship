@@ -1440,7 +1440,8 @@
                     fuel: ship.fuel,
                     maxFuel: ship.fuel,
                     cooldown: 0,
-                    revealed: false,
+                    visibleToOwner: true,  // ALWAYS visible to owner
+                    revealed: false,        // Hidden from enemy until revealed
                     player: 1
                 }));
                 
@@ -1473,7 +1474,8 @@
                     fuel: ship.fuel,
                     maxFuel: ship.fuel,
                     cooldown: 0,
-                    revealed: false,
+                    visibleToOwner: true,  // ALWAYS visible to owner
+                    revealed: false,        // Hidden from enemy until revealed
                     player: 2
                 }));
                 
@@ -1714,7 +1716,7 @@
                 const damage = 50 + Math.floor(Math.random() * 20);
                 targetShip.health = Math.max(0, targetShip.health - damage);
                 
-                // Reveal enemy ship
+                // Reveal enemy ship to current player
                 targetShip.revealed = true;
                 
                 if (targetShip.health <= 0) {
@@ -2112,7 +2114,7 @@
             // Update ships panel
             updateShipsPanel();
             
-            // Update game grid
+            // Update game grid - THIS IS THE FIXED FUNCTION
             updateGameGrid();
             
             // Update tips
@@ -2200,6 +2202,7 @@
                     );
                     if (cell) {
                         cell.classList.add('mine');
+                        cell.innerHTML = '💣';
                     }
                 }
             });
@@ -2211,21 +2214,22 @@
                 );
                 if (cell) {
                     cell.classList.add('hit');
+                    cell.innerHTML = '💥';
                 }
             });
             
-            // Show missed shots
-            // This would need to track misses in gameState
+            // Show missed shots from previous attacks
+            // (This would need to track misses in gameState)
             
-            // Now show ships - THIS IS THE FIXED PART
+            // ========== CRITICAL FIX: SHOW CURRENT PLAYER'S SHIPS ==========
+            // Show ALL current player's ships (always visible to owner)
             gameState.ships.forEach(ship => {
-                ship.cells.forEach(cellPos => {
-                    const cell = document.querySelector(
-                        `.game-cell[data-row="${cellPos.row}"][data-col="${cellPos.col}"]`
-                    );
-                    if (cell) {
-                        // Always show current player's ships
-                        if (ship.player === gameState.currentPlayer) {
+                if (ship.player === gameState.currentPlayer) {
+                    ship.cells.forEach(cellPos => {
+                        const cell = document.querySelector(
+                            `.game-cell[data-row="${cellPos.row}"][data-col="${cellPos.col}"]`
+                        );
+                        if (cell) {
                             cell.classList.add(`ship-p${ship.player}`);
                             
                             // Show damage state
@@ -2235,9 +2239,19 @@
                             } else if (healthPercent <= 50) {
                                 cell.classList.add('damaged');
                             }
-                        } 
-                        // Show enemy ships only if revealed
-                        else if (ship.revealed) {
+                        }
+                    });
+                }
+            });
+            
+            // ========== SHOW ENEMY SHIPS (only when revealed) ==========
+            gameState.ships.forEach(ship => {
+                if (ship.player !== gameState.currentPlayer && ship.revealed) {
+                    ship.cells.forEach(cellPos => {
+                        const cell = document.querySelector(
+                            `.game-cell[data-row="${cellPos.row}"][data-col="${cellPos.col}"]`
+                        );
+                        if (cell) {
                             cell.classList.add(`ship-p${ship.player}`);
                             cell.classList.add('revealed');
                             
@@ -2250,8 +2264,8 @@
                                 cell.classList.add('scanned');
                             }
                         }
-                    }
-                });
+                    });
+                }
             });
         }
 
