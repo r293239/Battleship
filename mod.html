@@ -33,6 +33,20 @@
             z-index: 1000;
         }
 
+        #readyScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 950;
+        }
+
         #placementScreen {
             position: fixed;
             top: 0;
@@ -88,6 +102,48 @@
         .start-button:hover {
             transform: scale(1.05);
             box-shadow: 0 0 40px rgba(255, 51, 102, 1);
+        }
+
+        /* READY SCREEN */
+        .ready-title {
+            font-size: 3.5rem;
+            color: #00ffff;
+            text-shadow: 0 0 20px #00ffff;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .ready-subtitle {
+            font-size: 1.8rem;
+            color: #ffcc00;
+            margin-bottom: 40px;
+            text-align: center;
+            max-width: 600px;
+            line-height: 1.5;
+        }
+
+        .ready-button {
+            padding: 20px 60px;
+            font-size: 2rem;
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 30px rgba(46, 204, 113, 0.7);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .ready-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 40px rgba(46, 204, 113, 1);
         }
 
         /* PLACEMENT SCREEN */
@@ -436,18 +492,12 @@
         .game-cell.scan-area {
             background: rgba(255, 255, 0, 0.2) !important;
             border-color: yellow !important;
-            animation: pulse-yellow 1s infinite;
         }
 
         /* ANIMATIONS */
         @keyframes pulse-red {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.7; }
-        }
-
-        @keyframes pulse-yellow {
-            0%, 100% { box-shadow: 0 0 5px yellow; }
-            50% { box-shadow: 0 0 20px yellow; }
         }
 
         @keyframes explode {
@@ -695,11 +745,6 @@
             color: white;
         }
 
-        .control-btn.scan-view {
-            background: linear-gradient(45deg, #3498db, #2980b9);
-            color: white;
-        }
-
         .control-btn.special {
             background: linear-gradient(45deg, #9b59b6, #8e44ad);
             color: white;
@@ -820,6 +865,13 @@
         <button class="start-button" onclick="startGame()">START GAME</button>
     </div>
 
+    <!-- READY SCREEN -->
+    <div id="readyScreen">
+        <h1 class="ready-title" id="readyTitle">PLAYER 1</h1>
+        <div class="ready-subtitle" id="readySubtitle">Get ready for your turn!</div>
+        <button class="ready-button" onclick="startTurn()">READY</button>
+    </div>
+
     <!-- PLACEMENT SCREEN -->
     <div id="placementScreen">
         <h2 class="placement-title" id="placementTitle">PLAYER 1: DEPLOY YOUR FLEET</h2>
@@ -907,7 +959,6 @@
             <h3 class="controls-title">COMMAND CENTER</h3>
             <div class="controls-grid">
                 <button class="control-btn end-turn" onclick="endTurn()" id="endTurnBtn">⏭️ END TURN</button>
-                <button class="control-btn scan-view" onclick="toggleScanView()" id="scanViewBtn">🔍 SCAN VIEW</button>
                 <button class="control-btn special" onclick="specialAction()" id="specialBtn">⚡ SPECIAL ACTION</button>
                 <button class="control-btn surrender" onclick="surrender()">🏳️ SURRENDER</button>
             </div>
@@ -923,7 +974,7 @@
     <script>
         // ========== GAME STATE ==========
         let gameState = {
-            phase: 'start', // 'start', 'placement', 'game'
+            phase: 'start', // 'start', 'placement', 'ready', 'game'
             currentPlayer: 1,
             turn: 1,
             actionPoints: 3,
@@ -933,7 +984,6 @@
             scanAreas: [],
             mines: [],
             explosions: [],
-            isScanView: false,
             placedShips: [],
             ships: []
         };
@@ -1440,14 +1490,41 @@
                 // Combine all ships
                 gameState.ships = [...window.player1Ships, ...p2Ships];
                 
-                // Start game
+                // Show ready screen for player 1
+                showReadyScreen('PLAYER 1', "Get ready for battle! Enemy ships are hidden.");
+            }
+        }
+
+        // ========== READY SCREEN ==========
+        function showReadyScreen(title, subtitle) {
+            document.getElementById('readyTitle').textContent = title;
+            document.getElementById('readySubtitle').textContent = subtitle;
+            
+            if (gameState.phase === 'placement') {
+                document.getElementById('placementScreen').style.display = 'none';
+            } else {
+                document.getElementById('gameScreen').style.display = 'none';
+            }
+            
+            document.getElementById('readyScreen').style.display = 'flex';
+            gameState.phase = 'ready';
+        }
+
+        function startTurn() {
+            document.getElementById('readyScreen').style.display = 'none';
+            
+            if (gameState.phase === 'ready' && gameState.currentPlayer === 1) {
+                // First turn of the game
                 gameState.phase = 'game';
                 gameState.currentPlayer = 1;
-                
-                document.getElementById('placementScreen').style.display = 'none';
                 document.getElementById('gameScreen').style.display = 'block';
                 updateDisplay();
                 showMessage('Game started! Player 1\'s turn. Enemy ships are hidden.');
+            } else {
+                // Continue game
+                document.getElementById('gameScreen').style.display = 'block';
+                updateDisplay();
+                showMessage(`Player ${gameState.currentPlayer}'s turn!`);
             }
         }
 
@@ -1931,13 +2008,12 @@
                 }
             }
             
-            // Switch player
+            // Switch player and show ready screen
             gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
             gameState.turn++;
             gameState.actionPoints = 3;
             gameState.selectedShip = null;
             gameState.gamePhase = 'select';
-            gameState.isScanView = false;
             
             // Refuel ships
             gameState.ships.forEach(ship => {
@@ -1962,14 +2038,8 @@
                 return exp.turns > 0;
             });
             
-            updateDisplay();
-            showMessage(`Player ${gameState.currentPlayer}'s turn!`);
-        }
-
-        function toggleScanView() {
-            gameState.isScanView = !gameState.isScanView;
-            updateDisplay();
-            showMessage(gameState.isScanView ? 'Scan view active' : 'Normal view');
+            // Show ready screen for next player
+            showReadyScreen(`PLAYER ${gameState.currentPlayer}`, "Your turn begins now!");
         }
 
         function specialAction() {
@@ -2054,10 +2124,6 @@
             
             // Update game grid
             updateGameGrid();
-            
-            // Update scan view button
-            document.getElementById('scanViewBtn').textContent = 
-                gameState.isScanView ? '📡 NORMAL VIEW' : '🔍 SCAN VIEW';
             
             // Update tips
             const tips = [
@@ -2169,7 +2235,7 @@
                         } else {
                             // Enemy ships - only show if revealed
                             cell.classList.add(`ship-p${ship.player}`);
-                            if (ship.revealed || gameState.isScanView || inScanArea) {
+                            if (ship.revealed || inScanArea) {
                                 cell.classList.add('revealed');
                                 if (inScanArea) {
                                     cell.classList.add('scanned');
@@ -2219,12 +2285,12 @@
                 scanAreas: [],
                 mines: [],
                 explosions: [],
-                isScanView: false,
                 placedShips: [],
                 ships: []
             };
             
             document.getElementById('startScreen').style.display = 'flex';
+            document.getElementById('readyScreen').style.display = 'none';
             document.getElementById('placementScreen').style.display = 'none';
             document.getElementById('gameScreen').style.display = 'none';
             document.getElementById('placementTitle').textContent = 'PLAYER 1: DEPLOY YOUR FLEET';
