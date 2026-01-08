@@ -1,731 +1,883 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <title>Battleship - Online Multiplayer</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-            -webkit-text-size-adjust: 100%;
-        }
-
-        body {
-            background: #000000;
-            min-height: 100vh;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        /* Matchmaking Screen */
-        #matchmakingScreen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #1a2980, #26d0ce);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            color: white;
-            padding: 20px;
-            overflow-y: auto;
-        }
-
-        .matchmaking-container {
-            max-width: 600px;
-            width: 90%;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 30px;
-            margin: 20px;
-            backdrop-filter: blur(10px);
-            text-align: center;
-        }
-
-        #matchmakingScreen h1 {
-            font-size: clamp(2.5rem, 8vw, 3.5rem);
-            margin-bottom: 20px;
-            color: white;
-            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
-        }
-
-        #matchmakingScreen h2 {
-            font-size: clamp(1.5rem, 5vw, 2rem);
-            margin-bottom: 20px;
-            color: #3498db;
-        }
-
-        .player-info-card {
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 15px;
-            padding: 15px;
-            margin: 15px 0;
-            text-align: center;
-        }
-
-        .player-info-card h3 {
-            color: #3498db;
-            margin-bottom: 10px;
-            font-size: 1.1rem;
-        }
-
-        #playerIdDisplay {
-            font-family: monospace;
-            background: rgba(0, 0, 0, 0.3);
-            padding: 8px;
-            border-radius: 8px;
-            font-size: 1rem;
-            word-break: break-all;
-            color: #fff;
-            margin: 8px 0;
-        }
-
-        .searching-dots {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin: 20px 0;
-        }
-
-        .searching-dots .dot {
-            width: 16px;
-            height: 16px;
-            background: #2ecc71;
-            border-radius: 50%;
-            animation: searching 1.4s infinite;
-        }
-
-        .searching-dots .dot:nth-child(2) { animation-delay: 0.2s; }
-        .searching-dots .dot:nth-child(3) { animation-delay: 0.4s; }
-
-        @keyframes searching {
-            0%, 60%, 100% { transform: translateY(0); opacity: 0.6; }
-            30% { transform: translateY(-10px); opacity: 1; }
-        }
-
-        .matchmaking-option {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-            margin: 15px 0;
-            border: 2px solid transparent;
-        }
-
-        .matchmaking-option h3 {
-            color: white;
-            margin-bottom: 10px;
-            font-size: 1.3rem;
-        }
-
-        .matchmaking-option p {
-            color: #ecf0f1;
-            margin-bottom: 15px;
-            opacity: 0.9;
-        }
-
-        .btn {
-            padding: 15px 30px;
-            font-size: 1.2rem;
-            font-weight: bold;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin: 8px;
-            min-width: 200px;
-        }
-
-        .btn-primary {
-            background: linear-gradient(to right, #2ecc71, #27ae60);
-            color: white;
-            box-shadow: 0 0 20px rgba(46, 204, 113, 0.5);
-        }
-
-        .btn-secondary {
-            background: linear-gradient(to right, #e74c3c, #c0392b);
-            color: white;
-        }
-
-        .btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
-        }
-
-        .room-creator {
-            background: rgba(46, 204, 113, 0.2);
-            padding: 15px;
-            border-radius: 10px;
-            margin: 15px 0;
-            text-align: center;
-        }
-
-        .room-creator p {
-            color: #2ecc71;
-            font-weight: bold;
-            font-size: 1rem;
-        }
-
-        #countdown {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: #2ecc71;
-            animation: pulse 1s infinite;
-            display: inline-block;
-            margin: 0 5px;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.1); opacity: 0.8; }
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* Game Screen */
-        #gameScreen {
-            display: none;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #1a2980, #26d0ce);
-            padding: 15px;
-            overflow-y: auto;
-        }
-
-        .header {
-            text-align: center;
-            color: white;
-            margin-bottom: 15px;
-            padding: 15px;
-        }
-
-        .header h1 {
-            font-size: clamp(1.5rem, 6vw, 2.2rem);
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-            margin-bottom: 10px;
-        }
-
-        .player-turn {
-            font-size: clamp(1.1rem, 4vw, 1.5rem);
-            font-weight: bold;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 10px 25px;
-            border-radius: 50px;
-            display: inline-block;
-            margin-top: 8px;
-        }
-
-        .game-container {
-            max-width: 1000px;
-            margin: 0 auto 20px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 20px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-        }
-
-        .player-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding: 12px;
-            background: rgba(52, 152, 219, 0.1);
-            border-radius: 12px;
-        }
-
-        .player-info-item {
-            text-align: center;
-        }
-
-        .player-info-item h3 {
-            color: #2c3e50;
-            margin-bottom: 5px;
-            font-size: 1rem;
-        }
-
-        .player-info-item p {
-            color: #3498db;
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
-
-        .grids-container {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            margin: 20px 0;
-        }
-
-        @media (min-width: 768px) {
-            .grids-container {
-                flex-direction: row;
-                justify-content: center;
-                gap: 30px;
-            }
-        }
-
-        .grid-wrapper {
-            text-align: center;
-        }
-
-        .grid-wrapper h3 {
-            color: #34495e;
-            margin-bottom: 10px;
-            font-size: 1.2rem;
-            font-weight: bold;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(10, 1fr);
-            grid-template-rows: repeat(10, 1fr);
-            gap: 1px;
-            width: min(95vw, 300px);
-            height: min(95vw, 300px);
-            border: 3px solid #2c3e50;
-            background-color: #3498db;
-            margin: 0 auto;
-        }
-
-        .cell {
-            background-color: #ecf0f1;
-            border: 1px solid #bdc3c7;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-            user-select: none;
-            position: relative;
-        }
-
-        .cell:hover {
-            background-color: #d6eaf8;
-        }
-
-        .cell.hit::after {
-            content: "💥";
-            font-size: 1.3rem;
-            animation: hitEffect 0.5s;
-        }
-
-        .cell.miss::after {
-            content: "●";
-            color: #7f8c8d;
-            font-size: 1.3rem;
-            animation: missEffect 0.5s;
-        }
-
-        .cell.ship {
-            background-color: #2c3e50;
-        }
-
-        .cell.ship.hit {
-            background-color: #c0392b;
-        }
-
-        @keyframes hitEffect {
-            0% { transform: scale(0); }
-            70% { transform: scale(1.5); }
-            100% { transform: scale(1); }
-        }
-
-        @keyframes missEffect {
-            0% { transform: scale(0); }
-            100% { transform: scale(1); }
-        }
-
-        .controls {
-            text-align: center;
-            margin-top: 20px;
-            padding: 15px;
-            background: rgba(236, 240, 241, 0.9);
-            border-radius: 12px;
-        }
-
-        .controls h3 {
-            color: #2c3e50;
-            margin-bottom: 12px;
-            font-size: 1.2rem;
-        }
-
-        .control-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .ship-status {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 15px;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 8px;
-        }
-
-        .ship-status-item {
-            background: #ecf0f1;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .ship-status-item.sunk {
-            background: #e74c3c;
-            color: white;
-        }
-
-        .chat-container {
-            margin-top: 20px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 12px;
-            padding: 15px;
-        }
-
-        .chat-messages {
-            height: 120px;
-            overflow-y: auto;
-            margin-bottom: 12px;
-            padding: 8px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-        }
-
-        .message {
-            margin-bottom: 6px;
-            padding: 4px;
-            border-radius: 4px;
-        }
-
-        .chat-input {
-            display: flex;
-            gap: 8px;
-        }
-
-        .chat-input input {
-            flex: 1;
-            padding: 10px;
-            border: 2px solid #3498db;
-            border-radius: 8px;
-            font-size: 0.9rem;
-        }
-
-        /* Game Over Overlay */
-        .game-over-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.95);
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-            text-align: center;
-            padding: 20px;
-        }
-
-        .game-over-content {
-            max-width: 500px;
-            width: 90%;
-            background: linear-gradient(135deg, #1a2980, #26d0ce);
-            padding: 30px;
-            border-radius: 20px;
-            box-shadow: 0 0 40px rgba(46, 204, 113, 0.5);
-        }
-
-        @media (max-width: 768px) {
-            .grid {
-                width: min(95vw, 280px);
-                height: min(95vw, 280px);
-            }
-            
-            .btn {
-                padding: 12px 25px;
-                font-size: 1rem;
-                min-width: 180px;
-            }
-            
-            .player-info {
-                flex-direction: column;
-                gap: 12px;
-            }
-        }
-    </style>
-    <!-- Back4App Parse SDK -->
-    <script src="https://npmcdn.com/parse/dist/parse.min.js"></script>
-</head>
-<body>
-    <!-- Matchmaking Screen -->
-    <div id="matchmakingScreen">
-        <div class="matchmaking-container">
-            <h1>🌐 ONLINE BATTLE</h1>
-            
-            <!-- Player Info -->
-            <div class="player-info-card">
-                <h3>Your Player ID:</h3>
-                <p id="playerIdDisplay">Loading...</p>
-            </div>
-            
-            <!-- Matchmaking Status -->
-            <h2 id="matchmakingStatus">Ready to Battle?</h2>
-            
-            <div class="searching-dots">
-                <div class="dot"></div>
-                <div class="dot"></div>
-                <div class="dot"></div>
-            </div>
-            
-            <!-- Quick Match -->
-            <div id="quickMatch" class="matchmaking-option">
-                <h3>⚡ Quick Match</h3>
-                <p>Find a random opponent instantly</p>
-                <button class="btn btn-primary" onclick="startQuickMatch()" id="findBtn">
-                    🔍 Find Match
-                </button>
-            </div>
-            
-            <!-- Room Status -->
-            <div id="queueStatus" class="hidden">
-                <h3>🔍 Creating game room...</h3>
-                <p>Please wait...</p>
-            </div>
-            
-            <div id="roomStatus" class="hidden">
-                <div class="room-creator">
-                    <h3>✅ Room Created!</h3>
-                    <p>Share this ID with a friend:</p>
-                    <h2 id="roomId">---</h2>
-                    <p>Waiting for opponent...</p>
-                </div>
-            </div>
-            
-            <div id="foundOpponent" class="hidden">
-                <h3>🎮 Opponent Found!</h3>
-                <p>Starting game in <span id="countdown">3</span></p>
-                <div class="room-creator">
-                    <p>Playing against: <span id="roomCreator">Opponent</span></p>
-                </div>
-            </div>
-            
-            <!-- Control Buttons -->
-            <div class="control-buttons" style="margin-top: 20px;">
-                <button class="btn btn-secondary" onclick="cancelMatchmaking()" id="cancelBtn" class="hidden">
-                    ❌ Cancel
-                </button>
-                <button class="btn btn-secondary" onclick="exitToMenu()">
-                    🏠 Exit to Menu
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Game Screen -->
-    <div id="gameScreen">
-        <div class="header">
-            <h1>🚢 ONLINE BATTLE</h1>
-            <div class="player-turn" id="turnIndicator">Setting up game...</div>
-        </div>
-
-        <div class="game-container">
-            <!-- Player Info -->
-            <div class="player-info">
-                <div class="player-info-item">
-                    <h3>You</h3>
-                    <p id="playerName">Player 1</p>
-                </div>
-                <div class="player-info-item">
-                    <h3>VS</h3>
-                    <p style="color: #e74c3c;">ONLINE</p>
-                </div>
-                <div class="player-info-item">
-                    <h3>Opponent</h3>
-                    <p id="opponentName">Waiting...</p>
-                </div>
-            </div>
-
-            <!-- Game Grids -->
-            <div class="grids-container">
-                <div class="grid-wrapper">
-                    <h3>Your Fleet</h3>
-                    <div class="grid" id="playerGrid"></div>
-                </div>
-                <div class="grid-wrapper">
-                    <h3>Attack Enemy</h3>
-                    <div class="grid" id="attackGrid"></div>
-                </div>
-            </div>
-
-            <!-- Controls -->
-            <div class="controls">
-                <h3>Game Controls</h3>
-                <div class="control-buttons">
-                    <button class="btn btn-secondary" onclick="surrenderGame()">
-                        🏳️ Surrender
-                    </button>
-                    <button class="btn btn-secondary" onclick="exitGame()">
-                        🚪 Exit Game
-                    </button>
-                </div>
-            </div>
-
-            <!-- Ship Status -->
-            <div class="ship-status" id="shipStatus">
-                <div class="ship-status-item">🚢 Carrier (0/5)</div>
-                <div class="ship-status-item">🚢 Battleship (0/4)</div>
-                <div class="ship-status-item">🚢 Cruiser (0/3)</div>
-                <div class="ship-status-item">🚢 Submarine (0/3)</div>
-                <div class="ship-status-item">🚢 Destroyer (0/2)</div>
-            </div>
-
-            <!-- Simple Chat -->
-            <div class="chat-container">
-                <h3>💬 Quick Chat</h3>
-                <div class="chat-messages" id="chatMessages">
-                    <div class="message"><strong>System:</strong> Welcome to Battleship!</div>
-                </div>
-                <div class="chat-input">
-                    <input type="text" id="chatInput" placeholder="Type a message..." 
-                           onkeypress="if(event.key === 'Enter') sendChatMessage()">
-                    <button class="btn btn-primary" onclick="sendChatMessage()">Send</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Game Over Overlay -->
-    <div id="gameOverOverlay" class="game-over-overlay">
-        <div class="game-over-content">
-            <h1 id="gameOverTitle" style="font-size: 2.5rem; margin-bottom: 15px; color: #2ecc71;">VICTORY!</h1>
-            <p id="gameOverMessage" style="font-size: 1.3rem; margin-bottom: 25px;">Thanks for playing!</p>
-            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                <button id="rematchBtn" style="
-                    padding: 12px 25px;
-                    font-size: 1.1rem;
-                    background: #3498db;
-                    color: white;
-                    border: none;
-                    border-radius: 8px;
-                    cursor: pointer;
-                ">Play Again</button>
-                <button id="menuBtn" style="
-                    padding: 12px 25px;
-                    font-size: 1.1rem;
-                    background: #95a5a6;
-                    color: white;
-                    border: none;
-                    border-radius: 8px;
-                    cursor: pointer;
-                ">Main Menu</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Backend Logic -->
-    <script src="backend.js"></script>
+// ============================
+// BACK4APP ONLINE MULTIPLAYER
+// ============================
+
+const onlineBackend = {
+    // Configuration
+    config: {
+        appId: "okHWTaxUkPKB140QAbSIcC4719YSK3Hdgn53BKR7",
+        javascriptKey: "ZDkeTkYgyvV9pqObdQueuhj5E7uoWBs5NMDX6hDy",
+        serverURL: "https://parseapi.back4app.com/"
+    },
     
-    <script>
-        // Frontend functions
-        function startQuickMatch() {
-            onlineBackend.startMatchmaking();
-            document.getElementById('findBtn').classList.add('hidden');
-            document.getElementById('cancelBtn').classList.remove('hidden');
-            document.getElementById('queueStatus').classList.remove('hidden');
-            document.getElementById('quickMatch').classList.add('hidden');
+    // Game state
+    state: {
+        playerId: null,
+        playerName: "",
+        gameId: null,
+        playerNumber: null,
+        opponentId: null,
+        opponentName: "Opponent",
+        gameActive: false,
+        currentTurn: 1,
+        ships: { player1: [], player2: [] },
+        attacks: { player1: [], player2: [] },
+        pollingInterval: null,
+        gamePhase: "placement",
+        shipTypes: [
+            { name: "Carrier", size: 5, id: "carrier" },
+            { name: "Battleship", size: 4, id: "battleship" },
+            { name: "Cruiser", size: 3, id: "cruiser" },
+            { name: "Submarine", size: 3, id: "submarine" },
+            { name: "Destroyer", size: 2, id: "destroyer" }
+        ],
+        placedShips: 0,
+        orientation: "vertical"
+    },
+    
+    // Initialize
+    initialize: function() {
+        console.log("Initializing Battleship Online...");
+        
+        try {
+            // Initialize Parse
+            Parse.initialize(this.config.appId, this.config.javascriptKey);
+            Parse.serverURL = this.config.serverURL;
+            console.log("Parse initialized successfully");
+            
+            // Generate player ID and name
+            this.state.playerId = 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+            
+            // Get or create player name
+            const savedName = localStorage.getItem('battleship_playerName');
+            if (savedName) {
+                this.state.playerName = savedName;
+            } else {
+                const names = ["Captain", "Admiral", "Commander", "Sailor", "Pirate", "Navigator"];
+                const randomName = names[Math.floor(Math.random() * names.length)];
+                this.state.playerName = `${randomName}_${Math.floor(Math.random() * 1000)}`;
+                localStorage.setItem('battleship_playerName', this.state.playerName);
+            }
+            
+            console.log("Player ID:", this.state.playerId);
+            console.log("Player Name:", this.state.playerName);
+            
+            // Update UI IMMEDIATELY
+            this.updatePlayerUI();
+            
+            // Test connection
+            this.testConnection();
+            
+        } catch (error) {
+            console.error("Initialization error:", error);
+            this.initializeOffline();
+        }
+    },
+    
+    updatePlayerUI: function() {
+        // Update player name in game screen
+        const playerNameElement = document.getElementById('playerName');
+        if (playerNameElement) {
+            playerNameElement.textContent = this.state.playerName;
         }
         
-        function cancelMatchmaking() {
-            onlineBackend.cancelMatchmaking();
-            document.getElementById('findBtn').classList.remove('hidden');
-            document.getElementById('cancelBtn').classList.add('hidden');
+        // Update player ID in matchmaking screen
+        const playerIdElement = document.getElementById('playerIdDisplay');
+        if (playerIdElement) {
+            // Show shortened version for display
+            const shortId = this.state.playerId.length > 15 
+                ? this.state.playerId.substring(0, 15) + '...' 
+                : this.state.playerId;
+            playerIdElement.textContent = shortId;
+            playerIdElement.style.color = '#4FC3F7';
+            playerIdElement.style.fontWeight = 'bold';
+        }
+        
+        console.log("UI updated with Player ID:", this.state.playerId);
+    },
+    
+    testConnection: async function() {
+        try {
+            // Simple test to check if Back4App is accessible
+            const TestObject = Parse.Object.extend("Test");
+            const test = new TestObject();
+            test.set("testField", "connection_test");
+            
+            // This will fail (no Test class) but that's OK - we just want to test connectivity
+            await test.save();
+            console.log("Back4App connection test successful");
+        } catch (error) {
+            // We expect an error since Test class doesn't exist, but connection worked
+            console.log("Back4App is accessible (expected error):", error.code);
+        }
+    },
+    
+    initializeOffline: function() {
+        console.log("Initializing in offline mode...");
+        this.state.playerId = 'offline_' + Date.now();
+        this.state.playerName = "Offline_Player";
+        this.updatePlayerUI();
+        
+        // Show offline indicator
+        const playerIdElement = document.getElementById('playerIdDisplay');
+        if (playerIdElement) {
+            playerIdElement.innerHTML = "🔴 OFFLINE MODE<br><small>Playing locally only</small>";
+        }
+    },
+    
+    // ============================
+    // MATCHMAKING
+    // ============================
+    
+    startMatchmaking: async function() {
+        console.log("Starting matchmaking for player:", this.state.playerId);
+        
+        // Update UI
+        document.getElementById('matchmakingStatus').textContent = "Creating game room...";
+        document.getElementById('searchingDots').classList.remove('hidden');
+        
+        try {
+            await this.createNewRoom();
+        } catch (error) {
+            console.error("Matchmaking failed:", error);
+            alert("Failed to create game room. Please try again.");
+            this.cancelMatchmaking();
+        }
+    },
+    
+    createNewRoom: async function() {
+        console.log("Creating new game room...");
+        
+        try {
+            const GameRoom = Parse.Object.extend("GameRoom");
+            const gameRoom = new GameRoom();
+            
+            // Set required fields
+            gameRoom.set("player1Id", this.state.playerId);
+            gameRoom.set("player1Name", this.state.playerName);
+            gameRoom.set("status", "waiting");
+            gameRoom.set("currentTurn", 1);
+            gameRoom.set("createdAt", new Date());
+            
+            // Set optional fields
+            gameRoom.set("player2Id", "");
+            gameRoom.set("player2Name", "");
+            gameRoom.set("player1Ready", false);
+            gameRoom.set("player2Ready", false);
+            gameRoom.set("winner", "");
+            gameRoom.set("ships", JSON.stringify({ player1: [], player2: [] }));
+            gameRoom.set("attacks", JSON.stringify({ player1: [], player2: [] }));
+            
+            const savedRoom = await gameRoom.save();
+            this.state.gameId = savedRoom.id;
+            console.log("Game room created successfully! ID:", this.state.gameId);
+            
+            // Update UI
             document.getElementById('queueStatus').classList.add('hidden');
-            document.getElementById('roomStatus').classList.add('hidden');
-            document.getElementById('foundOpponent').classList.add('hidden');
-            document.getElementById('quickMatch').classList.remove('hidden');
+            document.getElementById('roomStatus').classList.remove('hidden');
+            document.getElementById('roomId').textContent = this.state.gameId.substring(0, 12) + '...';
+            document.getElementById('roomCreator').textContent = this.state.playerName;
+            document.getElementById('matchmakingStatus').textContent = "Room created!";
+            
+            // Start polling for opponent
+            this.pollForOpponent();
+            
+        } catch (error) {
+            console.error("Error creating room:", error);
+            throw error;
+        }
+    },
+    
+    pollForOpponent: function() {
+        if (!this.state.gameId) return;
+        
+        console.log("Starting to poll for opponent...");
+        
+        this.state.pollingInterval = setInterval(async () => {
+            try {
+                const query = new Parse.Query("GameRoom");
+                const gameRoom = await query.get(this.state.gameId);
+                
+                const player2Id = gameRoom.get("player2Id");
+                const status = gameRoom.get("status");
+                
+                if (status === "cancelled") {
+                    clearInterval(this.state.pollingInterval);
+                    alert("Room was cancelled.");
+                    this.cancelMatchmaking();
+                    return;
+                }
+                
+                if (player2Id && player2Id !== "") {
+                    // Opponent found!
+                    clearInterval(this.state.pollingInterval);
+                    
+                    this.state.playerNumber = 1;
+                    this.state.opponentId = player2Id;
+                    this.state.opponentName = gameRoom.get("player2Name") || "Opponent";
+                    
+                    // Update room status
+                    gameRoom.set("status", "active");
+                    await gameRoom.save();
+                    
+                    // Update UI
+                    document.getElementById('opponentName').textContent = this.state.opponentName;
+                    this.opponentFound();
+                }
+                
+            } catch (error) {
+                console.error("Polling error:", error);
+                if (error.code === 101) {
+                    clearInterval(this.state.pollingInterval);
+                    alert("Game room was deleted.");
+                    this.cancelMatchmaking();
+                }
+            }
+        }, 2000);
+    },
+    
+    joinRoom: async function(roomId) {
+        console.log("Attempting to join room:", roomId);
+        
+        try {
+            const query = new Parse.Query("GameRoom");
+            const gameRoom = await query.get(roomId);
+            
+            const status = gameRoom.get("status");
+            if (status !== "waiting") {
+                alert("Room is not available.");
+                return;
+            }
+            
+            const player2Id = gameRoom.get("player2Id");
+            if (player2Id && player2Id !== "") {
+                alert("Room is already full!");
+                return;
+            }
+            
+            // Join the room
+            gameRoom.set("player2Id", this.state.playerId);
+            gameRoom.set("player2Name", this.state.playerName);
+            gameRoom.set("status", "active");
+            await gameRoom.save();
+            
+            this.state.gameId = roomId;
+            this.state.playerNumber = 2;
+            this.state.opponentId = gameRoom.get("player1Id");
+            this.state.opponentName = gameRoom.get("player1Name") || "Player 1";
+            
+            // Start game immediately
+            this.startGame();
+            
+        } catch (error) {
+            console.error("Error joining room:", error);
+            alert("Could not join room. It may have been deleted.");
+        }
+    },
+    
+    opponentFound: function() {
+        console.log("Opponent found! Starting game...");
+        
+        document.getElementById('roomStatus').classList.add('hidden');
+        document.getElementById('foundOpponent').classList.remove('hidden');
+        
+        // Quick countdown
+        let countdown = 3;
+        const countdownElement = document.getElementById('countdown');
+        countdownElement.textContent = countdown;
+        
+        const countdownInterval = setInterval(() => {
+            countdown--;
+            countdownElement.textContent = countdown;
+            
+            if (countdown <= 0) {
+                clearInterval(countdownInterval);
+                this.startGame();
+            }
+        }, 1000);
+    },
+    
+    cancelMatchmaking: function() {
+        console.log("Cancelling matchmaking...");
+        
+        if (this.state.pollingInterval) {
+            clearInterval(this.state.pollingInterval);
         }
         
-        function exitToMenu() {
-            if (confirm('Return to main menu?')) {
-                onlineBackend.cleanup();
-                window.location.href = '../index.html';
+        if (this.state.gameId) {
+            this.markRoomAsCancelled();
+        }
+        
+        this.resetUI();
+    },
+    
+    markRoomAsCancelled: async function() {
+        try {
+            const query = new Parse.Query("GameRoom");
+            const gameRoom = await query.get(this.state.gameId);
+            gameRoom.set("status", "cancelled");
+            await gameRoom.save();
+        } catch (error) {
+            console.error("Error cancelling room:", error);
+        }
+    },
+    
+    resetUI: function() {
+        document.getElementById('matchmakingStatus').textContent = "READY FOR BATTLE?";
+        document.getElementById('queueStatus').classList.add('hidden');
+        document.getElementById('roomStatus').classList.add('hidden');
+        document.getElementById('foundOpponent').classList.add('hidden');
+        document.getElementById('searchingDots').classList.add('hidden');
+        document.getElementById('findBtn').classList.remove('hidden');
+        document.getElementById('cancelBtn').classList.add('hidden');
+        document.getElementById('quickMatch').classList.remove('hidden');
+    },
+    
+    // ============================
+    // GAME LOGIC
+    // ============================
+    
+    startGame: function() {
+        console.log("Starting game! Player:", this.state.playerNumber);
+        
+        // Hide matchmaking, show game
+        document.getElementById('matchmakingScreen').classList.add('hidden');
+        document.getElementById('gameScreen').style.display = 'block';
+        
+        // Update opponent name
+        document.getElementById('opponentName').textContent = this.state.opponentName;
+        
+        // Initialize grids
+        this.createGrids();
+        
+        // Start game polling
+        this.startGamePolling();
+        
+        // Reset game state
+        this.state.gameActive = true;
+        this.state.gamePhase = "placement";
+        this.state.placedShips = 0;
+        this.state.ships = { player1: [], player2: [] };
+        this.state.attacks = { player1: [], player2: [] };
+        
+        this.updateTurnIndicator();
+        this.addChatMessage("System", `Game started! You are Player ${this.state.playerNumber}`);
+        
+        // Auto-place ships for player 2 (for testing)
+        if (this.state.playerNumber === 2) {
+            setTimeout(() => this.autoPlaceShips(), 1000);
+        }
+    },
+    
+    createGrids: function() {
+        const playerGrid = document.getElementById('playerGrid');
+        const attackGrid = document.getElementById('attackGrid');
+        
+        // Clear grids
+        playerGrid.innerHTML = '';
+        attackGrid.innerHTML = '';
+        
+        // Create player grid
+        for (let row = 0; row < 10; row++) {
+            for (let col = 0; col < 10; col++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.dataset.row = row;
+                cell.dataset.col = col;
+                
+                cell.addEventListener('click', () => {
+                    if (this.state.gamePhase === "placement") {
+                        this.placeShip(row, col, this.state.orientation);
+                    }
+                });
+                
+                playerGrid.appendChild(cell);
             }
         }
         
-        function surrenderGame() {
-            if (confirm('Are you sure you want to surrender?')) {
-                onlineBackend.surrenderGame();
+        // Create attack grid
+        for (let row = 0; row < 10; row++) {
+            for (let col = 0; col < 10; col++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.dataset.row = row;
+                cell.dataset.col = col;
+                
+                cell.addEventListener('click', () => this.attack(row, col));
+                attackGrid.appendChild(cell);
             }
         }
         
-        function exitGame() {
-            if (confirm('Exit this game?')) {
-                onlineBackend.leaveGame();
+        this.updateShipStatus();
+    },
+    
+    autoPlaceShips: function() {
+        console.log("Auto-placing ships...");
+        
+        const placements = [
+            { row: 0, col: 0, vertical: true },
+            { row: 0, col: 2, vertical: true },
+            { row: 0, col: 4, vertical: true },
+            { row: 0, col: 6, vertical: true },
+            { row: 2, col: 8, vertical: false }
+        ];
+        
+        let index = 0;
+        const placeNext = () => {
+            if (index < 5 && this.state.placedShips < 5) {
+                const pos = placements[index];
+                if (this.placeShip(pos.row, pos.col, pos.vertical)) {
+                    index++;
+                }
+                setTimeout(placeNext, 500);
             }
+        };
+        
+        placeNext();
+    },
+    
+    placeShip: function(row, col, vertical = true) {
+        if (this.state.gamePhase !== "placement") return false;
+        if (this.state.placedShips >= 5) return false;
+        
+        const shipType = this.state.shipTypes[this.state.placedShips];
+        const playerKey = `player${this.state.playerNumber}`;
+        
+        if (this.canPlaceShip(row, col, shipType.size, vertical, playerKey)) {
+            const cells = [];
+            for (let i = 0; i < shipType.size; i++) {
+                cells.push({
+                    row: vertical ? row + i : row,
+                    col: vertical ? col : col + i
+                });
+            }
+            
+            this.state.ships[playerKey].push({
+                ...shipType,
+                cells: cells,
+                hits: 0,
+                sunk: false
+            });
+            
+            this.state.placedShips++;
+            
+            this.updateGrids();
+            this.addChatMessage("You", `Placed ${shipType.name}`);
+            
+            if (this.state.placedShips >= 5) {
+                this.markReady();
+                this.addChatMessage("System", "All ships placed! Waiting for opponent...");
+            }
+            
+            return true;
+        } else {
+            this.addChatMessage("System", `Can't place ${shipType.name} there!`);
+            return false;
+        }
+    },
+    
+    canPlaceShip: function(startRow, startCol, size, vertical, playerKey) {
+        for (let i = 0; i < size; i++) {
+            const row = vertical ? startRow + i : startRow;
+            const col = vertical ? startCol : startCol + i;
+            
+            if (row >= 10 || col >= 10) return false;
+            
+            const existingShip = this.state.ships[playerKey].find(ship =>
+                ship.cells.some(cell => cell.row === row && cell.col === col)
+            );
+            if (existingShip) return false;
+        }
+        return true;
+    },
+    
+    markReady: async function() {
+        try {
+            const query = new Parse.Query("GameRoom");
+            const gameRoom = await query.get(this.state.gameId);
+            
+            if (this.state.playerNumber === 1) {
+                gameRoom.set("player1Ready", true);
+            } else {
+                gameRoom.set("player2Ready", true);
+            }
+            
+            gameRoom.set("ships", JSON.stringify(this.state.ships));
+            await gameRoom.save();
+            
+        } catch (error) {
+            console.error("Error marking ready:", error);
+        }
+    },
+    
+    attack: async function(row, col) {
+        if (this.state.gamePhase !== "battle") {
+            this.addChatMessage("System", "Wait for battle phase!");
+            return;
         }
         
-        function sendChatMessage() {
-            const input = document.getElementById('chatInput');
-            const message = input.value.trim();
-            if (message) {
-                onlineBackend.sendChatMessage(message);
-                input.value = '';
-            }
+        if (this.state.currentTurn !== this.state.playerNumber) {
+            this.addChatMessage("System", "Not your turn!");
+            return;
         }
         
-        // Handle Enter key in chat
-        document.getElementById('chatInput')?.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                sendChatMessage();
-            }
+        const attackKey = `${row},${col}`;
+        const playerKey = `player${this.state.playerNumber}`;
+        const enemyKey = `player${this.state.playerNumber === 1 ? 2 : 1}`;
+        
+        if (this.state.attacks[playerKey].includes(attackKey)) {
+            this.addChatMessage("System", "Already attacked here!");
+            return;
+        }
+        
+        this.state.attacks[playerKey].push(attackKey);
+        
+        let hit = false;
+        let shipHit = null;
+        
+        this.state.ships[enemyKey].forEach(ship => {
+            ship.cells.forEach(cell => {
+                if (cell.row === row && cell.col === col) {
+                    hit = true;
+                    ship.hits++;
+                    shipHit = ship;
+                    
+                    if (ship.hits === ship.size) {
+                        ship.sunk = true;
+                        this.addChatMessage("System", `Sunk ${ship.name}!`);
+                    }
+                }
+            });
         });
         
-        // Game over overlay handlers
-        document.getElementById('rematchBtn').onclick = function() {
-            document.getElementById('gameOverOverlay').style.display = 'none';
-            onlineBackend.rematch();
-        };
+        this.updateGrids();
         
-        document.getElementById('menuBtn').onclick = function() {
-            window.location.href = '../index.html';
-        };
+        await this.saveAttack(row, col, hit);
         
-        // Custom game over display
-        window.showGameOver = function(message, isWin) {
-            const overlay = document.getElementById('gameOverOverlay');
-            const title = document.getElementById('gameOverTitle');
-            const messageEl = document.getElementById('gameOverMessage');
+        this.addChatMessage("You", `${hit ? 'Hit' : 'Miss'} at (${row},${col})`);
+        
+        if (this.checkWin(enemyKey)) {
+            await this.endGame(this.state.playerNumber);
+            return;
+        }
+        
+        await this.switchTurns();
+    },
+    
+    saveAttack: async function(row, col, hit) {
+        try {
+            const query = new Parse.Query("GameRoom");
+            const gameRoom = await query.get(this.state.gameId);
             
-            title.textContent = isWin ? '🎉 VICTORY! 🎉' : '💀 DEFEAT! 💀';
-            title.style.color = isWin ? '#2ecc71' : '#e74c3c';
-            messageEl.textContent = message;
+            const attacks = JSON.parse(gameRoom.get("attacks") || '{"player1":[],"player2":[]}');
+            const playerKey = `player${this.state.playerNumber}`;
             
-            overlay.style.display = 'flex';
-        };
+            attacks[playerKey].push(`${row},${col},${hit ? 'hit' : 'miss'}`);
+            
+            gameRoom.set("attacks", JSON.stringify(attacks));
+            await gameRoom.save();
+            
+        } catch (error) {
+            console.error("Error saving attack:", error);
+        }
+    },
+    
+    switchTurns: async function() {
+        try {
+            const query = new Parse.Query("GameRoom");
+            const gameRoom = await query.get(this.state.gameId);
+            
+            const newTurn = gameRoom.get("currentTurn") === 1 ? 2 : 1;
+            gameRoom.set("currentTurn", newTurn);
+            await gameRoom.save();
+            
+            this.state.currentTurn = newTurn;
+            this.updateTurnIndicator();
+            
+        } catch (error) {
+            console.error("Error switching turns:", error);
+        }
+    },
+    
+    checkWin: function(playerKey) {
+        return this.state.ships[playerKey].every(ship => ship.sunk);
+    },
+    
+    // ============================
+    // GAME POLLING
+    // ============================
+    
+    startGamePolling: function() {
+        if (this.state.pollingInterval) {
+            clearInterval(this.state.pollingInterval);
+        }
         
-        // Initialize when page loads
-        window.onload = function() {
-            onlineBackend.initialize();
-        };
-    </script>
-</body>
-</html>
+        this.state.pollingInterval = setInterval(async () => {
+            if (!this.state.gameActive || !this.state.gameId) return;
+            
+            try {
+                const query = new Parse.Query("GameRoom");
+                const gameRoom = await query.get(this.state.gameId);
+                
+                const status = gameRoom.get("status");
+                if (status === "ended") {
+                    this.state.gameActive = false;
+                    clearInterval(this.state.pollingInterval);
+                    
+                    const winner = gameRoom.get("winner");
+                    if (winner === this.state.playerId) {
+                        this.showGameOver("🎉 You Win! 🎉", true);
+                    } else {
+                        this.showGameOver("💀 You Lose! 💀", false);
+                    }
+                    return;
+                }
+                
+                const ships = JSON.parse(gameRoom.get("ships") || '{"player1":[],"player2":[]}');
+                const attacks = JSON.parse(gameRoom.get("attacks") || '{"player1":[],"player2":[]}');
+                const currentTurn = gameRoom.get("currentTurn");
+                const player1Ready = gameRoom.get("player1Ready");
+                const player2Ready = gameRoom.get("player2Ready");
+                
+                this.state.ships = ships;
+                this.state.attacks = attacks;
+                this.state.currentTurn = currentTurn;
+                
+                if (player1Ready && player2Ready && this.state.gamePhase === "placement") {
+                    this.state.gamePhase = "battle";
+                    this.addChatMessage("System", "⚔️ Battle begins!");
+                }
+                
+                this.updateGrids();
+                this.updateTurnIndicator();
+                this.updateShipStatus();
+                
+            } catch (error) {
+                console.error("Polling error:", error);
+            }
+        }, 2000);
+    },
+    
+    // ============================
+    // UI UPDATES
+    // ============================
+    
+    updateGrids: function() {
+        const playerGrid = document.getElementById('playerGrid');
+        const attackGrid = document.getElementById('attackGrid');
+        const playerKey = `player${this.state.playerNumber}`;
+        const enemyKey = `player${this.state.playerNumber === 1 ? 2 : 1}`;
+        
+        // Player grid
+        for (let i = 0; i < 100; i++) {
+            const row = Math.floor(i / 10);
+            const col = i % 10;
+            const cell = playerGrid.children[i];
+            
+            if (!cell) continue;
+            
+            cell.className = 'cell';
+            
+            // Show ships
+            const shipHere = this.state.ships[playerKey].find(ship =>
+                ship.cells.some(c => c.row === row && c.col === col)
+            );
+            
+            if (shipHere) {
+                cell.classList.add('ship');
+                
+                // Check hits
+                const enemyAttacks = this.state.attacks[enemyKey] || [];
+                const wasHit = enemyAttacks.some(attack => {
+                    const [r, c] = attack.split(',');
+                    return parseInt(r) === row && parseInt(c) === col;
+                });
+                
+                if (wasHit) {
+                    cell.classList.add('hit');
+                }
+            }
+            
+            // Show misses
+            const enemyAttacks = this.state.attacks[enemyKey] || [];
+            enemyAttacks.forEach(attackStr => {
+                const [r, c, result] = attackStr.split(',');
+                if (parseInt(r) === row && parseInt(c) === col && result === 'miss') {
+                    cell.classList.add('miss');
+                }
+            });
+        }
+        
+        // Attack grid
+        for (let i = 0; i < 100; i++) {
+            const row = Math.floor(i / 10);
+            const col = i % 10;
+            const cell = attackGrid.children[i];
+            
+            if (!cell) continue;
+            
+            cell.className = 'cell';
+            
+            // Show attacks
+            const playerAttacks = this.state.attacks[playerKey] || [];
+            playerAttacks.forEach(attackStr => {
+                const [r, c, result] = attackStr.split(',');
+                if (parseInt(r) === row && parseInt(c) === col) {
+                    cell.classList.add(result);
+                }
+            });
+        }
+    },
+    
+    updateTurnIndicator: function() {
+        let text = "";
+        if (this.state.gamePhase === "placement") {
+            text = `Place ships (${this.state.placedShips}/5)`;
+        } else if (this.state.currentTurn === this.state.playerNumber) {
+            text = "🎯 Your Turn!";
+        } else {
+            text = "⏳ Opponent's Turn";
+        }
+        document.getElementById('turnIndicator').textContent = text;
+    },
+    
+    updateShipStatus: function() {
+        const shipStatus = document.getElementById('shipStatus');
+        shipStatus.innerHTML = '';
+        
+        const enemyKey = `player${this.state.playerNumber === 1 ? 2 : 1}`;
+        
+        this.state.ships[enemyKey].forEach(ship => {
+            const item = document.createElement('div');
+            item.className = `ship-status-item ${ship.sunk ? 'sunk' : ''}`;
+            const icon = ship.sunk ? '💀' : (ship.hits > 0 ? '🔥' : '🚢');
+            item.innerHTML = `${icon} ${ship.name} (${ship.hits}/${ship.size})`;
+            shipStatus.appendChild(item);
+        });
+        
+        if (this.state.ships[enemyKey].length === 0) {
+            this.state.shipTypes.forEach(ship => {
+                const item = document.createElement('div');
+                item.className = 'ship-status-item';
+                item.innerHTML = `🚢 ${ship.name} (0/${ship.size})`;
+                shipStatus.appendChild(item);
+            });
+        }
+    },
+    
+    addChatMessage: function(sender, message) {
+        const chatMessages = document.getElementById('chatMessages');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message';
+        
+        if (sender === "System") {
+            messageDiv.classList.add('system');
+            messageDiv.innerHTML = `<strong>System:</strong> ${message}`;
+        } else if (sender === "You") {
+            messageDiv.classList.add('player');
+            messageDiv.innerHTML = `<strong>You:</strong> ${message}`;
+        }
+        
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    },
+    
+    sendChatMessage: function() {
+        const input = document.getElementById('chatInput');
+        const message = input.value.trim();
+        
+        if (message) {
+            this.addChatMessage("You", message);
+            input.value = '';
+        }
+    },
+    
+    // ============================
+    // GAME MANAGEMENT
+    // ============================
+    
+    showGameOver: function(message, isWin) {
+        window.showGameOver(message, isWin);
+    },
+    
+    rematch: function() {
+        this.state.gameId = null;
+        this.state.gameActive = false;
+        this.state.gamePhase = "placement";
+        this.state.placedShips = 0;
+        this.state.ships = { player1: [], player2: [] };
+        this.state.attacks = { player1: [], player2: [] };
+        
+        if (this.state.pollingInterval) {
+            clearInterval(this.state.pollingInterval);
+        }
+        
+        document.getElementById('matchmakingScreen').classList.remove('hidden');
+        document.getElementById('gameScreen').style.display = 'none';
+        document.getElementById('gameOverOverlay').classList.add('hidden');
+        
+        this.resetUI();
+    },
+    
+    surrenderGame: async function() {
+        if (!confirm("Surrender?")) return;
+        
+        try {
+            const query = new Parse.Query("GameRoom");
+            const gameRoom = await query.get(this.state.gameId);
+            gameRoom.set("status", "ended");
+            gameRoom.set("winner", this.state.opponentId);
+            await gameRoom.save();
+            
+            this.showGameOver("You surrendered!", false);
+            
+        } catch (error) {
+            console.error("Error surrendering:", error);
+        }
+    },
+    
+    leaveGame: function() {
+        if (confirm("Leave game?")) {
+            window.location.href = "../index.html";
+        }
+    },
+    
+    endGame: async function(winnerNumber) {
+        try {
+            const query = new Parse.Query("GameRoom");
+            const gameRoom = await query.get(this.state.gameId);
+            
+            const winnerId = winnerNumber === 1 ? 
+                gameRoom.get("player1Id") : gameRoom.get("player2Id");
+            
+            gameRoom.set("status", "ended");
+            gameRoom.set("winner", winnerId);
+            await gameRoom.save();
+            
+            this.state.gameActive = false;
+            
+            if (winnerNumber === this.state.playerNumber) {
+                this.showGameOver("🎉 Victory! 🎉", true);
+            } else {
+                this.showGameOver("💀 Defeat! 💀", false);
+            }
+            
+        } catch (error) {
+            console.error("Error ending game:", error);
+        }
+    },
+    
+    cleanup: function() {
+        if (this.state.pollingInterval) {
+            clearInterval(this.state.pollingInterval);
+        }
+    }
+};
+
+// Make it globally available
+window.onlineBackend = onlineBackend;
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    onlineBackend.cleanup();
+});
