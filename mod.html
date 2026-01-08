@@ -387,7 +387,7 @@
             opacity: 0.5;
         }
 
-        /* MAIN GAME GRID */
+        /* MAIN GAME GRID - FIXED VISIBILITY */
         .game-grid-container {
             background: rgba(0, 40, 80, 0.8);
             border-radius: 15px;
@@ -427,17 +427,13 @@
             background: rgba(0, 255, 255, 0.2);
         }
 
-        /* SHIP VISIBILITY */
+        /* PLAYER 1 SHIPS - Blue */
         .game-cell.ship-p1 {
-            background: #3498db;
-            border-color: #2980b9;
+            background: #3498db !important;
+            border-color: #2980b9 !important;
         }
 
-        .game-cell.ship-p2 {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(0, 255, 255, 0.1);
-        }
-
+        /* PLAYER 2 SHIPS - Red (only when revealed) */
         .game-cell.ship-p2.revealed {
             background: #e74c3c !important;
             border-color: #c0392b !important;
@@ -446,12 +442,11 @@
         .game-cell.ship-p2.scanned {
             background: rgba(255, 0, 0, 0.3) !important;
             border-color: #ff0000 !important;
-            animation: pulse-red 1s infinite;
         }
 
         /* DAMAGE STATES */
         .game-cell.damaged {
-            background: linear-gradient(45deg, #3498db, #e67e22) !important;
+            opacity: 0.7;
         }
 
         .game-cell.critical {
@@ -495,11 +490,6 @@
         }
 
         /* ANIMATIONS */
-        @keyframes pulse-red {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-
         @keyframes explode {
             0% { transform: translate(-50%, -50%) scale(0); }
             70% { transform: translate(-50%, -50%) scale(1.5); }
@@ -2084,7 +2074,7 @@
             }
         }
 
-        // ========== DISPLAY FUNCTIONS ==========
+        // ========== DISPLAY FUNCTIONS - FIXED VISIBILITY ==========
         function updateDisplay() {
             // Update header
             document.getElementById('turnDisplay').textContent = `PLAYER ${gameState.currentPlayer}'S TURN`;
@@ -2182,69 +2172,85 @@
         }
 
         function updateGameGrid() {
-            // Clear grid
+            // Clear grid first
             document.querySelectorAll('.game-cell').forEach(cell => {
                 cell.className = 'game-cell';
                 cell.innerHTML = '';
             });
             
-            // Update cells
-            for (let row = 0; row < 20; row++) {
-                for (let col = 0; col < 20; col++) {
-                    const cell = document.querySelector(
-                        `.game-cell[data-row="${row}"][data-col="${col}"]`
-                    );
-                    
-                    // Check for scan areas
-                    let inScanArea = false;
-                    gameState.scanAreas.forEach(area => {
-                        if (area.cells.some(c => c.row === row && c.col === col)) {
-                            inScanArea = true;
+            // First, mark scan areas
+            gameState.scanAreas.forEach(area => {
+                if (area.player === gameState.currentPlayer) {
+                    area.cells.forEach(cellPos => {
+                        const cell = document.querySelector(
+                            `.game-cell[data-row="${cellPos.row}"][data-col="${cellPos.col}"]`
+                        );
+                        if (cell) {
+                            cell.classList.add('scan-area');
                         }
                     });
-                    
-                    if (inScanArea) {
-                        cell.classList.add('scan-area');
-                    }
-                    
-                    // Check for mines
-                    const mine = gameState.mines.find(m => m.row === row && m.col === col && m.active);
-                    if (mine) {
+                }
+            });
+            
+            // Mark mines
+            gameState.mines.forEach(mine => {
+                if (mine.active) {
+                    const cell = document.querySelector(
+                        `.game-cell[data-row="${mine.row}"][data-col="${mine.col}"]`
+                    );
+                    if (cell) {
                         cell.classList.add('mine');
                     }
-                    
-                    // Check for explosions
-                    const explosion = gameState.explosions.find(e => e.row === row && e.col === col);
-                    if (explosion) {
-                        cell.classList.add('hit');
-                    }
-                    
-                    // Check for ships
-                    const ship = getShipAt(row, col);
-                    if (ship) {
+                }
+            });
+            
+            // Mark explosions
+            gameState.explosions.forEach(explosion => {
+                const cell = document.querySelector(
+                    `.game-cell[data-row="${explosion.row}"][data-col="${explosion.col}"]`
+                );
+                if (cell) {
+                    cell.classList.add('hit');
+                }
+            });
+            
+            // Now show ships with proper visibility
+            gameState.ships.forEach(ship => {
+                ship.cells.forEach(cellPos => {
+                    const cell = document.querySelector(
+                        `.game-cell[data-row="${cellPos.row}"][data-col="${cellPos.col}"]`
+                    );
+                    if (cell) {
                         if (ship.player === gameState.currentPlayer) {
-                            // Show own ships
+                            // Show own ships in blue
                             cell.classList.add(`ship-p${ship.player}`);
                             
-                            // Show damage
-                            if (ship.health <= ship.maxHealth * 0.25) {
+                            // Show damage state
+                            const healthPercent = (ship.health / ship.maxHealth) * 100;
+                            if (healthPercent <= 25) {
                                 cell.classList.add('critical');
-                            } else if (ship.health <= ship.maxHealth * 0.5) {
+                            } else if (healthPercent <= 50) {
                                 cell.classList.add('damaged');
                             }
                         } else {
-                            // Enemy ships - only show if revealed
-                            cell.classList.add(`ship-p${ship.player}`);
-                            if (ship.revealed || inScanArea) {
+                            // Enemy ships - only show if revealed or in scan area
+                            if (ship.revealed) {
+                                cell.classList.add(`ship-p${ship.player}`);
                                 cell.classList.add('revealed');
+                                
+                                // Check if in scan area
+                                const inScanArea = gameState.scanAreas.some(area => 
+                                    area.player === gameState.currentPlayer &&
+                                    area.cells.some(c => c.row === cellPos.row && c.col === cellPos.col)
+                                );
                                 if (inScanArea) {
                                     cell.classList.add('scanned');
                                 }
                             }
                         }
                     }
-                }
-            }
+                });
+            });
         }
 
         // ========== GAME FLOW ==========
