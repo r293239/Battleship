@@ -2,132 +2,128 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <title>BATTLESHIP: Tactical Warfare</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tactical Battleship</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            -webkit-tap-highlight-color: transparent;
+            font-family: 'Arial', sans-serif;
         }
 
         body {
-            background: #000000;
+            background: #000;
             color: white;
             min-height: 100vh;
-            overflow-x: hidden;
         }
 
-        /* Ready Screen */
-        #readyScreen {
+        /* SCREENS */
+        #startScreen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: #000000;
+            background: #000;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            padding: 20px;
-            text-align: center;
         }
 
-        #readyTitle {
-            font-size: clamp(2.5rem, 8vw, 4rem);
-            margin-bottom: 20px;
-            color: #00ffff;
-            text-shadow: 0 0 20px rgba(0, 255, 255, 0.7);
-        }
-
-        .ready-subtitle {
-            font-size: clamp(1.2rem, 4vw, 1.8rem);
-            margin-bottom: 40px;
-            color: #ffcc00;
-            max-width: 600px;
-            line-height: 1.4;
-        }
-
-        #readyButton {
-            padding: 20px 60px;
-            font-size: clamp(1.5rem, 6vw, 2.5rem);
-            font-weight: bold;
-            background: linear-gradient(45deg, #ff3366, #ff0066);
-            color: white;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            box-shadow: 0 0 40px rgba(255, 51, 102, 0.7);
-            animation: pulse 2s infinite;
-            transition: all 0.3s;
-        }
-
-        #readyButton:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 60px rgba(255, 51, 102, 1);
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-
-        /* Setup Screen for Ship Placement */
-        #setupScreen {
+        #placementScreen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: #000000;
+            background: #001122;
             display: none;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
-            z-index: 1000;
             padding: 20px;
+            overflow-y: auto;
+            z-index: 900;
+        }
+
+        #gameScreen {
+            display: none;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* START SCREEN */
+        .game-title {
+            font-size: 4rem;
+            color: #00ffff;
+            text-shadow: 0 0 20px #00ffff;
+            margin-bottom: 20px;
             text-align: center;
         }
 
-        .setup-title {
-            font-size: clamp(2rem, 6vw, 3rem);
-            color: #00ffff;
-            margin-bottom: 20px;
-        }
-
-        .setup-instructions {
-            font-size: clamp(1rem, 3vw, 1.3rem);
+        .game-subtitle {
+            font-size: 1.5rem;
             color: #ffcc00;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
+            text-align: center;
             max-width: 600px;
             line-height: 1.5;
         }
 
-        /* Ship Dock */
-        .ship-dock {
-            background: rgba(0, 20, 40, 0.8);
-            border-radius: 15px;
-            padding: 20px;
-            margin: 20px 0;
-            border: 3px solid #3498db;
-            max-width: 800px;
-            width: 90%;
+        .start-button {
+            padding: 20px 60px;
+            font-size: 2rem;
+            background: linear-gradient(45deg, #ff3366, #ff0066);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 30px rgba(255, 51, 102, 0.7);
         }
 
-        .ship-dock-title {
+        .start-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 40px rgba(255, 51, 102, 1);
+        }
+
+        /* PLACEMENT SCREEN */
+        .placement-title {
+            font-size: 2.5rem;
+            color: #00ffff;
+            margin: 20px 0;
             text-align: center;
-            font-size: clamp(1.3rem, 4vw, 1.8rem);
+        }
+
+        .placement-instructions {
+            font-size: 1.2rem;
+            color: #ffcc00;
+            margin-bottom: 20px;
+            text-align: center;
+            max-width: 800px;
+        }
+
+        .ship-dock {
+            background: rgba(0, 40, 80, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px;
+            width: 90%;
+            max-width: 800px;
+            border: 3px solid #3498db;
+        }
+
+        .dock-title {
+            text-align: center;
+            font-size: 1.5rem;
             color: #ffcc00;
             margin-bottom: 20px;
         }
 
-        .ship-dock-items {
+        .dock-ships {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
@@ -135,28 +131,27 @@
             margin-bottom: 20px;
         }
 
-        .ship-dock-item {
+        .dock-ship {
+            padding: 12px 20px;
+            background: rgba(52, 152, 219, 0.3);
+            border: 2px dashed #3498db;
+            border-radius: 10px;
+            cursor: grab;
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 12px 20px;
-            background: rgba(52, 152, 219, 0.3);
-            border-radius: 10px;
-            cursor: grab;
-            user-select: none;
-            border: 2px dashed #3498db;
             transition: all 0.3s;
         }
 
-        .ship-dock-item:hover {
+        .dock-ship:hover {
             background: rgba(52, 152, 219, 0.5);
             transform: translateY(-3px);
         }
 
-        .ship-dock-item.placed {
+        .dock-ship.placed {
             background: rgba(46, 204, 113, 0.3);
             border-color: #2ecc71;
-            opacity: 0.7;
+            opacity: 0.6;
             cursor: default;
         }
 
@@ -165,33 +160,28 @@
             gap: 2px;
         }
 
-        .ship-cell {
+        .preview-cell {
             width: 20px;
             height: 20px;
             background: #3498db;
             border-radius: 3px;
         }
 
-        .ship-cell.carrier {
+        .preview-cell.carrier {
             background: #9b59b6;
         }
 
-        .ship-dock-item.placed .ship-cell {
-            background: #2ecc71;
-        }
-
-        /* Setup Grid */
-        .setup-grid-container {
-            background: rgba(0, 20, 40, 0.8);
-            border-radius: 20px;
+        /* PLACEMENT GRID */
+        .placement-grid-container {
+            background: rgba(0, 40, 80, 0.8);
+            border-radius: 15px;
             padding: 20px;
-            margin: 20px 0;
-            border: 3px solid #3498db;
+            margin: 20px;
+            border: 3px solid #00ffff;
             max-width: 800px;
-            width: 90%;
         }
 
-        #setupGrid {
+        #placementGrid {
             display: grid;
             grid-template-columns: repeat(20, 1fr);
             grid-template-rows: repeat(20, 1fr);
@@ -199,55 +189,55 @@
             width: min(90vw, 600px);
             height: min(90vw, 600px);
             margin: 0 auto;
-            border: 3px solid #00ffff;
             background: linear-gradient(45deg, #1a2980, #26d0ce);
+            border: 2px solid #00ffff;
         }
 
-        .setup-cell {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(0, 255, 255, 0.1);
+        .placement-cell {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.2);
             cursor: pointer;
             transition: all 0.2s;
-            position: relative;
         }
 
-        .setup-cell:hover {
-            background: rgba(0, 255, 255, 0.2);
+        .placement-cell:hover {
+            background: rgba(0, 255, 255, 0.3);
         }
 
-        .setup-cell.ship {
-            background: rgba(52, 152, 219, 0.7);
+        .placement-cell.ship {
+            background: #3498db;
             border-color: #2980b9;
         }
 
-        .setup-cell.ship.carrier {
-            background: rgba(155, 89, 182, 0.7);
+        .placement-cell.carrier {
+            background: #9b59b6;
             border-color: #8e44ad;
         }
 
-        .setup-cell.drag-over {
-            background: rgba(243, 156, 18, 0.7) !important;
+        .placement-cell.drag-over {
+            background: #f39c12 !important;
             border-color: #f39c12 !important;
         }
 
-        .setup-cell.invalid {
-            background: rgba(231, 76, 60, 0.7) !important;
+        .placement-cell.invalid {
+            background: #e74c3c !important;
             border-color: #c0392b !important;
         }
 
-        /* Setup Controls */
-        .setup-controls {
+        /* PLACEMENT CONTROLS */
+        .placement-controls {
             display: flex;
             gap: 15px;
-            justify-content: center;
-            margin-top: 20px;
+            margin: 20px;
             flex-wrap: wrap;
+            justify-content: center;
         }
 
-        .setup-btn {
+        .placement-btn {
             padding: 12px 25px;
             font-size: 1.1rem;
-            font-weight: bold;
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
             border: none;
             border-radius: 8px;
             cursor: pointer;
@@ -255,54 +245,46 @@
             min-width: 180px;
         }
 
-        .setup-btn.primary {
-            background: linear-gradient(45deg, #2ecc71, #27ae60);
-            color: white;
-        }
-
-        .setup-btn.secondary {
-            background: linear-gradient(45deg, #3498db, #2980b9);
-            color: white;
-        }
-
-        .setup-btn.danger {
-            background: linear-gradient(45deg, #e74c3c, #c0392b);
-            color: white;
-        }
-
-        .setup-btn:hover {
-            transform: translateY(-3px);
+        .placement-btn:hover {
+            transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
 
-        /* Main Game */
-        #gameScreen {
-            display: none;
-            padding: 15px;
-            max-width: 1400px;
-            margin: 0 auto;
-            background: linear-gradient(135deg, #0a0a2a, #1a1a40);
+        .placement-btn.rotate {
+            background: linear-gradient(45deg, #9b59b6, #8e44ad);
         }
 
-        .header {
+        .placement-btn.random {
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+        }
+
+        .placement-btn.clear {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+        }
+
+        .placement-btn.finish {
+            background: linear-gradient(45deg, #ff3366, #ff0066);
+            font-weight: bold;
+        }
+
+        /* GAME SCREEN */
+        .game-header {
             text-align: center;
-            padding: 15px;
-            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            background: rgba(0, 40, 80, 0.8);
             border-radius: 15px;
             margin-bottom: 20px;
-            border: 2px solid #00ffff;
+            border: 3px solid #00ffff;
         }
 
-        .header h1 {
-            font-size: clamp(1.8rem, 6vw, 2.8rem);
+        .game-title-small {
+            font-size: 2.5rem;
             color: #00ffff;
             margin-bottom: 10px;
-            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
         }
 
         .turn-display {
-            font-size: clamp(1.3rem, 4vw, 1.8rem);
-            font-weight: bold;
+            font-size: 1.8rem;
             background: linear-gradient(45deg, #ff3366, #ff0066);
             padding: 15px 30px;
             border-radius: 50px;
@@ -310,169 +292,168 @@
             margin: 10px 0;
         }
 
-        .turn-counter {
-            font-size: clamp(1rem, 3vw, 1.3rem);
-            color: #ffcc00;
-            margin-top: 5px;
-        }
-
-        .action-points {
+        .turn-info {
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 30px;
             margin: 15px 0;
             flex-wrap: wrap;
         }
 
-        .ap-circle {
-            width: 60px;
-            height: 60px;
+        .info-item {
+            font-size: 1.2rem;
+            color: #ffcc00;
+        }
+
+        .action-points {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+
+        .ap-dot {
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
+            background: #3498db;
+            border: 3px solid #00ffff;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
             font-weight: bold;
-            background: linear-gradient(45deg, #3498db, #2980b9);
-            border: 3px solid #00ffff;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            font-size: 1.2rem;
         }
 
-        .ap-circle.used {
-            background: linear-gradient(45deg, #7f8c8d, #95a5a6);
-            border-color: #999;
+        .ap-dot.used {
+            background: #7f8c8d;
+            border-color: #95a5a6;
             opacity: 0.5;
         }
 
-        /* Fuel Display */
-        .fuel-display {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin: 10px 0;
-            font-size: 1.1rem;
-            color: #ff9900;
-        }
-
-        .fuel-bar {
-            width: 200px;
-            height: 10px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 5px;
-            overflow: hidden;
-        }
-
-        .fuel-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #ff9900, #ff5500);
-            transition: width 0.5s;
-        }
-
-        /* SHARED MAIN GRID - 20x20 */
-        .main-grid-container {
-            background: rgba(0, 20, 40, 0.8);
-            border-radius: 20px;
+        /* MAIN GAME GRID */
+        .game-grid-container {
+            background: rgba(0, 40, 80, 0.8);
+            border-radius: 15px;
             padding: 20px;
             margin-bottom: 20px;
             border: 3px solid #3498db;
-            box-shadow: 0 0 30px rgba(52, 152, 219, 0.3);
-            overflow: auto;
         }
 
         .grid-title {
             text-align: center;
-            font-size: clamp(1.5rem, 4vw, 2rem);
+            font-size: 1.8rem;
             color: #ffcc00;
             margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #ffcc00;
         }
 
-        #mainGrid {
+        #gameGrid {
             display: grid;
             grid-template-columns: repeat(20, 1fr);
             grid-template-rows: repeat(20, 1fr);
             gap: 1px;
-            width: min(95vw, 800px);
-            height: min(95vw, 800px);
+            width: min(95vw, 700px);
+            height: min(95vw, 700px);
             margin: 0 auto;
-            border: 3px solid #00ffff;
             background: linear-gradient(45deg, #1a2980, #26d0ce);
-            position: relative;
+            border: 2px solid #00ffff;
         }
 
-        .cell {
+        .game-cell {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(0, 255, 255, 0.1);
             cursor: pointer;
             transition: all 0.2s;
             position: relative;
-            overflow: hidden;
-            min-width: 0;
-            min-height: 0;
         }
 
-        .cell:hover {
+        .game-cell:hover {
             background: rgba(0, 255, 255, 0.2);
         }
 
-        /* Ship Colors - Only visible to owner during movement */
-        .cell.ship-p1 { background: rgba(52, 152, 219, 0.7); border-color: #2980b9; }
-        .cell.ship-p2 { background: rgba(231, 76, 60, 0.7); border-color: #c0392b; }
-        
-        /* Ship Damage States */
-        .cell.ship-p1.damaged { background: rgba(52, 152, 219, 0.5); }
-        .cell.ship-p2.damaged { background: rgba(231, 76, 60, 0.5); }
-        .cell.ship-p1.critical { background: rgba(52, 152, 219, 0.3); }
-        .cell.ship-p2.critical { background: rgba(231, 76, 60, 0.3); }
-        
-        /* Hidden enemy ships */
-        .cell.enemy-ship {
-            background: rgba(255, 255, 255, 0.05) !important;
-            border-color: rgba(0, 255, 255, 0.1) !important;
-        }
-        
-        /* Visible when scanned or hit */
-        .cell.enemy-ship.scanned {
-            background: rgba(255, 0, 0, 0.3) !important;
-            border-color: #ff0000 !important;
-            animation: scan-pulse 1s infinite;
-        }
-        
-        .cell.enemy-ship.hit {
-            background: rgba(255, 0, 0, 0.7) !important;
-            border-color: #ff0000 !important;
+        /* SHIP VISIBILITY */
+        .game-cell.ship-p1 {
+            background: #3498db;
+            border-color: #2980b9;
         }
 
-        /* Special Effects */
-        .cell.mine::before {
-            content: "💣";
+        .game-cell.ship-p2 {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(0, 255, 255, 0.1);
+        }
+
+        .game-cell.ship-p2.revealed {
+            background: #e74c3c !important;
+            border-color: #c0392b !important;
+        }
+
+        .game-cell.ship-p2.scanned {
+            background: rgba(255, 0, 0, 0.3) !important;
+            border-color: #ff0000 !important;
+            animation: pulse-red 1s infinite;
+        }
+
+        /* DAMAGE STATES */
+        .game-cell.damaged {
+            background: linear-gradient(45deg, #3498db, #e67e22) !important;
+        }
+
+        .game-cell.critical {
+            background: linear-gradient(45deg, #3498db, #e74c3c) !important;
+        }
+
+        /* SPECIAL EFFECTS */
+        .game-cell.hit::after {
+            content: "💥";
             position: absolute;
-            font-size: 1rem;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            animation: float 2s infinite;
-            z-index: 2;
-        }
-
-        .cell.scan-area {
-            background: rgba(255, 255, 0, 0.2);
-            border-color: yellow;
-            animation: pulse-glow 1s infinite;
-        }
-
-        .cell.explosion {
-            background: radial-gradient(circle, #ff9900, #ff3300);
+            font-size: 1.5rem;
             animation: explode 0.5s;
-            z-index: 3;
         }
 
-        .cell.moving-path {
-            background: rgba(0, 255, 255, 0.3);
-            border-color: #00ffff;
-            animation: path-pulse 1s infinite;
+        .game-cell.miss::after {
+            content: "●";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #7f8c8d;
+            font-size: 1.5rem;
+        }
+
+        .game-cell.mine::after {
+            content: "💣";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.2rem;
+            animation: float 2s infinite;
+        }
+
+        .game-cell.scan-area {
+            background: rgba(255, 255, 0, 0.2) !important;
+            border-color: yellow !important;
+            animation: pulse-yellow 1s infinite;
+        }
+
+        /* ANIMATIONS */
+        @keyframes pulse-red {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        @keyframes pulse-yellow {
+            0%, 100% { box-shadow: 0 0 5px yellow; }
+            50% { box-shadow: 0 0 20px yellow; }
+        }
+
+        @keyframes explode {
+            0% { transform: translate(-50%, -50%) scale(0); }
+            70% { transform: translate(-50%, -50%) scale(1.5); }
+            100% { transform: translate(-50%, -50%) scale(1); }
         }
 
         @keyframes float {
@@ -480,62 +461,36 @@
             50% { transform: translate(-50%, -50%) scale(1.2); }
         }
 
-        @keyframes scan-pulse {
-            0%, 100% { box-shadow: 0 0 5px rgba(255, 0, 0, 0.5); }
-            50% { box-shadow: 0 0 15px rgba(255, 0, 0, 0.8); }
-        }
-
-        @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 5px yellow; }
-            50% { box-shadow: 0 0 15px yellow; }
-        }
-
-        @keyframes explode {
-            0% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(2); opacity: 0; }
-        }
-
-        @keyframes path-pulse {
-            0%, 100% { box-shadow: 0 0 5px #00ffff; }
-            50% { box-shadow: 0 0 15px #00ffff; }
-        }
-
-        @keyframes move-ship {
-            0% { transform: translate(0, 0); opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { transform: translate(var(--tx), var(--ty)); opacity: 1; }
-        }
-
-        /* Ships Panel */
+        /* SHIPS PANEL */
         .ships-panel {
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 40, 80, 0.8);
             border-radius: 15px;
             padding: 20px;
             margin: 20px 0;
-            border: 2px solid #ffcc00;
+            border: 3px solid #ffcc00;
         }
 
         .ships-title {
             text-align: center;
-            font-size: clamp(1.3rem, 4vw, 1.8rem);
+            font-size: 1.8rem;
             color: #ffcc00;
             margin-bottom: 20px;
         }
 
         .ships-container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 15px;
             margin-bottom: 20px;
         }
 
         .ship-card {
             background: rgba(52, 152, 219, 0.2);
+            border: 2px solid #3498db;
             border-radius: 10px;
             padding: 15px;
-            border: 2px solid #3498db;
-            transition: all 0.3s;
             cursor: pointer;
+            transition: all 0.3s;
         }
 
         .ship-card:hover {
@@ -544,12 +499,12 @@
         }
 
         .ship-card.selected {
-            background: rgba(255, 204, 0, 0.3);
+            background: rgba(255, 204, 0, 0.2);
             border-color: #ffcc00;
-            animation: selected-pulse 1s infinite;
+            animation: pulse-select 1s infinite;
         }
 
-        @keyframes selected-pulse {
+        @keyframes pulse-select {
             0%, 100% { border-color: #ffcc00; }
             50% { border-color: #ff9900; }
         }
@@ -562,20 +517,10 @@
         }
 
         .ship-name {
-            font-size: 1.2rem;
-            font-weight: bold;
+            font-size: 1.3rem;
             color: #00ffff;
+            font-weight: bold;
         }
-
-        .ship-player {
-            font-size: 0.9rem;
-            padding: 3px 10px;
-            border-radius: 15px;
-            background: #3498db;
-            color: white;
-        }
-
-        .ship-player.p2 { background: #e74c3c; }
 
         .ship-health {
             height: 10px;
@@ -591,26 +536,52 @@
             transition: width 0.5s;
         }
 
-        .health-bar.damaged { background: linear-gradient(90deg, #e67e22, #d35400); }
-        .health-bar.critical { background: linear-gradient(90deg, #e74c3c, #c0392b); }
+        .health-bar.damaged {
+            background: linear-gradient(90deg, #e67e22, #d35400);
+        }
+
+        .health-bar.critical {
+            background: linear-gradient(90deg, #e74c3c, #c0392b);
+        }
 
         .ship-stats {
             display: flex;
             justify-content: space-between;
+            margin: 10px 0;
             font-size: 0.9rem;
             color: #bbb;
-            margin-bottom: 10px;
+        }
+
+        .ship-fuel {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin: 5px 0;
+            color: #ff9900;
+        }
+
+        .fuel-bar {
+            flex-grow: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .fuel-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff9900, #ff5500);
+            transition: width 0.5s;
         }
 
         .ship-ability {
             background: rgba(155, 89, 182, 0.3);
             padding: 8px;
             border-radius: 5px;
-            font-size: 0.9rem;
             text-align: center;
+            margin-top: 10px;
             border: 1px solid #9b59b6;
             cursor: pointer;
-            margin-top: 10px;
             transition: all 0.3s;
         }
 
@@ -624,18 +595,81 @@
             cursor: not-allowed;
         }
 
-        /* Controls Panel */
-        .controls-panel {
-            background: rgba(0, 0, 0, 0.8);
+        /* SELECTED SHIP INFO */
+        .selected-ship-info {
+            background: rgba(255, 204, 0, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            border: 2px solid #ffcc00;
+        }
+
+        .selected-title {
+            text-align: center;
+            color: #ffcc00;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+        }
+
+        .selected-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            min-width: 150px;
+        }
+
+        .action-btn.move {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .action-btn.attack {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        .action-btn.ability {
+            background: linear-gradient(45deg, #9b59b6, #8e44ad);
+            color: white;
+        }
+
+        .action-btn.cancel {
+            background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+            color: white;
+        }
+
+        .action-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* GAME CONTROLS */
+        .game-controls {
+            background: rgba(0, 40, 80, 0.8);
             border-radius: 15px;
             padding: 20px;
             margin-top: 20px;
-            border: 2px solid #9b59b6;
+            border: 3px solid #9b59b6;
         }
 
         .controls-title {
             text-align: center;
-            font-size: clamp(1.3rem, 4vw, 1.8rem);
+            font-size: 1.8rem;
             color: #9b59b6;
             margin-bottom: 20px;
         }
@@ -644,41 +678,35 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
-            margin-bottom: 20px;
         }
 
         .control-btn {
             padding: 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
             font-size: 1.1rem;
             font-weight: bold;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
             transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            text-align: center;
         }
 
-        .control-btn.primary {
+        .control-btn.end-turn {
             background: linear-gradient(45deg, #2ecc71, #27ae60);
             color: white;
         }
 
-        .control-btn.secondary {
+        .control-btn.scan-view {
             background: linear-gradient(45deg, #3498db, #2980b9);
-            color: white;
-        }
-
-        .control-btn.danger {
-            background: linear-gradient(45deg, #e74c3c, #c0392b);
             color: white;
         }
 
         .control-btn.special {
             background: linear-gradient(45deg, #9b59b6, #8e44ad);
+            color: white;
+        }
+
+        .control-btn.surrender {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
             color: white;
         }
 
@@ -692,17 +720,7 @@
             cursor: not-allowed;
         }
 
-        .turn-summary {
-            text-align: center;
-            font-size: 1.1rem;
-            color: #ffcc00;
-            margin: 20px 0;
-            padding: 15px;
-            background: rgba(255, 204, 0, 0.1);
-            border-radius: 10px;
-        }
-
-        /* Message Display */
+        /* MESSAGE DISPLAY */
         #messageDisplay {
             position: fixed;
             bottom: 20px;
@@ -712,107 +730,48 @@
             color: white;
             padding: 15px 30px;
             border-radius: 50px;
-            font-size: 1.2rem;
-            text-align: center;
             border: 2px solid #00ffff;
             box-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
-            z-index: 100;
+            z-index: 1000;
             max-width: 90%;
+            text-align: center;
             animation: slideUp 0.3s;
         }
 
         @keyframes slideUp {
-            from { transform: translateX(-50%) translateY(100px); opacity: 0; }
-            to { transform: translateX(-50%) translateY(0); opacity: 1; }
-        }
-
-        /* Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background: linear-gradient(45deg, #1a2980, #26d0ce);
-            padding: 30px;
-            border-radius: 20px;
-            max-width: 500px;
-            width: 90%;
-            text-align: center;
-            border: 3px solid #00ffff;
-        }
-
-        .modal h2 {
-            color: #ffcc00;
-            margin-bottom: 20px;
-            font-size: 2rem;
-        }
-
-        .modal p {
-            margin-bottom: 20px;
-            font-size: 1.2rem;
-            line-height: 1.5;
-        }
-
-        .modal-btn {
-            padding: 15px 40px;
-            font-size: 1.3rem;
-            background: linear-gradient(45deg, #ff3366, #ff0066);
-            color: white;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            margin: 10px;
-        }
-
-        .modal-btn:hover {
-            transform: scale(1.05);
-        }
-
-        /* Movement Animation */
-        .moving-ship {
-            position: absolute;
-            width: var(--cell-size);
-            height: var(--cell-size);
-            background: var(--ship-color);
-            border: 2px solid var(--border-color);
-            border-radius: 3px;
-            z-index: 10;
-            transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
-            pointer-events: none;
-        }
-
-        /* Drag Ghost Element */
-        .drag-ghost {
-            position: fixed;
-            pointer-events: none;
-            z-index: 1000;
-            opacity: 0.8;
-            transform: translate(-50%, -50%);
-        }
-
-        /* Responsive */
-        @media (max-width: 1024px) {
-            #mainGrid, #setupGrid {
-                grid-template-columns: repeat(20, 1fr);
-                grid-template-rows: repeat(20, 1fr);
-                width: min(95vw, 700px);
-                height: min(95vw, 700px);
+            from {
+                transform: translateX(-50%) translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
             }
         }
 
+        /* UTILITY */
+        .hidden {
+            display: none !important;
+        }
+
+        /* RESPONSIVE */
         @media (max-width: 768px) {
-            #mainGrid, #setupGrid {
-                width: min(95vw, 600px);
-                height: min(95vw, 600px);
+            .game-title {
+                font-size: 2.5rem;
+            }
+            
+            .game-title-small {
+                font-size: 2rem;
+            }
+            
+            .turn-display {
+                font-size: 1.4rem;
+                padding: 10px 20px;
+            }
+            
+            #gameGrid, #placementGrid {
+                width: min(95vw, 500px);
+                height: min(95vw, 500px);
             }
             
             .ships-container {
@@ -823,324 +782,246 @@
                 grid-template-columns: 1fr;
             }
             
-            .ship-dock-items {
+            .dock-ships {
                 flex-direction: column;
                 align-items: center;
             }
         }
 
         @media (max-width: 480px) {
-            #mainGrid, #setupGrid {
+            .game-title {
+                font-size: 2rem;
+            }
+            
+            #gameGrid, #placementGrid {
                 width: min(95vw, 400px);
                 height: min(95vw, 400px);
             }
             
-            .control-btn, .setup-btn {
-                padding: 12px;
-                font-size: 1rem;
+            .placement-controls, .selected-actions {
+                flex-direction: column;
+                align-items: center;
             }
-        }
-
-        /* Utility Classes */
-        .hidden { display: none !important; }
-        .fade-in { animation: fadeIn 0.5s; }
-        .blink { animation: blink 1s infinite; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            
+            .placement-btn, .action-btn, .control-btn {
+                width: 100%;
+                max-width: 300px;
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Ready Screen -->
-    <div id="readyScreen">
-        <h1 id="readyTitle">BATTLESHIP: TACTICAL WARFARE</h1>
-        <div class="ready-subtitle">Each turn: Use Ability • Move (Limited Fuel) • Attack • Special Actions</div>
-        <button id="readyButton" onclick="startSetup()">DEPLOY FLEET</button>
+    <!-- START SCREEN -->
+    <div id="startScreen">
+        <h1 class="game-title">TACTICAL BATTLESHIP</h1>
+        <div class="game-subtitle">
+            ⚔️ Drag & Drop Ships • Hidden Enemy • Limited Fuel • Ship Abilities • Explosions
+        </div>
+        <button class="start-button" onclick="startGame()">START GAME</button>
     </div>
 
-    <!-- Setup Screen for Ship Placement -->
-    <div id="setupScreen">
-        <h2 class="setup-title" id="setupTitle">PLAYER 1: DEPLOY YOUR FLEET</h2>
-        <div class="setup-instructions">
-            Drag and drop ships from the dock to the grid. Right-click or use buttons to rotate.
-            <div style="color: #00ffff; margin-top: 10px; font-size: 0.9rem;">
-                Ships: Destroyer (2) • Submarine (3) • Cruiser (3) • Battleship (4) • Carrier (T-shape 5)
-            </div>
+    <!-- PLACEMENT SCREEN -->
+    <div id="placementScreen">
+        <h2 class="placement-title" id="placementTitle">PLAYER 1: DEPLOY YOUR FLEET</h2>
+        <div class="placement-instructions">
+            Drag ships from dock to grid. Press R or button to rotate. All ships must be placed.
+            <br>
+            <span style="color: #00ffff;">Ships: Destroyer(2) • Submarine(3) • Cruiser(3) • Battleship(4) • Carrier(T-5)</span>
         </div>
 
-        <!-- Ship Dock -->
+        <!-- SHIP DOCK -->
         <div class="ship-dock">
-            <h3 class="ship-dock-title">SHIP DOCK - DRAG TO PLACE</h3>
-            <div class="ship-dock-items" id="shipDockItems">
-                <!-- Ships will be added dynamically -->
+            <h3 class="dock-title">SHIP DOCK - DRAG TO PLACE</h3>
+            <div class="dock-ships" id="dockShips">
+                <!-- Ships added by JavaScript -->
             </div>
         </div>
 
-        <!-- Setup Grid -->
-        <div class="setup-grid-container">
+        <!-- PLACEMENT GRID -->
+        <div class="placement-grid-container">
             <h3 class="grid-title">DEPLOYMENT ZONE (20x20)</h3>
-            <div id="setupGrid"></div>
+            <div id="placementGrid"></div>
         </div>
 
-        <!-- Setup Controls -->
-        <div class="setup-controls">
-            <button class="setup-btn secondary" onclick="rotateShip()">
-                🔄 ROTATE SHIP (R)
-            </button>
-            <button class="setup-btn secondary" onclick="randomPlaceShips()">
-                🎲 RANDOM PLACEMENT
-            </button>
-            <button class="setup-btn danger" onclick="resetPlacement()">
-                ↻ CLEAR ALL
-            </button>
-            <button class="setup-btn primary" onclick="finishPlacement()" id="finishBtn">
-                ✅ FINISH DEPLOYMENT
-            </button>
+        <!-- PLACEMENT CONTROLS -->
+        <div class="placement-controls">
+            <button class="placement-btn rotate" onclick="rotateShip()">🔄 ROTATE (R)</button>
+            <button class="placement-btn random" onclick="randomPlacement()">🎲 RANDOM PLACE</button>
+            <button class="placement-btn clear" onclick="clearPlacement()">🗑️ CLEAR ALL</button>
+            <button class="placement-btn finish" onclick="finishPlacement()" id="finishBtn" disabled>✅ FINISH DEPLOYMENT</button>
         </div>
     </div>
 
-    <!-- Main Game Screen -->
+    <!-- GAME SCREEN -->
     <div id="gameScreen">
-        <!-- Game Header -->
-        <div class="header">
-            <h1>⚔️ TACTICAL BATTLESHIP WARFARE ⚔️</h1>
-            <div class="turn-display" id="turnIndicator">PLAYER 1'S TURN</div>
-            <div class="turn-counter" id="turnCounter">Turn: 1</div>
-            
+        <!-- GAME HEADER -->
+        <div class="game-header">
+            <h2 class="game-title-small">⚔️ TACTICAL BATTLESHIP ⚔️</h2>
+            <div class="turn-display" id="turnDisplay">PLAYER 1'S TURN</div>
+            <div class="turn-info">
+                <div class="info-item">Turn: <span id="turnCounter">1</span></div>
+                <div class="info-item">Player: <span id="playerIndicator">1</span></div>
+            </div>
             <div class="action-points">
-                <div class="ap-circle" id="ap1">①</div>
-                <div class="ap-circle" id="ap2">②</div>
-                <div class="ap-circle" id="ap3">③</div>
+                <div class="ap-dot" id="ap1">①</div>
+                <div class="ap-dot" id="ap2">②</div>
+                <div class="ap-dot" id="ap3">③</div>
             </div>
-            
-            <div id="fuelDisplay" class="fuel-display hidden">
-                <span>⛽ Fuel:</span>
-                <div class="fuel-bar">
-                    <div class="fuel-fill" id="fuelFill"></div>
-                </div>
-                <span id="fuelText">0/0</span>
+            <div id="actionSummary" style="color: #ffcc00; margin-top: 10px;">
+                Select a ship and choose an action
             </div>
-            
-            <div class="turn-summary" id="actionSummary">Select a ship and choose action</div>
         </div>
 
-        <!-- Shared Main Grid -->
-        <div class="main-grid-container">
-            <h2 class="grid-title">SHARED BATTLEFIELD ZONE (20x20)</h2>
-            <div id="mainGrid"></div>
-            <div class="grid-legend" style="text-align: center; margin-top: 15px; color: #bbb; font-size: 0.9rem;">
+        <!-- MAIN GAME GRID -->
+        <div class="game-grid-container">
+            <h3 class="grid-title">BATTLEFIELD (20x20) - SHARED TERRITORY</h3>
+            <div id="gameGrid"></div>
+            <div style="text-align: center; margin-top: 15px; color: #bbb; font-size: 0.9rem;">
                 <span style="color: #3498db;">■ Your Ships</span> • 
-                <span style="color: #ff0000;">■ Scanned/Hit Enemy</span> • 
-                <span style="color: yellow;">■ Scan Area</span> • 
-                <span>💣 Mines</span>
+                <span style="color: #e74c3c;">■ Revealed Enemy</span> • 
+                <span style="color: yellow;">■ Scan Area</span>
             </div>
         </div>
 
-        <!-- Ships Panel -->
+        <!-- SHIPS PANEL -->
         <div class="ships-panel">
-            <h2 class="ships-title">YOUR FLEET</h2>
+            <h3 class="ships-title">YOUR FLEET</h3>
             <div class="ships-container" id="shipsContainer">
-                <!-- Ships will be dynamically added here -->
+                <!-- Ships added by JavaScript -->
             </div>
-            <div id="selectedShipInfo" class="hidden">
-                <div style="text-align: center; padding: 15px; background: rgba(255,204,0,0.1); border-radius: 10px;">
-                    <h3 style="color: #ffcc00;">SELECTED: <span id="selectedShipName">None</span></h3>
-                    <div style="display: flex; justify-content: center; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
-                        <button class="control-btn secondary" onclick="startMoveShip()" id="moveBtn">🚢 MOVE SHIP</button>
-                        <button class="control-btn danger" onclick="startAttack()" id="attackBtn">💥 ATTACK</button>
-                        <button class="control-btn special" onclick="useShipAbility()" id="abilityBtn">✨ USE ABILITY</button>
-                        <button class="control-btn primary" onclick="cancelAction()" id="cancelBtn">✖️ CANCEL</button>
-                    </div>
+            <div class="selected-ship-info hidden" id="selectedShipInfo">
+                <div class="selected-title">
+                    SELECTED: <span id="selectedShipName">None</span>
+                </div>
+                <div class="selected-actions">
+                    <button class="action-btn move" onclick="startMove()" id="moveBtn">🚢 MOVE SHIP</button>
+                    <button class="action-btn attack" onclick="startAttack()" id="attackBtn">💥 ATTACK</button>
+                    <button class="action-btn ability" onclick="useAbility()" id="abilityBtn">✨ USE ABILITY</button>
+                    <button class="action-btn cancel" onclick="cancelAction()">✖️ CANCEL</button>
                 </div>
             </div>
         </div>
 
-        <!-- Controls Panel -->
-        <div class="controls-panel">
-            <h2 class="controls-title">COMMAND CENTER</h2>
+        <!-- GAME CONTROLS -->
+        <div class="game-controls">
+            <h3 class="controls-title">COMMAND CENTER</h3>
             <div class="controls-grid">
-                <button class="control-btn primary" onclick="endTurn()" id="endTurnBtn">
-                    ⏭️ END TURN
-                </button>
-                <button class="control-btn secondary" onclick="showScanView()" id="scanViewBtn">
-                    🔍 SCAN VIEW
-                </button>
-                <button class="control-btn danger" onclick="surrender()">
-                    🏳️ SURRENDER
-                </button>
-                <button class="control-btn special" onclick="useSpecialAction()">
-                    ⚡ SPECIAL ACTION
-                </button>
+                <button class="control-btn end-turn" onclick="endTurn()" id="endTurnBtn">⏭️ END TURN</button>
+                <button class="control-btn scan-view" onclick="toggleScanView()" id="scanViewBtn">🔍 SCAN VIEW</button>
+                <button class="control-btn special" onclick="specialAction()" id="specialBtn">⚡ SPECIAL ACTION</button>
+                <button class="control-btn surrender" onclick="surrender()">🏳️ SURRENDER</button>
             </div>
-            <div class="turn-summary">
-                <div id="gameTips">Tip: Enemy ships are hidden. Use scan abilities to reveal them!</div>
+            <div style="text-align: center; margin-top: 15px; color: #ffcc00; font-style: italic;">
+                <div id="gameTip">Tip: Enemy ships are hidden until scanned or hit!</div>
             </div>
         </div>
     </div>
 
-    <!-- Message Display -->
+    <!-- MESSAGE DISPLAY -->
     <div id="messageDisplay" class="hidden"></div>
 
-    <!-- Rules Modal -->
-    <div id="rulesModal" class="modal">
-        <div class="modal-content">
-            <h2>⚔️ GAME RULES ⚔️</h2>
-            <p><strong>1. HIDDEN ENEMY:</strong> Cannot see opponent's ships until scanned or hit</p>
-            <p><strong>2. LIMITED FUEL:</strong> Each ship has fuel for movement (consumes 1 per cell)</p>
-            <p><strong>3. TURN ACTIONS:</strong> Use 1 Ability OR Move 1 Ship OR Attack Once</p>
-            <p><strong>4. DAMAGE SYSTEM:</strong> Ships >50% damaged cannot move</p>
-            <p><strong>5. EXPLOSIONS:</strong> Sunk ships explode (3x3 damage area)</p>
-            <p><strong>6. AIRCRAFT CARRIER:</strong> T-shaped: 2x2 block with front extension</p>
-            <button class="modal-btn" onclick="closeRules()">UNDERSTOOD</button>
-        </div>
-    </div>
-
     <script>
-        // GAME STATE
-        let currentPlayer = 1;
-        let currentTurn = 1;
-        let actionPoints = 3;
-        let selectedShipId = null;
-        let gamePhase = 'select'; // select, moving, attacking, ability
-        let scanAreas = [];
-        let mines = [];
-        let explosions = [];
-        let movementPath = [];
-        let isScanView = false;
-        
-        // Setup phase variables
-        let placingPlayer = 1;
-        let placingShips = [];
-        let placedShips = [];
-        let currentDraggingShip = null;
-        let isVertical = true;
-        let dragOffsetX = 0;
-        let dragOffsetY = 0;
-        
-        // Ship Definitions with FUEL and unique shapes
-        const shipTemplates = {
-            destroyer: {
-                name: "Destroyer",
-                size: 2,
-                health: 100,
-                maxHealth: 100,
-                fuel: 4,
-                maxFuel: 4,
-                ability: "mine",
-                abilityCooldown: 0,
-                abilityName: "Deploy Mine",
-                abilityDesc: "Place a mine that damages enemy ships",
-                shape: "line",
-                color: "#3498db"
-            },
-            submarine: {
-                name: "Submarine",
-                size: 3,
-                health: 150,
-                maxHealth: 150,
-                fuel: 3,
-                maxFuel: 3,
-                ability: "sonar",
-                abilityCooldown: 0,
-                abilityName: "Sonar Pulse",
-                abilityDesc: "Reveal ships in 3x3 area for 2 turns",
-                shape: "line",
-                color: "#2ecc71"
-            },
-            cruiser: {
-                name: "Cruiser",
-                size: 3,
-                health: 200,
-                maxHealth: 200,
-                fuel: 5,
-                maxFuel: 5,
-                ability: "repair",
-                abilityCooldown: 2,
-                abilityName: "Emergency Repair",
-                abilityDesc: "Repair 50 health to self or adjacent ship",
-                shape: "L",
-                color: "#9b59b6"
-            },
-            battleship: {
-                name: "Battleship",
-                size: 4,
-                health: 300,
-                maxHealth: 300,
-                fuel: 4,
-                maxFuel: 4,
-                ability: "barrage",
-                abilityCooldown: 3,
-                abilityName: "Barrage Fire",
-                abilityDesc: "Attack all adjacent cells",
-                shape: "line",
-                color: "#e74c3c"
-            },
-            carrier: {
-                name: "Aircraft Carrier",
-                size: 5,
-                health: 400,
-                maxHealth: 400,
-                fuel: 2,
-                maxFuel: 2,
-                ability: "recon",
-                abilityCooldown: 0,
-                abilityName: "Aerial Recon",
-                abilityDesc: "Scan 5x5 area for 3 turns",
-                shape: "T",
-                color: "#f39c12"
-            }
+        // ========== GAME STATE ==========
+        let gameState = {
+            phase: 'start', // 'start', 'placement', 'game'
+            currentPlayer: 1,
+            turn: 1,
+            actionPoints: 3,
+            selectedShip: null,
+            gamePhase: 'select', // 'select', 'moving', 'attacking', 'ability'
+            isVertical: true,
+            scanAreas: [],
+            mines: [],
+            explosions: [],
+            isScanView: false,
+            placedShips: [],
+            ships: []
         };
 
-        // All ships in game
-        let ships = [];
+        // ========== SHIP TEMPLATES ==========
+        const shipTemplates = [
+            {
+                id: 'destroyer',
+                name: 'Destroyer',
+                size: 2,
+                health: 100,
+                fuel: 4,
+                ability: 'mine',
+                abilityName: 'Deploy Mine',
+                abilityDesc: 'Place a mine that damages enemy ships',
+                cooldown: 0,
+                shape: 'line'
+            },
+            {
+                id: 'submarine',
+                name: 'Submarine',
+                size: 3,
+                health: 150,
+                fuel: 3,
+                ability: 'sonar',
+                abilityName: 'Sonar Pulse',
+                abilityDesc: 'Reveal ships in 3x3 area for 2 turns',
+                cooldown: 0,
+                shape: 'line'
+            },
+            {
+                id: 'cruiser',
+                name: 'Cruiser',
+                size: 3,
+                health: 200,
+                fuel: 5,
+                ability: 'repair',
+                abilityName: 'Emergency Repair',
+                abilityDesc: 'Repair 50 health to self or adjacent ship',
+                cooldown: 2,
+                shape: 'L'
+            },
+            {
+                id: 'battleship',
+                name: 'Battleship',
+                size: 4,
+                health: 300,
+                fuel: 4,
+                ability: 'barrage',
+                abilityName: 'Barrage Fire',
+                abilityDesc: 'Attack all adjacent cells',
+                cooldown: 3,
+                shape: 'line'
+            },
+            {
+                id: 'carrier',
+                name: 'Aircraft Carrier',
+                size: 5,
+                health: 400,
+                fuel: 2,
+                ability: 'recon',
+                abilityName: 'Aerial Recon',
+                abilityDesc: 'Scan 5x5 area for 3 turns',
+                cooldown: 0,
+                shape: 'T'
+            }
+        ];
 
-        // Initialize Game
+        // ========== INITIALIZATION ==========
         function initGame() {
-            createGrid();
-            createSetupGrid();
+            createPlacementGrid();
+            createGameGrid();
             createShipDock();
             updateDisplay();
         }
 
-        // Create 20x20 shared grid for gameplay
-        function createGrid() {
-            const grid = document.getElementById('mainGrid');
+        function createPlacementGrid() {
+            const grid = document.getElementById('placementGrid');
             grid.innerHTML = '';
             
             for (let row = 0; row < 20; row++) {
                 for (let col = 0; col < 20; col++) {
                     const cell = document.createElement('div');
-                    cell.className = 'cell';
+                    cell.className = 'placement-cell';
                     cell.dataset.row = row;
                     cell.dataset.col = col;
                     
-                    cell.addEventListener('click', () => handleCellClick(row, col));
-                    
-                    grid.appendChild(cell);
-                }
-            }
-        }
-
-        // Create 20x20 setup grid for ship placement
-        function createSetupGrid() {
-            const grid = document.getElementById('setupGrid');
-            grid.innerHTML = '';
-            
-            for (let row = 0; row < 20; row++) {
-                for (let col = 0; col < 20; col++) {
-                    const cell = document.createElement('div');
-                    cell.className = 'setup-cell';
-                    cell.dataset.row = row;
-                    cell.dataset.col = col;
-                    
-                    // Drag events for setup
+                    // Drag and drop events
                     cell.addEventListener('dragover', handleDragOver);
                     cell.addEventListener('drop', handleDrop);
                     cell.addEventListener('dragenter', handleDragEnter);
@@ -1151,352 +1032,178 @@
             }
         }
 
-        // Create ship dock for drag and drop
-        function createShipDock() {
-            const shipDockItems = document.getElementById('shipDockItems');
-            shipDockItems.innerHTML = '';
+        function createGameGrid() {
+            const grid = document.getElementById('gameGrid');
+            grid.innerHTML = '';
             
-            Object.keys(shipTemplates).forEach((shipType, index) => {
-                const ship = shipTemplates[shipType];
-                const shipItem = document.createElement('div');
-                shipItem.className = 'ship-dock-item';
-                shipItem.dataset.shipType = shipType;
-                shipItem.draggable = true;
-                
-                // Create ship preview
-                const shipPreview = document.createElement('div');
-                shipPreview.className = 'ship-preview';
-                
-                // Generate preview based on shape
-                const cells = getShipPreviewCells(ship.shape, ship.size);
-                cells.forEach(() => {
-                    const shipCell = document.createElement('div');
-                    shipCell.className = `ship-cell ${shipType === 'carrier' ? 'carrier' : ''}`;
-                    shipPreview.appendChild(shipCell);
-                });
-                
-                const shipName = document.createElement('span');
-                shipName.className = 'ship-name';
-                shipName.textContent = `${ship.name} (${ship.size})`;
-                
-                shipItem.appendChild(shipPreview);
-                shipItem.appendChild(shipName);
-                
-                // Add drag events
-                shipItem.addEventListener('dragstart', handleDragStart);
-                shipItem.addEventListener('dragend', handleDragEnd);
-                
-                // Add touch events for mobile
-                shipItem.addEventListener('touchstart', handleTouchStart);
-                shipItem.addEventListener('touchmove', handleTouchMove);
-                shipItem.addEventListener('touchend', handleTouchEnd);
-                
-                shipDockItems.appendChild(shipItem);
-            });
-            
-            // Initialize placing ships
-            placingShips = Object.keys(shipTemplates).map(shipType => ({
-                ...shipTemplates[shipType],
-                type: shipType,
-                placed: false
-            }));
-        }
-
-        // Get ship preview cells based on shape
-        function getShipPreviewCells(shape, size) {
-            const cells = [];
-            
-            switch(shape) {
-                case 'line':
-                    for (let i = 0; i < size; i++) cells.push(i);
-                    break;
-                case 'L':
-                    // L shape: 2 down, 1 right
-                    cells.push(0, 1, 2); // Simple line for preview
-                    break;
-                case 'T':
-                    // T shape: 2x2 block + front
-                    cells.push(0, 1, 2, 3, 4); // Simple line for preview
-                    break;
-                default:
-                    for (let i = 0; i < size; i++) cells.push(i);
-            }
-            
-            return cells;
-        }
-
-        // Handle drag start
-        function handleDragStart(e) {
-            const shipType = e.target.dataset.shipType;
-            const ship = placingShips.find(s => s.type === shipType);
-            
-            if (ship.placed) {
-                e.preventDefault();
-                return;
-            }
-            
-            currentDraggingShip = ship;
-            e.target.classList.add('dragging');
-            e.dataTransfer.setData('text/plain', shipType);
-            e.dataTransfer.effectAllowed = 'move';
-            
-            // Create ghost element
-            setTimeout(() => {
-                const ghost = e.target.cloneNode(true);
-                ghost.id = 'drag-ghost';
-                ghost.classList.add('drag-ghost');
-                ghost.style.opacity = '0.8';
-                document.body.appendChild(ghost);
-                
-                e.dataTransfer.setDragImage(ghost, 0, 0);
-            }, 0);
-        }
-
-        // Handle drag end
-        function handleDragEnd(e) {
-            e.target.classList.remove('dragging');
-            currentDraggingShip = null;
-            
-            // Remove ghost element
-            const ghost = document.getElementById('drag-ghost');
-            if (ghost) ghost.remove();
-            
-            // Clear drag-over classes
-            const cells = document.querySelectorAll('.setup-cell');
-            cells.forEach(cell => {
-                cell.classList.remove('drag-over');
-                cell.classList.remove('invalid');
-            });
-        }
-
-        // Handle touch start for mobile
-        function handleTouchStart(e) {
-            const shipItem = e.target.closest('.ship-dock-item');
-            if (!shipItem) return;
-            
-            const shipType = shipItem.dataset.shipType;
-            const ship = placingShips.find(s => s.type === shipType);
-            
-            if (ship.placed) {
-                e.preventDefault();
-                return;
-            }
-            
-            currentDraggingShip = ship;
-            shipItem.classList.add('dragging');
-            
-            // Calculate touch position
-            const touch = e.touches[0];
-            const rect = shipItem.getBoundingClientRect();
-            dragOffsetX = touch.clientX - rect.left;
-            dragOffsetY = touch.clientY - rect.top;
-            
-            // Create ghost element
-            const ghost = shipItem.cloneNode(true);
-            ghost.id = 'drag-ghost';
-            ghost.classList.add('drag-ghost');
-            ghost.style.left = (touch.clientX - dragOffsetX) + 'px';
-            ghost.style.top = (touch.clientY - dragOffsetY) + 'px';
-            document.body.appendChild(ghost);
-            
-            e.preventDefault();
-        }
-
-        // Handle touch move for mobile
-        function handleTouchMove(e) {
-            if (!currentDraggingShip) return;
-            
-            const touch = e.touches[0];
-            const ghost = document.getElementById('drag-ghost');
-            if (ghost) {
-                ghost.style.left = (touch.clientX - dragOffsetX) + 'px';
-                ghost.style.top = (touch.clientY - dragOffsetY) + 'px';
-            }
-            
-            // Highlight grid cells
-            const grid = document.getElementById('setupGrid');
-            const gridRect = grid.getBoundingClientRect();
-            const cells = document.querySelectorAll('.setup-cell');
-            
-            // Clear previous highlights
-            cells.forEach(cell => {
-                cell.classList.remove('drag-over');
-                cell.classList.remove('invalid');
-            });
-            
-            if (touch.clientX >= gridRect.left && touch.clientX <= gridRect.right &&
-                touch.clientY >= gridRect.top && touch.clientY <= gridRect.bottom) {
-                
-                // Calculate grid position
-                const cellSize = gridRect.width / 20;
-                const col = Math.floor((touch.clientX - gridRect.left) / cellSize);
-                const row = Math.floor((touch.clientY - gridRect.top) / cellSize);
-                
-                if (row >= 0 && row < 20 && col >= 0 && col < 20) {
-                    // Highlight cells where ship can be placed
-                    const shipCells = getShipCells(currentDraggingShip.shape, currentDraggingShip.size, row, col, isVertical);
-                    const isValid = canPlaceShip(shipCells);
+            for (let row = 0; row < 20; row++) {
+                for (let col = 0; col < 20; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'game-cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
                     
-                    shipCells.forEach(cellPos => {
-                        if (cellPos.row >= 0 && cellPos.row < 20 && cellPos.col >= 0 && cellPos.col < 20) {
-                            const index = cellPos.row * 20 + cellPos.col;
-                            if (cells[index]) {
-                                cells[index].classList.add(isValid ? 'drag-over' : 'invalid');
-                            }
-                        }
-                    });
+                    cell.addEventListener('click', () => handleGameCellClick(row, col));
+                    
+                    grid.appendChild(cell);
                 }
             }
-            
-            e.preventDefault();
         }
 
-        // Handle touch end for mobile
-        function handleTouchEnd(e) {
-            if (!currentDraggingShip) return;
+        function createShipDock() {
+            const dock = document.getElementById('dockShips');
+            dock.innerHTML = '';
             
-            const touch = e.changedTouches[0];
-            const grid = document.getElementById('setupGrid');
-            const gridRect = grid.getBoundingClientRect();
-            
-            // Remove ghost
-            const ghost = document.getElementById('drag-ghost');
-            if (ghost) ghost.remove();
-            
-            // Clear dragging class
-            const shipItem = document.querySelector('.ship-dock-item.dragging');
-            if (shipItem) shipItem.classList.remove('dragging');
-            
-            if (touch.clientX >= gridRect.left && touch.clientX <= gridRect.right &&
-                touch.clientY >= gridRect.top && touch.clientY <= gridRect.bottom) {
+            shipTemplates.forEach(ship => {
+                const shipElement = document.createElement('div');
+                shipElement.className = 'dock-ship';
+                shipElement.dataset.shipId = ship.id;
+                shipElement.draggable = true;
                 
-                // Calculate grid position
-                const cellSize = gridRect.width / 20;
-                const col = Math.floor((touch.clientX - gridRect.left) / cellSize);
-                const row = Math.floor((touch.clientY - gridRect.top) / cellSize);
+                const preview = document.createElement('div');
+                preview.className = 'ship-preview';
                 
-                if (row >= 0 && row < 20 && col >= 0 && col < 20) {
-                    placeShip(currentDraggingShip.type, row, col);
+                for (let i = 0; i < ship.size; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = `preview-cell ${ship.id === 'carrier' ? 'carrier' : ''}`;
+                    preview.appendChild(cell);
                 }
-            }
-            
-            currentDraggingShip = null;
-            
-            // Clear highlights
-            const cells = document.querySelectorAll('.setup-cell');
-            cells.forEach(cell => {
-                cell.classList.remove('drag-over');
-                cell.classList.remove('invalid');
+                
+                const name = document.createElement('span');
+                name.textContent = `${ship.name} (${ship.size})`;
+                
+                shipElement.appendChild(preview);
+                shipElement.appendChild(name);
+                
+                // Drag events
+                shipElement.addEventListener('dragstart', handleDragStart);
+                shipElement.addEventListener('dragend', handleDragEnd);
+                
+                dock.appendChild(shipElement);
             });
-            
-            e.preventDefault();
         }
 
-        // Handle drag over
+        // ========== DRAG AND DROP ==========
+        let currentDragShip = null;
+
+        function handleDragStart(e) {
+            const shipId = e.target.dataset.shipId;
+            const ship = shipTemplates.find(s => s.id === shipId);
+            
+            if (gameState.placedShips.some(s => s.id === shipId && s.placed)) {
+                e.preventDefault();
+                return;
+            }
+            
+            currentDragShip = ship;
+            e.dataTransfer.setData('text/plain', shipId);
+            e.dataTransfer.effectAllowed = 'move';
+        }
+
+        function handleDragEnd() {
+            currentDragShip = null;
+            clearPlacementHighlights();
+        }
+
         function handleDragOver(e) {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
         }
 
-        // Handle drop
-        function handleDrop(e) {
-            e.preventDefault();
-            
-            const row = parseInt(e.target.dataset.row);
-            const col = parseInt(e.target.dataset.col);
-            
-            if (isNaN(row) || isNaN(col)) return;
-            
-            const shipType = e.dataTransfer.getData('text/plain');
-            if (!shipType) return;
-            
-            placeShip(shipType, row, col);
-        }
-
-        // Handle drag enter
         function handleDragEnter(e) {
             e.preventDefault();
-            
             const row = parseInt(e.target.dataset.row);
             const col = parseInt(e.target.dataset.col);
             
-            if (isNaN(row) || isNaN(col)) return;
-            
-            if (currentDraggingShip) {
-                // Highlight cells where ship can be placed
-                const shipCells = getShipCells(currentDraggingShip.shape, currentDraggingShip.size, row, col, isVertical);
-                const cells = document.querySelectorAll('.setup-cell');
-                const isValid = canPlaceShip(shipCells);
-                
-                // Clear previous highlights
-                cells.forEach(cell => {
-                    cell.classList.remove('drag-over');
-                    cell.classList.remove('invalid');
-                });
-                
-                // Highlight new cells
-                shipCells.forEach(cellPos => {
-                    if (cellPos.row >= 0 && cellPos.row < 20 && cellPos.col >= 0 && cellPos.col < 20) {
-                        const index = cellPos.row * 20 + cellPos.col;
-                        if (cells[index]) {
-                            cells[index].classList.add(isValid ? 'drag-over' : 'invalid');
-                        }
-                    }
-                });
+            if (!isNaN(row) && !isNaN(col) && currentDragShip) {
+                highlightPlacementCells(row, col);
             }
         }
 
-        // Handle drag leave
-        function handleDragLeave(e) {
-            // Keep highlights for smooth transitions
+        function handleDragLeave() {
+            // Keep highlights for smooth UX
         }
 
-        // Get ship cells based on shape and position
-        function getShipCells(shape, size, startRow, startCol, vertical) {
+        function handleDrop(e) {
+            e.preventDefault();
+            const row = parseInt(e.target.dataset.row);
+            const col = parseInt(e.target.dataset.col);
+            const shipId = e.dataTransfer.getData('text/plain');
+            
+            if (!isNaN(row) && !isNaN(col) && shipId) {
+                placeShip(shipId, row, col);
+            }
+        }
+
+        function highlightPlacementCells(row, col) {
+            clearPlacementHighlights();
+            
+            if (!currentDragShip) return;
+            
+            const cells = getShipCells(currentDragShip.shape, currentDragShip.size, row, col, gameState.isVertical);
+            const isValid = canPlaceShip(cells);
+            
+            cells.forEach(pos => {
+                if (pos.row >= 0 && pos.row < 20 && pos.col >= 0 && pos.col < 20) {
+                    const cell = document.querySelector(
+                        `.placement-cell[data-row="${pos.row}"][data-col="${pos.col}"]`
+                    );
+                    if (cell) {
+                        cell.classList.add(isValid ? 'drag-over' : 'invalid');
+                    }
+                }
+            });
+        }
+
+        function clearPlacementHighlights() {
+            document.querySelectorAll('.placement-cell').forEach(cell => {
+                cell.classList.remove('drag-over', 'invalid');
+            });
+        }
+
+        function getShipCells(shape, size, row, col, vertical) {
             const cells = [];
             
             switch(shape) {
                 case 'line':
                     if (vertical) {
                         for (let i = 0; i < size; i++) {
-                            cells.push({row: startRow + i, col: startCol});
+                            cells.push({row: row + i, col});
                         }
                     } else {
                         for (let i = 0; i < size; i++) {
-                            cells.push({row: startRow, col: startCol + i});
+                            cells.push({row, col: col + i});
                         }
                     }
                     break;
                     
                 case 'L':
-                    // L shape: vertical then horizontal
                     if (vertical) {
-                        cells.push({row: startRow, col: startCol});
-                        cells.push({row: startRow + 1, col: startCol});
-                        cells.push({row: startRow + 1, col: startCol + 1});
+                        cells.push({row, col});
+                        cells.push({row: row + 1, col});
+                        cells.push({row: row + 1, col: col + 1});
                     } else {
-                        cells.push({row: startRow, col: startCol});
-                        cells.push({row: startRow, col: startCol + 1});
-                        cells.push({row: startRow + 1, col: startCol});
+                        cells.push({row, col});
+                        cells.push({row, col: col + 1});
+                        cells.push({row: row + 1, col});
                     }
                     break;
                     
                 case 'T':
-                    // T shape: 2x2 block with front extension
                     if (vertical) {
-                        // Vertical T
-                        cells.push({row: startRow, col: startCol});
-                        cells.push({row: startRow, col: startCol + 1});
-                        cells.push({row: startRow + 1, col: startCol});
-                        cells.push({row: startRow + 1, col: startCol + 1});
-                        cells.push({row: startRow - 1, col: startCol});
+                        // T shape vertical
+                        cells.push({row, col});
+                        cells.push({row, col: col + 1});
+                        cells.push({row: row + 1, col});
+                        cells.push({row: row + 1, col: col + 1});
+                        cells.push({row: row - 1, col});
                     } else {
-                        // Horizontal T
-                        cells.push({row: startRow, col: startCol});
-                        cells.push({row: startRow, col: startCol + 1});
-                        cells.push({row: startRow + 1, col: startCol});
-                        cells.push({row: startRow + 1, col: startCol + 1});
-                        cells.push({row: startRow, col: startCol - 1});
+                        // T shape horizontal
+                        cells.push({row, col});
+                        cells.push({row, col: col + 1});
+                        cells.push({row: row + 1, col});
+                        cells.push({row: row + 1, col: col + 1});
+                        cells.push({row, col: col - 1});
                     }
                     break;
             }
@@ -1504,19 +1211,18 @@
             return cells;
         }
 
-        // Check if ship can be placed
-        function canPlaceShip(shipCells) {
+        function canPlaceShip(cells) {
             // Check bounds
-            for (const cell of shipCells) {
+            for (const cell of cells) {
                 if (cell.row < 0 || cell.row >= 20 || cell.col < 0 || cell.col >= 20) {
                     return false;
                 }
                 
-                // Check if cell is already occupied
-                const cellElement = document.querySelector(
-                    `.setup-cell[data-row="${cell.row}"][data-col="${cell.col}"]`
+                // Check if cell is occupied
+                const existingCell = document.querySelector(
+                    `.placement-cell[data-row="${cell.row}"][data-col="${cell.col}"].ship`
                 );
-                if (cellElement && cellElement.classList.contains('ship')) {
+                if (existingCell) {
                     return false;
                 }
             }
@@ -1524,125 +1230,125 @@
             return true;
         }
 
-        // Place ship on setup grid
-        function placeShip(shipType, startRow, startCol) {
-            const ship = placingShips.find(s => s.type === shipType);
+        function placeShip(shipId, row, col) {
+            const shipTemplate = shipTemplates.find(s => s.id === shipId);
             
-            if (!ship || ship.placed) {
-                showMessage("This ship is already placed!");
+            if (!shipTemplate) return;
+            
+            // Check if already placed
+            if (gameState.placedShips.some(s => s.id === shipId && s.placed)) {
+                showMessage('This ship is already placed!');
                 return;
             }
             
-            const shipCells = getShipCells(ship.shape, ship.size, startRow, startCol, isVertical);
+            const cells = getShipCells(shipTemplate.shape, shipTemplate.size, row, col, gameState.isVertical);
             
-            if (!canPlaceShip(shipCells)) {
-                showMessage("Cannot place ship here!");
+            if (!canPlaceShip(cells)) {
+                showMessage('Cannot place ship here!');
                 return;
             }
             
             // Mark ship as placed
-            ship.placed = true;
+            let placedShip = gameState.placedShips.find(s => s.id === shipId);
+            if (!placedShip) {
+                placedShip = {
+                    ...shipTemplate,
+                    cells: cells,
+                    placed: true,
+                    player: gameState.currentPlayer
+                };
+                gameState.placedShips.push(placedShip);
+            } else {
+                placedShip.cells = cells;
+                placedShip.placed = true;
+            }
             
-            // Add ship to placed ships
-            placedShips.push({
-                ...ship,
-                cells: shipCells,
-                player: placingPlayer
-            });
-            
-            // Update grid display
-            shipCells.forEach(cell => {
-                const cellElement = document.querySelector(
-                    `.setup-cell[data-row="${cell.row}"][data-col="${cell.col}"]`
+            // Update grid
+            cells.forEach(pos => {
+                const cell = document.querySelector(
+                    `.placement-cell[data-row="${pos.row}"][data-col="${pos.col}"]`
                 );
-                if (cellElement) {
-                    cellElement.classList.add('ship');
-                    if (shipType === 'carrier') {
-                        cellElement.classList.add('carrier');
+                if (cell) {
+                    cell.classList.add('ship');
+                    if (shipId === 'carrier') {
+                        cell.classList.add('carrier');
                     }
                 }
             });
             
-            // Update ship dock
+            // Update dock
             updateShipDock();
             
             // Check if all ships placed
-            const allPlaced = placingShips.every(s => s.placed);
+            const allPlaced = shipTemplates.every(ship => 
+                gameState.placedShips.some(s => s.id === ship.id && s.placed)
+            );
+            
             document.getElementById('finishBtn').disabled = !allPlaced;
             
             if (allPlaced) {
-                showMessage("All ships placed! Click 'Finish Deployment' to continue.");
+                showMessage('All ships placed! Click Finish Deployment.');
             } else {
-                showMessage(`${ship.name} placed! ${placingShips.filter(s => !s.placed).length} ships remaining.`);
+                showMessage(`${shipTemplate.name} placed. ${shipTemplates.length - gameState.placedShips.filter(s => s.placed).length} ships remaining.`);
             }
             
-            // Clear highlights
-            const cells = document.querySelectorAll('.setup-cell');
-            cells.forEach(cell => {
-                cell.classList.remove('drag-over');
-                cell.classList.remove('invalid');
-            });
+            clearPlacementHighlights();
         }
 
-        // Update ship dock display
         function updateShipDock() {
-            const shipItems = document.querySelectorAll('.ship-dock-item');
-            shipItems.forEach(item => {
-                const shipType = item.dataset.shipType;
-                const ship = placingShips.find(s => s.type === shipType);
+            document.querySelectorAll('.dock-ship').forEach(shipElement => {
+                const shipId = shipElement.dataset.shipId;
+                const placed = gameState.placedShips.some(s => s.id === shipId && s.placed);
                 
-                if (ship.placed) {
-                    item.classList.add('placed');
-                    item.draggable = false;
+                if (placed) {
+                    shipElement.classList.add('placed');
                 } else {
-                    item.classList.remove('placed');
-                    item.draggable = true;
+                    shipElement.classList.remove('placed');
                 }
             });
         }
 
-        // Rotate ship during placement
+        // ========== PLACEMENT CONTROLS ==========
         function rotateShip() {
-            isVertical = !isVertical;
-            showMessage(`Ship orientation: ${isVertical ? 'Vertical' : 'Horizontal'}`);
+            gameState.isVertical = !gameState.isVertical;
+            showMessage(`Orientation: ${gameState.isVertical ? 'Vertical' : 'Horizontal'}`);
         }
 
-        // Randomly place all ships
-        function randomPlaceShips() {
-            // Clear current placement
-            resetPlacement();
+        function randomPlacement() {
+            clearPlacement();
             
             const gridSize = 20;
             let attempts = 0;
             
-            placingShips.forEach(ship => {
+            shipTemplates.forEach(ship => {
                 let placed = false;
                 let maxAttempts = 100;
                 
                 while (!placed && attempts < maxAttempts) {
-                    const startRow = Math.floor(Math.random() * gridSize);
-                    const startCol = Math.floor(Math.random() * gridSize);
+                    const row = Math.floor(Math.random() * gridSize);
+                    const col = Math.floor(Math.random() * gridSize);
                     const vertical = Math.random() > 0.5;
                     
-                    const shipCells = getShipCells(ship.shape, ship.size, startRow, startCol, vertical);
+                    const cells = getShipCells(ship.shape, ship.size, row, col, vertical);
                     
-                    if (canPlaceShip(shipCells)) {
-                        ship.placed = true;
-                        placedShips.push({
+                    if (canPlaceShip(cells)) {
+                        // Mark as placed
+                        gameState.placedShips.push({
                             ...ship,
-                            cells: shipCells,
-                            player: placingPlayer
+                            cells: cells,
+                            placed: true,
+                            player: gameState.currentPlayer
                         });
                         
                         // Update grid
-                        shipCells.forEach(cell => {
-                            const cellElement = document.querySelector(
-                                `.setup-cell[data-row="${cell.row}"][data-col="${cell.col}"]`
+                        cells.forEach(pos => {
+                            const cell = document.querySelector(
+                                `.placement-cell[data-row="${pos.row}"][data-col="${pos.col}"]`
                             );
-                            if (cellElement) {
-                                cellElement.classList.add('ship');
-                                if (ship.type === 'carrier') {
-                                    cellElement.classList.add('carrier');
+                            if (cell) {
+                                cell.classList.add('ship');
+                                if (ship.id === 'carrier') {
+                                    cell.classList.add('carrier');
                                 }
                             }
                         });
@@ -1656,232 +1362,206 @@
             
             updateShipDock();
             
-            const allPlaced = placingShips.every(s => s.placed);
+            const allPlaced = shipTemplates.every(ship => 
+                gameState.placedShips.some(s => s.id === ship.id && s.placed)
+            );
+            
             document.getElementById('finishBtn').disabled = !allPlaced;
             
             if (allPlaced) {
-                showMessage("All ships randomly placed!");
-            } else {
-                showMessage("Could not place all ships randomly. Some positions may need manual adjustment.");
+                showMessage('All ships randomly placed!');
             }
         }
 
-        // Reset placement
-        function resetPlacement() {
+        function clearPlacement() {
             // Clear grid
-            const cells = document.querySelectorAll('.setup-cell');
-            cells.forEach(cell => {
-                cell.classList.remove('ship');
-                cell.classList.remove('carrier');
+            document.querySelectorAll('.placement-cell').forEach(cell => {
+                cell.classList.remove('ship', 'carrier');
             });
             
-            // Reset ships
-            placingShips.forEach(ship => {
-                ship.placed = false;
-            });
-            placedShips = [];
+            // Clear placed ships
+            gameState.placedShips = [];
             
             // Update dock
             updateShipDock();
-            document.getElementById('finishBtn').disabled = true;
             
-            showMessage("All ships cleared. Drag and drop to place again.");
+            document.getElementById('finishBtn').disabled = true;
+            showMessage('Placement cleared. Drag ships to place again.');
         }
 
-        // Finish placement and proceed
         function finishPlacement() {
-            if (placingPlayer === 1) {
+            if (gameState.currentPlayer === 1) {
                 // Save player 1's ships
-                const p1Ships = placedShips.map(ship => createGameShip(ship, 1));
-                
-                // Reset for player 2
-                placingPlayer = 2;
-                placingShips = Object.keys(shipTemplates).map(shipType => ({
-                    ...shipTemplates[shipType],
-                    type: shipType,
-                    placed: false
+                const p1Ships = gameState.placedShips.map(ship => ({
+                    ...ship,
+                    id: `p1-${ship.id}`,
+                    health: ship.health,
+                    maxHealth: ship.health,
+                    fuel: ship.fuel,
+                    maxFuel: ship.fuel,
+                    cooldown: 0,
+                    revealed: false,
+                    player: 1
                 }));
-                placedShips = [];
+                
+                // Switch to player 2
+                gameState.currentPlayer = 2;
+                gameState.placedShips = [];
                 
                 // Clear grid
-                const cells = document.querySelectorAll('.setup-cell');
-                cells.forEach(cell => {
-                    cell.classList.remove('ship');
-                    cell.classList.remove('carrier');
+                document.querySelectorAll('.placement-cell').forEach(cell => {
+                    cell.classList.remove('ship', 'carrier');
                 });
                 
                 // Update UI
-                document.getElementById('setupTitle').textContent = "PLAYER 2: DEPLOY YOUR FLEET";
+                document.getElementById('placementTitle').textContent = 'PLAYER 2: DEPLOY YOUR FLEET';
                 updateShipDock();
                 document.getElementById('finishBtn').disabled = true;
                 
-                // Store player 1 ships temporarily
+                // Store player 1 ships
                 window.player1Ships = p1Ships;
                 
-                showMessage("Player 2's turn to place ships. Player 1 look away!");
+                showMessage('Player 2, deploy your ships! Player 1 look away.');
                 
             } else {
-                // Save player 2's ships and start game
-                const p2Ships = placedShips.map(ship => createGameShip(ship, 2));
+                // Save player 2's ships
+                const p2Ships = gameState.placedShips.map(ship => ({
+                    ...ship,
+                    id: `p2-${ship.id}`,
+                    health: ship.health,
+                    maxHealth: ship.health,
+                    fuel: ship.fuel,
+                    maxFuel: ship.fuel,
+                    cooldown: 0,
+                    revealed: false,
+                    player: 2
+                }));
                 
-                // Combine both players' ships
-                ships = [...window.player1Ships, ...p2Ships];
+                // Combine all ships
+                gameState.ships = [...window.player1Ships, ...p2Ships];
                 
                 // Start game
-                document.getElementById('setupScreen').style.display = 'none';
+                gameState.phase = 'game';
+                gameState.currentPlayer = 1;
+                
+                document.getElementById('placementScreen').style.display = 'none';
                 document.getElementById('gameScreen').style.display = 'block';
-                currentPlayer = 1;
                 updateDisplay();
-                showMessage("Game started! Player 1's turn. Enemy ships are hidden.");
+                showMessage('Game started! Player 1\'s turn. Enemy ships are hidden.');
             }
         }
 
-        // Create game ship from placed ship
-        function createGameShip(placedShip, player) {
-            return {
-                ...placedShip,
-                id: `p${player}-${placedShip.type}`,
-                player: player,
-                health: placedShip.maxHealth,
-                fuel: placedShip.fuel,
-                abilityCooldown: 0,
-                canMove: true,
-                damageLevel: 0,
-                revealed: false
-            };
-        }
-
-        // Start setup phase
-        function startSetup() {
-            document.getElementById('readyScreen').style.display = 'none';
-            document.getElementById('setupScreen').style.display = 'flex';
-            initGame();
+        // ========== GAME LOGIC ==========
+        function handleGameCellClick(row, col) {
+            if (gameState.actionPoints <= 0) {
+                showMessage('No action points remaining!');
+                return;
+            }
             
-            // Add keyboard shortcut for rotation
-            document.addEventListener('keydown', (e) => {
-                if (e.key.toLowerCase() === 'r') {
-                    rotateShip();
-                }
-            });
+            switch(gameState.gamePhase) {
+                case 'select':
+                    // Try to select a ship
+                    const ship = getShipAt(row, col);
+                    if (ship && ship.player === gameState.currentPlayer) {
+                        selectShip(ship.id);
+                    } else {
+                        showMessage('Select one of your ships first!');
+                    }
+                    break;
+                    
+                case 'moving':
+                    moveShipTo(row, col);
+                    break;
+                    
+                case 'attacking':
+                    attackTarget(row, col);
+                    break;
+                    
+                case 'ability_mine':
+                    placeMine(row, col);
+                    break;
+                    
+                case 'ability_sonar':
+                    useSonar(row, col);
+                    break;
+                    
+                case 'ability_recon':
+                    useRecon(row, col);
+                    break;
+                    
+                case 'ability_repair':
+                    repairTarget(row, col);
+                    break;
+                    
+                case 'ability_barrage':
+                    useBarrage(row, col);
+                    break;
+            }
         }
 
-        // [REST OF THE GAME LOGIC FUNCTIONS REMAIN THE SAME AS BEFORE]
-        // Get ship at position
         function getShipAt(row, col) {
-            return ships.find(ship => 
+            return gameState.ships.find(ship => 
                 ship.cells.some(cell => cell.row === row && cell.col === col)
             );
         }
 
-        // Get all ships at position (for explosions)
-        function getShipsInArea(centerRow, centerCol, radius = 1) {
-            const shipsInArea = [];
-            for (let r = Math.max(0, centerRow - radius); r <= Math.min(19, centerRow + radius); r++) {
-                for (let c = Math.max(0, centerCol - radius); c <= Math.min(19, centerCol + radius); c++) {
-                    const ship = getShipAt(r, c);
-                    if (ship && !shipsInArea.includes(ship)) {
-                        shipsInArea.push(ship);
-                    }
-                }
-            }
-            return shipsInArea;
-        }
-
-        // Select a ship
         function selectShip(shipId) {
-            selectedShipId = shipId;
-            gamePhase = 'select';
-            updateDisplay();
+            const ship = gameState.ships.find(s => s.id === shipId);
+            if (!ship || ship.player !== gameState.currentPlayer) {
+                showMessage('Cannot select this ship!');
+                return;
+            }
             
-            const ship = getShipById(shipId);
+            gameState.selectedShip = shipId;
+            gameState.gamePhase = 'select';
+            updateDisplay();
             showMessage(`Selected ${ship.name}. Fuel: ${ship.fuel}/${ship.maxFuel}`);
         }
 
-        // Start moving ship
-        function startMoveShip() {
-            const ship = getShipById(selectedShipId);
+        function startMove() {
+            const ship = gameState.ships.find(s => s.id === gameState.selectedShip);
+            if (!ship) return;
             
-            if (!ship) {
-                showMessage("No ship selected!");
-                return;
-            }
-            
-            if (ship.damageLevel >= 1) {
-                showMessage(`${ship.name} is too damaged to move! (>50% damage)`);
-                return;
-            }
-            
-            if (ship.player !== currentPlayer) {
-                showMessage("You can only move your own ships!");
+            if (ship.health <= ship.maxHealth * 0.5) {
+                showMessage('Ship too damaged to move! (>50% damage)');
                 return;
             }
             
             if (ship.fuel <= 0) {
-                showMessage(`${ship.name} has no fuel remaining!`);
+                showMessage('No fuel remaining!');
                 return;
             }
             
-            if (actionPoints <= 0) {
-                showMessage("No action points remaining!");
-                return;
-            }
-            
-            gamePhase = 'moving';
-            movementPath = [];
-            showMessage(`Select destination. Fuel available: ${ship.fuel}. Each cell costs 1 fuel.`);
-            
-            // Highlight ship's current position
-            highlightMovementOptions(ship);
+            gameState.gamePhase = 'moving';
+            showMessage(`Select destination. Fuel available: ${ship.fuel}`);
         }
 
-        // Highlight movement options
-        function highlightMovementOptions(ship) {
-            const cells = document.querySelectorAll('#mainGrid .cell');
-            cells.forEach(cell => cell.classList.remove('moving-path'));
-            
-            // Show possible moves within fuel range
-            ship.cells.forEach(cell => {
-                const maxDistance = ship.fuel;
-                for (let r = Math.max(0, cell.row - maxDistance); r <= Math.min(19, cell.row + maxDistance); r++) {
-                    for (let c = Math.max(0, cell.col - maxDistance); c <= Math.min(19, cell.col + maxDistance); c++) {
-                        const distance = Math.abs(r - cell.row) + Math.abs(c - cell.col);
-                        if (distance <= maxDistance && distance > 0) {
-                            const index = r * 20 + c;
-                            if (cells[index]) {
-                                cells[index].classList.add('moving-path');
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // Move ship to clicked cell
-        function moveShipToCell(targetRow, targetCol) {
-            const ship = getShipById(selectedShipId);
-            
+        function moveShipTo(targetRow, targetCol) {
+            const ship = gameState.ships.find(s => s.id === gameState.selectedShip);
             if (!ship) return;
             
-            // Find closest ship cell
-            let closestCell = null;
+            // Find closest cell to calculate distance
             let minDistance = Infinity;
-            
             ship.cells.forEach(cell => {
                 const distance = Math.abs(cell.row - targetRow) + Math.abs(cell.col - targetCol);
-                if (distance < minDistance && distance <= ship.fuel) {
+                if (distance < minDistance) {
                     minDistance = distance;
-                    closestCell = cell;
                 }
             });
             
-            if (!closestCell || minDistance > ship.fuel) {
+            if (minDistance > ship.fuel) {
                 showMessage(`Not enough fuel! Need ${minDistance}, have ${ship.fuel}`);
                 return;
             }
             
-            // Calculate movement vector
-            const dRow = targetRow - closestCell.row;
-            const dCol = targetCol - closestCell.col;
+            if (minDistance === 0) {
+                showMessage('Ship is already here!');
+                return;
+            }
+            
+            // Calculate move vector
+            const dRow = targetRow - ship.cells[0].row;
+            const dCol = targetCol - ship.cells[0].col;
             
             // Check if new position is valid
             const newCells = ship.cells.map(cell => ({
@@ -1889,311 +1569,169 @@
                 col: cell.col + dCol
             }));
             
-            // Check bounds
             for (const cell of newCells) {
                 if (cell.row < 0 || cell.row >= 20 || cell.col < 0 || cell.col >= 20) {
-                    showMessage("Cannot move outside grid!");
+                    showMessage('Cannot move outside grid!');
                     return;
                 }
                 
-                // Check for other ships (excluding self)
                 const otherShip = getShipAt(cell.row, cell.col);
                 if (otherShip && otherShip.id !== ship.id) {
-                    showMessage("Cannot move onto another ship!");
+                    showMessage('Cannot move onto another ship!');
                     return;
-                }
-                
-                // Check for mines
-                const mine = mines.find(m => m.row === cell.row && m.col === cell.col && m.active);
-                if (mine && mine.player !== currentPlayer) {
-                    showMessage("Warning: Moving into minefield!");
-                    // Mine will trigger after move
                 }
             }
             
-            // Animate movement
-            animateShipMovement(ship, newCells, minDistance);
+            // Move ship
+            ship.cells = newCells;
+            ship.fuel -= minDistance;
+            
+            // Check for mines
+            checkMineHits(ship);
+            
+            gameState.actionPoints--;
+            gameState.gamePhase = 'select';
+            updateDisplay();
+            showMessage(`${ship.name} moved ${minDistance} cells. Fuel: ${ship.fuel}/${ship.maxFuel}`);
         }
 
-        // Animate ship movement
-        function animateShipMovement(ship, newCells, fuelCost) {
-            const shipElements = [];
-            const grid = document.getElementById('mainGrid');
-            const cellSize = grid.clientWidth / 20;
-            
-            // Create temporary ship elements for animation
-            ship.cells.forEach((cell, index) => {
-                const shipElement = document.createElement('div');
-                shipElement.className = 'moving-ship';
-                shipElement.style.cssText = `
-                    --cell-size: ${cellSize}px;
-                    --ship-color: ${ship.player === 1 ? 'rgba(52, 152, 219, 0.8)' : 'rgba(231, 76, 60, 0.8)'};
-                    --border-color: ${ship.player === 1 ? '#2980b9' : '#c0392b'};
-                    left: ${cell.col * cellSize}px;
-                    top: ${cell.row * cellSize}px;
-                    width: ${cellSize}px;
-                    height: ${cellSize}px;
-                `;
-                grid.appendChild(shipElement);
-                shipElements.push(shipElement);
-            });
-            
-            // Hide original ship during animation
-            const originalCells = [...ship.cells];
-            originalCells.forEach(cell => {
-                const index = cell.row * 20 + cell.col;
-                const cellElement = grid.children[index];
-                cellElement.classList.remove(`ship-p${ship.player}`);
-            });
-            
-            // Animate movement
-            setTimeout(() => {
-                shipElements.forEach((element, index) => {
-                    const newCell = newCells[index];
-                    const dx = (newCell.col - originalCells[index].col) * cellSize;
-                    const dy = (newCell.row - originalCells[index].row) * cellSize;
-                    
-                    element.style.transform = `translate(${dx}px, ${dy}px)`;
-                });
-                
-                setTimeout(() => {
-                    // Remove temporary elements
-                    shipElements.forEach(el => el.remove());
-                    
-                    // Update ship position
-                    ship.cells = newCells;
-                    ship.fuel -= fuelCost;
-                    
-                    // Check for mine hits
-                    checkMineHits(ship);
-                    
-                    actionPoints--;
-                    gamePhase = 'select';
-                    clearMovementHighlights();
-                    updateDisplay();
-                    
-                    showMessage(`${ship.name} moved ${fuelCost} cells. Fuel remaining: ${ship.fuel}/${ship.maxFuel}`);
-                    
-                    // Vibrate on mobile if supported
-                    if (navigator.vibrate) navigator.vibrate(50);
-                    
-                }, 1000);
-                
-            }, 100);
-        }
-
-        // Check for mine hits after movement
         function checkMineHits(ship) {
-            let mineHit = false;
+            let hitMine = false;
             
             ship.cells.forEach(cell => {
-                const mine = mines.find(m => 
-                    m.row === cell.row && 
-                    m.col === cell.col && 
-                    m.active && 
-                    m.player !== currentPlayer
+                const mine = gameState.mines.find(m => 
+                    m.row === cell.row && m.col === cell.col && m.active && m.player !== ship.player
                 );
                 
                 if (mine) {
-                    mineHit = true;
+                    hitMine = true;
                     mine.active = false;
                     
-                    // Damage ship
                     const damage = 30;
                     ship.health = Math.max(0, ship.health - damage);
                     
-                    // Update damage level
-                    updateShipDamageLevel(ship);
-                    
-                    showMessage(`💥 ${ship.name} hit a mine! Took ${damage} damage!`);
-                    
-                    // Check if sunk
                     if (ship.health <= 0) {
                         sinkShip(ship.id);
+                    } else {
+                        showMessage(`${ship.name} hit a mine! Lost ${damage} health.`);
                     }
                 }
             });
             
-            return mineHit;
+            return hitMine;
         }
 
-        // Clear movement highlights
-        function clearMovementHighlights() {
-            const cells = document.querySelectorAll('#mainGrid .cell');
-            cells.forEach(cell => cell.classList.remove('moving-path'));
-        }
-
-        // Start attack
         function startAttack() {
-            const ship = getShipById(selectedShipId);
-            
-            if (!ship) {
-                showMessage("No ship selected!");
-                return;
-            }
-            
-            if (ship.player !== currentPlayer) {
-                showMessage("You can only attack with your own ships!");
-                return;
-            }
-            
-            if (actionPoints <= 0) {
-                showMessage("No action points remaining!");
-                return;
-            }
-            
-            gamePhase = 'attacking';
-            showMessage(`Select target to attack. Range: adjacent cells to ${ship.name}.`);
+            gameState.gamePhase = 'attacking';
+            showMessage('Select target to attack (must be adjacent to your ship)');
         }
 
-        // Attack target
         function attackTarget(row, col) {
-            const attacker = getShipById(selectedShipId);
-            
+            const attacker = gameState.ships.find(s => s.id === gameState.selectedShip);
             if (!attacker) return;
             
-            // Check if target is in range (adjacent to any ship cell)
+            // Check if target is adjacent
             const inRange = attacker.cells.some(cell => 
                 Math.abs(cell.row - row) <= 1 && Math.abs(cell.col - col) <= 1
             );
             
             if (!inRange) {
-                showMessage("Target out of range! Must be adjacent to your ship.");
+                showMessage('Target out of range! Must be adjacent.');
                 return;
             }
             
             const targetShip = getShipAt(row, col);
             
-            if (targetShip && targetShip.player !== currentPlayer) {
-                // Damage enemy ship
-                const damage = 50 + Math.floor(Math.random() * 20); // 50-70 damage
+            if (targetShip && targetShip.player !== gameState.currentPlayer) {
+                // Hit!
+                const damage = 50 + Math.floor(Math.random() * 20);
                 targetShip.health = Math.max(0, targetShip.health - damage);
                 
-                // Update damage level
-                updateShipDamageLevel(targetShip);
+                // Reveal enemy ship
+                targetShip.revealed = true;
                 
-                // Reveal enemy ship location
-                revealEnemyShip(targetShip);
-                
-                // Check if sunk
                 if (targetShip.health <= 0) {
                     sinkShip(targetShip.id);
                 } else {
                     showMessage(`Hit! ${targetShip.name} took ${damage} damage!`);
                 }
             } else {
-                showMessage("Miss! No enemy ship at target.");
+                // Miss
+                showMessage('Miss! No enemy ship at target.');
+                
+                // Add miss marker
+                const cell = document.querySelector(
+                    `.game-cell[data-row="${row}"][data-col="${col}"]`
+                );
+                if (cell) {
+                    cell.classList.add('miss');
+                }
             }
             
-            actionPoints--;
-            gamePhase = 'select';
+            gameState.actionPoints--;
+            gameState.gamePhase = 'select';
             updateDisplay();
         }
 
-        // Reveal enemy ship (make visible)
-        function revealEnemyShip(ship) {
-            ship.revealed = true;
-        }
-
-        // Update ship damage level
-        function updateShipDamageLevel(ship) {
-            const healthPercent = (ship.health / ship.maxHealth) * 100;
-            if (healthPercent <= 25) {
-                ship.damageLevel = 2;
-                ship.canMove = false;
-            } else if (healthPercent <= 50) {
-                ship.damageLevel = 1;
-                ship.canMove = false;
-            } else {
-                ship.damageLevel = 0;
-                ship.canMove = true;
-            }
-        }
-
-        // Use ship ability
-        function useShipAbility() {
-            const ship = getShipById(selectedShipId);
+        function useAbility() {
+            const ship = gameState.ships.find(s => s.id === gameState.selectedShip);
+            if (!ship) return;
             
-            if (!ship) {
-                showMessage("No ship selected!");
-                return;
-            }
-            
-            if (ship.player !== currentPlayer) {
-                showMessage("You can only use your own ship's abilities!");
-                return;
-            }
-            
-            if (actionPoints <= 0) {
-                showMessage("No action points remaining!");
-                return;
-            }
-            
-            if (ship.abilityCooldown > 0) {
-                showMessage(`Ability on cooldown! ${ship.abilityCooldown} turns remaining.`);
+            if (ship.cooldown > 0) {
+                showMessage(`Ability on cooldown! ${ship.cooldown} turns remaining.`);
                 return;
             }
             
             switch(ship.ability) {
                 case 'mine':
-                    gamePhase = 'ability_mine';
-                    showMessage("Select location to place mine (cannot be on ships).");
+                    gameState.gamePhase = 'ability_mine';
+                    showMessage('Select location to place mine.');
                     break;
                     
                 case 'sonar':
-                    gamePhase = 'ability_sonar';
-                    showMessage("Select center of 3x3 sonar scan area.");
+                    gameState.gamePhase = 'ability_sonar';
+                    showMessage('Select center of 3x3 sonar scan area.');
                     break;
                     
                 case 'recon':
-                    gamePhase = 'ability_recon';
-                    showMessage("Select center of 5x5 aerial reconnaissance area.");
+                    gameState.gamePhase = 'ability_recon';
+                    showMessage('Select center of 5x5 reconnaissance area.');
                     break;
                     
                 case 'repair':
-                    gamePhase = 'ability_repair';
-                    showMessage("Select ship to repair (must be adjacent to your ship).");
+                    gameState.gamePhase = 'ability_repair';
+                    showMessage('Select ship to repair (must be adjacent).');
                     break;
                     
                 case 'barrage':
-                    gamePhase = 'ability_barrage';
-                    showMessage("Select center of barrage attack (3x3 area).");
+                    gameState.gamePhase = 'ability_barrage';
+                    showMessage('Select center of barrage attack.');
                     break;
             }
         }
 
-        // Place mine (ability)
         function placeMine(row, col) {
-            // Check if cell is empty
             if (getShipAt(row, col)) {
-                showMessage("Cannot place mine on a ship!");
+                showMessage('Cannot place mine on a ship!');
                 return;
             }
             
-            // Check if already has mine
-            const existingMine = mines.find(m => m.row === row && m.col === col && m.active);
-            if (existingMine) {
-                showMessage("Already a mine at this location!");
-                return;
-            }
-            
-            mines.push({
-                player: currentPlayer,
+            gameState.mines.push({
+                player: gameState.currentPlayer,
                 row: row,
                 col: col,
                 active: true
             });
             
-            const ship = getShipById(selectedShipId);
-            ship.abilityCooldown = 3;
+            const ship = gameState.ships.find(s => s.id === gameState.selectedShip);
+            ship.cooldown = 3;
             
-            actionPoints--;
-            gamePhase = 'select';
+            gameState.actionPoints--;
+            gameState.gamePhase = 'select';
             updateDisplay();
-            showMessage(`Mine placed at (${row+1}, ${col+1})!`);
+            showMessage(`Mine placed at (${row+1}, ${col+1})`);
         }
 
-        // Use sonar (ability)
         function useSonar(row, col) {
             // Create 3x3 scan area
             const cells = [];
@@ -2203,31 +1741,29 @@
                 }
             }
             
-            scanAreas.push({
-                player: currentPlayer,
+            gameState.scanAreas.push({
+                player: gameState.currentPlayer,
                 cells: cells,
-                turnsRemaining: 2,
-                type: 'sonar'
+                turns: 2
             });
             
-            // Reveal any enemy ships in area
+            // Reveal enemy ships in area
             cells.forEach(cell => {
                 const ship = getShipAt(cell.row, cell.col);
-                if (ship && ship.player !== currentPlayer) {
+                if (ship && ship.player !== gameState.currentPlayer) {
                     ship.revealed = true;
                 }
             });
             
-            const ship = getShipById(selectedShipId);
-            ship.abilityCooldown = 2;
+            const ship = gameState.ships.find(s => s.id === gameState.selectedShip);
+            ship.cooldown = 2;
             
-            actionPoints--;
-            gamePhase = 'select';
+            gameState.actionPoints--;
+            gameState.gamePhase = 'select';
             updateDisplay();
-            showMessage(`Sonar active! Revealing enemy ships in 3x3 area for 2 turns.`);
+            showMessage('Sonar active! Enemy ships revealed in area.');
         }
 
-        // Use recon (ability - carrier)
         function useRecon(row, col) {
             // Create 5x5 scan area
             const cells = [];
@@ -2237,37 +1773,35 @@
                 }
             }
             
-            scanAreas.push({
-                player: currentPlayer,
+            gameState.scanAreas.push({
+                player: gameState.currentPlayer,
                 cells: cells,
-                turnsRemaining: 3,
-                type: 'recon'
+                turns: 3
             });
             
-            // Reveal any enemy ships in area
+            // Reveal enemy ships
             cells.forEach(cell => {
                 const ship = getShipAt(cell.row, cell.col);
-                if (ship && ship.player !== currentPlayer) {
+                if (ship && ship.player !== gameState.currentPlayer) {
                     ship.revealed = true;
                 }
             });
             
-            const ship = getShipById(selectedShipId);
-            ship.abilityCooldown = 4;
+            const ship = gameState.ships.find(s => s.id === gameState.selectedShip);
+            ship.cooldown = 4;
             
-            actionPoints--;
-            gamePhase = 'select';
+            gameState.actionPoints--;
+            gameState.gamePhase = 'select';
             updateDisplay();
-            showMessage(`Aerial reconnaissance active! Large area scanned for 3 turns.`);
+            showMessage('Aerial reconnaissance active!');
         }
 
-        // Repair target (ability)
         function repairTarget(row, col) {
             const targetShip = getShipAt(row, col);
-            const repairer = getShipById(selectedShipId);
+            const repairer = gameState.ships.find(s => s.id === gameState.selectedShip);
             
             if (!targetShip) {
-                showMessage("No ship to repair at that location!");
+                showMessage('No ship to repair at this location!');
                 return;
             }
             
@@ -2277,12 +1811,12 @@
             );
             
             if (!isAdjacent) {
-                showMessage("Can only repair adjacent ships!");
+                showMessage('Target must be adjacent to repair!');
                 return;
             }
             
-            if (targetShip.player !== currentPlayer) {
-                showMessage("Can only repair your own ships!");
+            if (targetShip.player !== gameState.currentPlayer) {
+                showMessage('Can only repair your own ships!');
                 return;
             }
             
@@ -2290,37 +1824,29 @@
             const repairAmount = 50;
             targetShip.health = Math.min(targetShip.maxHealth, targetShip.health + repairAmount);
             
-            // Update damage level and movement capability
-            updateShipDamageLevel(targetShip);
+            repairer.cooldown = 2;
             
-            repairer.abilityCooldown = 2;
-            
-            actionPoints--;
-            gamePhase = 'select';
+            gameState.actionPoints--;
+            gameState.gamePhase = 'select';
             updateDisplay();
             showMessage(`${targetShip.name} repaired for ${repairAmount} health!`);
         }
 
-        // Use barrage (ability - battleship)
         function useBarrage(row, col) {
-            const attacker = getShipById(selectedShipId);
+            const attacker = gameState.ships.find(s => s.id === gameState.selectedShip);
             let hits = 0;
             
             // Damage all enemy ships in 3x3 area
             for (let r = Math.max(0, row-1); r <= Math.min(19, row+1); r++) {
                 for (let c = Math.max(0, col-1); c <= Math.min(19, col+1); c++) {
                     const targetShip = getShipAt(r, c);
-                    if (targetShip && targetShip.player !== currentPlayer) {
+                    if (targetShip && targetShip.player !== gameState.currentPlayer) {
                         targetShip.health = Math.max(0, targetShip.health - 40);
                         hits++;
                         
-                        // Reveal enemy ship
+                        // Reveal enemy
                         targetShip.revealed = true;
                         
-                        // Update damage level
-                        updateShipDamageLevel(targetShip);
-                        
-                        // Check if sunk
                         if (targetShip.health <= 0) {
                             sinkShip(targetShip.id);
                         }
@@ -2328,247 +1854,260 @@
                 }
             }
             
-            attacker.abilityCooldown = 3;
+            attacker.cooldown = 3;
             
-            actionPoints--;
-            gamePhase = 'select';
+            gameState.actionPoints--;
+            gameState.gamePhase = 'select';
             updateDisplay();
-            showMessage(`Barrage hit ${hits} enemy targets!`);
+            showMessage(`Barrage hit ${hits} targets!`);
         }
 
-        // Sink ship (with explosion)
         function sinkShip(shipId) {
-            const ship = getShipById(shipId);
-            const enemyPlayer = ship.player === 1 ? 2 : 1;
+            const ship = gameState.ships.find(s => s.id === shipId);
+            showMessage(`💥 ${ship.name} DESTROYED!`);
             
-            showMessage(`💥 ${ship.name} EXPLODED!`);
-            
-            // Create explosion in 3x3 area around each ship cell
+            // Create explosion
             ship.cells.forEach(cell => {
-                explosions.push({
+                gameState.explosions.push({
                     row: cell.row,
                     col: cell.col,
-                    turnsRemaining: 2,
-                    radius: 1
+                    turns: 2
                 });
                 
-                // Damage any ships in explosion area (chain reaction)
-                const nearbyShips = getShipsInArea(cell.row, cell.col, 1);
-                nearbyShips.forEach(nearbyShip => {
-                    if (nearbyShip.id !== shipId) {
-                        const damage = 25;
-                        nearbyShip.health = Math.max(0, nearbyShip.health - damage);
-                        
-                        if (nearbyShip.health <= 0) {
-                            sinkShip(nearbyShip.id);
-                        } else {
-                            // Reveal damaged enemy ships
-                            if (nearbyShip.player !== currentPlayer) {
+                // Damage nearby ships
+                for (let r = Math.max(0, cell.row-1); r <= Math.min(19, cell.row+1); r++) {
+                    for (let c = Math.max(0, cell.col-1); c <= Math.min(19, cell.col+1); c++) {
+                        const nearbyShip = getShipAt(r, c);
+                        if (nearbyShip && nearbyShip.id !== shipId) {
+                            nearbyShip.health = Math.max(0, nearbyShip.health - 25);
+                            
+                            if (nearbyShip.health <= 0) {
+                                sinkShip(nearbyShip.id);
+                            } else if (nearbyShip.player !== gameState.currentPlayer) {
                                 nearbyShip.revealed = true;
                             }
-                            updateShipDamageLevel(nearbyShip);
                         }
                     }
-                });
+                }
             });
             
             // Remove ship
-            ships = ships.filter(s => s.id !== shipId);
+            gameState.ships = gameState.ships.filter(s => s.id !== shipId);
             
             // Check win condition
-            setTimeout(() => checkWin(), 500);
+            setTimeout(checkWin, 500);
         }
 
-        // Check win condition
         function checkWin() {
-            const p1Ships = ships.filter(s => s.player === 1);
-            const p2Ships = ships.filter(s => s.player === 2);
+            const p1Ships = gameState.ships.filter(s => s.player === 1);
+            const p2Ships = gameState.ships.filter(s => s.player === 2);
             
             if (p1Ships.length === 0) {
-                endGame(2, "Player 2 destroys all enemy ships!");
+                endGame(2);
             } else if (p2Ships.length === 0) {
-                endGame(1, "Player 1 destroys all enemy ships!");
+                endGame(1);
             }
         }
 
-        // End game
-        function endGame(winner, message) {
+        function endGame(winner) {
             setTimeout(() => {
-                alert(`🎉 PLAYER ${winner} WINS! 🎉\n\n${message}`);
+                alert(`🎉 PLAYER ${winner} WINS! 🎉`);
                 if (confirm('Play again?')) {
                     resetGame();
                 }
             }, 1000);
         }
 
-        // End turn
+        function cancelAction() {
+            gameState.gamePhase = 'select';
+            updateDisplay();
+            showMessage('Action cancelled.');
+        }
+
         function endTurn() {
-            if (actionPoints > 0) {
-                if (!confirm(`You still have ${actionPoints} action points. End turn anyway?`)) {
+            if (gameState.actionPoints > 0) {
+                if (!confirm(`You still have ${gameState.actionPoints} action points. End turn anyway?`)) {
                     return;
                 }
             }
             
             // Switch player
-            currentPlayer = currentPlayer === 1 ? 2 : 1;
-            currentTurn++;
-            actionPoints = 3;
-            selectedShipId = null;
-            gamePhase = 'select';
-            isScanView = false;
+            gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
+            gameState.turn++;
+            gameState.actionPoints = 3;
+            gameState.selectedShip = null;
+            gameState.gamePhase = 'select';
+            gameState.isScanView = false;
             
-            // Refuel ships (partial refuel)
-            ships.forEach(ship => {
-                if (ship.player === currentPlayer) {
-                    // Refuel 1-2 points per turn
-                    const refuelAmount = Math.min(2, ship.maxFuel - ship.fuel);
-                    if (refuelAmount > 0) {
-                        ship.fuel += refuelAmount;
-                    }
+            // Refuel ships
+            gameState.ships.forEach(ship => {
+                if (ship.player === gameState.currentPlayer) {
+                    ship.fuel = Math.min(ship.maxFuel, ship.fuel + 1);
+                }
+                
+                if (ship.cooldown > 0) {
+                    ship.cooldown--;
                 }
             });
             
             // Update scan areas
-            scanAreas.forEach(area => {
-                area.turnsRemaining--;
-                return area.turnsRemaining > 0;
+            gameState.scanAreas = gameState.scanAreas.filter(area => {
+                area.turns--;
+                return area.turns > 0;
             });
             
             // Update explosions
-            explosions.forEach(exp => {
-                exp.turnsRemaining--;
-                return exp.turnsRemaining > 0;
+            gameState.explosions = gameState.explosions.filter(exp => {
+                exp.turns--;
+                return exp.turns > 0;
             });
             
-            // Update ability cooldowns for current player's ships
-            ships.forEach(ship => {
-                if (ship.player === currentPlayer && ship.abilityCooldown > 0) {
-                    ship.abilityCooldown--;
+            updateDisplay();
+            showMessage(`Player ${gameState.currentPlayer}'s turn!`);
+        }
+
+        function toggleScanView() {
+            gameState.isScanView = !gameState.isScanView;
+            updateDisplay();
+            showMessage(gameState.isScanView ? 'Scan view active' : 'Normal view');
+        }
+
+        function specialAction() {
+            if (gameState.actionPoints < 2) {
+                showMessage('Need 2 action points for special action!');
+                return;
+            }
+            
+            // Radar sweep
+            const row = Math.floor(Math.random() * 15) + 2;
+            const col = Math.floor(Math.random() * 15) + 2;
+            
+            const cells = [];
+            for (let r = Math.max(0, row-2); r <= Math.min(19, row+2); r++) {
+                for (let c = Math.max(0, col-2); c <= Math.min(19, col+2); c++) {
+                    cells.push({row: r, col: c});
+                }
+            }
+            
+            gameState.scanAreas.push({
+                player: gameState.currentPlayer,
+                cells: cells,
+                turns: 1
+            });
+            
+            // Reveal ships
+            cells.forEach(cell => {
+                const ship = getShipAt(cell.row, cell.col);
+                if (ship && ship.player !== gameState.currentPlayer) {
+                    ship.revealed = true;
                 }
             });
             
-            // Show ready screen
-            showReadyScreen();
-        }
-
-        // Cancel current action
-        function cancelAction() {
-            gamePhase = 'select';
-            clearMovementHighlights();
+            gameState.actionPoints -= 2;
             updateDisplay();
-            showMessage("Action cancelled.");
+            showMessage('Radar sweep activated!');
         }
 
-        // Show scan view (toggle)
-        function showScanView() {
-            isScanView = !isScanView;
-            updateDisplay();
-            showMessage(isScanView ? "Scan view: Showing detected enemy positions" : "Normal view");
+        function surrender() {
+            if (confirm('Are you sure you want to surrender?')) {
+                endGame(gameState.currentPlayer === 1 ? 2 : 1);
+            }
         }
 
-        // Update display
+        // ========== DISPLAY FUNCTIONS ==========
         function updateDisplay() {
-            // Update UI elements
-            document.getElementById('turnIndicator').textContent = `PLAYER ${currentPlayer}'S TURN`;
-            document.getElementById('turnCounter').textContent = `Turn: ${currentTurn}`;
+            // Update header
+            document.getElementById('turnDisplay').textContent = `PLAYER ${gameState.currentPlayer}'S TURN`;
+            document.getElementById('turnCounter').textContent = gameState.turn;
+            document.getElementById('playerIndicator').textContent = gameState.currentPlayer;
             
             // Update action points
-            document.getElementById('ap1').className = `ap-circle ${actionPoints < 1 ? 'used' : ''}`;
-            document.getElementById('ap2').className = `ap-circle ${actionPoints < 2 ? 'used' : ''}`;
-            document.getElementById('ap3').className = `ap-circle ${actionPoints < 3 ? 'used' : ''}`;
+            document.getElementById('ap1').className = `ap-dot ${gameState.actionPoints < 1 ? 'used' : ''}`;
+            document.getElementById('ap2').className = `ap-dot ${gameState.actionPoints < 2 ? 'used' : ''}`;
+            document.getElementById('ap3').className = `ap-dot ${gameState.actionPoints < 3 ? 'used' : ''}`;
             
             // Update selected ship info
-            const selectedShip = getShipById(selectedShipId);
-            if (selectedShip && selectedShip.player === currentPlayer) {
+            const ship = gameState.ships.find(s => s.id === gameState.selectedShip);
+            if (ship && ship.player === gameState.currentPlayer) {
                 document.getElementById('selectedShipInfo').classList.remove('hidden');
                 document.getElementById('selectedShipName').textContent = 
-                    `${selectedShip.name} (Fuel: ${selectedShip.fuel}/${selectedShip.maxFuel})`;
+                    `${ship.name} (Fuel: ${ship.fuel}/${ship.maxFuel})`;
                 
-                // Update fuel display
-                document.getElementById('fuelDisplay').classList.remove('hidden');
-                document.getElementById('fuelFill').style.width = `${(selectedShip.fuel / selectedShip.maxFuel) * 100}%`;
-                document.getElementById('fuelText').textContent = `${selectedShip.fuel}/${selectedShip.maxFuel}`;
-                
-                // Update button states
-                document.getElementById('moveBtn').disabled = selectedShip.damageLevel >= 1 || selectedShip.fuel <= 0;
+                document.getElementById('moveBtn').disabled = ship.health <= ship.maxHealth * 0.5 || ship.fuel <= 0;
                 document.getElementById('attackBtn').disabled = false;
-                document.getElementById('abilityBtn').disabled = selectedShip.abilityCooldown > 0;
-                document.getElementById('cancelBtn').disabled = false;
+                document.getElementById('abilityBtn').disabled = ship.cooldown > 0;
+                
+                // Update action summary
+                let summary = `${ship.name} selected. `;
+                if (gameState.gamePhase === 'moving') summary += 'Select destination.';
+                else if (gameState.gamePhase === 'attacking') summary += 'Select target.';
+                else if (gameState.gamePhase.startsWith('ability_')) summary += 'Select ability target.';
+                else summary += 'Choose an action.';
+                document.getElementById('actionSummary').textContent = summary;
             } else {
                 document.getElementById('selectedShipInfo').classList.add('hidden');
-                document.getElementById('fuelDisplay').classList.add('hidden');
+                document.getElementById('actionSummary').textContent = 'Select a ship and choose an action';
             }
             
-            // Update end turn button
-            document.getElementById('endTurnBtn').disabled = false;
-            document.getElementById('scanViewBtn').textContent = isScanView ? '📡 NORMAL VIEW' : '🔍 SCAN VIEW';
+            // Update ships panel
+            updateShipsPanel();
             
-            // Update ships display
-            updateShipsDisplay();
+            // Update game grid
+            updateGameGrid();
             
-            // Update grid
-            updateGrid();
-            
-            // Update action summary
-            let summary = '';
-            if (selectedShip) {
-                summary = `${selectedShip.name} selected. `;
-                if (gamePhase === 'moving') summary += 'Select destination.';
-                else if (gamePhase === 'attacking') summary += 'Select target.';
-                else if (gamePhase.startsWith('ability_')) summary += 'Select ability target.';
-            }
-            summary += ` Action points: ${actionPoints}`;
-            document.getElementById('actionSummary').textContent = summary;
+            // Update scan view button
+            document.getElementById('scanViewBtn').textContent = 
+                gameState.isScanView ? '📡 NORMAL VIEW' : '🔍 SCAN VIEW';
             
             // Update tips
             const tips = [
-                "Tip: Enemy ships are hidden until scanned or hit!",
-                "Tip: Use Submarine's sonar to reveal enemy positions",
-                "Tip: Aircraft Carrier can scan large areas with recon",
-                "Tip: Damaged ships (>50%) cannot move but can still attack",
-                "Tip: Mines damage enemy ships that move over them",
-                "Tip: Sunk ships explode, damaging nearby ships"
+                'Tip: Enemy ships are hidden until scanned or hit!',
+                'Tip: Use sonar/recon to reveal enemy positions',
+                'Tip: Damaged ships (>50%) cannot move',
+                'Tip: Mines damage enemy ships that move over them',
+                'Tip: Sunk ships explode, damaging nearby ships',
+                'Tip: Fuel regenerates 1 point per turn'
             ];
-            document.getElementById('gameTips').textContent = tips[currentTurn % tips.length];
+            document.getElementById('gameTip').textContent = tips[gameState.turn % tips.length];
         }
 
-        // Update ships display
-        function updateShipsDisplay() {
+        function updateShipsPanel() {
             const container = document.getElementById('shipsContainer');
             container.innerHTML = '';
             
-            // Only show current player's ships
-            const playerShips = ships.filter(ship => ship.player === currentPlayer);
+            const playerShips = gameState.ships.filter(ship => ship.player === gameState.currentPlayer);
             
             playerShips.forEach(ship => {
+                const card = document.createElement('div');
+                card.className = `ship-card ${ship.id === gameState.selectedShip ? 'selected' : ''}`;
+                card.onclick = () => selectShip(ship.id);
+                
                 const healthPercent = (ship.health / ship.maxHealth) * 100;
                 const fuelPercent = (ship.fuel / ship.maxFuel) * 100;
-                const healthColor = healthPercent <= 25 ? 'critical' : healthPercent <= 50 ? 'damaged' : '';
-                
-                const card = document.createElement('div');
-                card.className = `ship-card ${ship.id === selectedShipId ? 'selected' : ''}`;
-                card.onclick = () => selectShip(ship.id);
+                const healthClass = healthPercent <= 25 ? 'critical' : healthPercent <= 50 ? 'damaged' : '';
                 
                 card.innerHTML = `
                     <div class="ship-header">
                         <div class="ship-name">${ship.name}</div>
-                        <div class="ship-player">P${ship.player}</div>
+                        <div>${ship.health}/${ship.maxHealth} HP</div>
                     </div>
                     <div class="ship-health">
-                        <div class="health-bar ${healthColor}" style="width: ${healthPercent}%"></div>
+                        <div class="health-bar ${healthClass}" style="width: ${healthPercent}%"></div>
                     </div>
                     <div class="ship-stats">
-                        <span>HP: ${ship.health}/${ship.maxHealth}</span>
-                        <span>⛽ ${ship.fuel}/${ship.maxFuel}</span>
-                        <span>${ship.damageLevel >= 1 ? '🚫' : '✅'}</span>
+                        <div>Size: ${ship.size}</div>
+                        <div>${ship.cooldown > 0 ? `CD: ${ship.cooldown}` : 'Ready'}</div>
                     </div>
-                    <div style="height: 5px; background: rgba(255, 255, 255, 0.1); margin: 5px 0; border-radius: 3px;">
-                        <div style="height: 100%; width: ${fuelPercent}%; background: linear-gradient(90deg, #ff9900, #ff5500); border-radius: 3px;"></div>
+                    <div class="ship-fuel">
+                        <span>⛽</span>
+                        <div class="fuel-bar">
+                            <div class="fuel-fill" style="width: ${fuelPercent}%"></div>
+                        </div>
+                        <span>${ship.fuel}/${ship.maxFuel}</span>
                     </div>
-                    <div class="ship-ability ${ship.abilityCooldown > 0 ? 'disabled' : ''}" 
-                         onclick="event.stopPropagation(); selectShip('${ship.id}'); useShipAbility();">
+                    <div class="ship-ability ${ship.cooldown > 0 ? 'disabled' : ''}" 
+                         onclick="event.stopPropagation(); selectShip('${ship.id}'); useAbility();">
                         ✨ ${ship.abilityName}
-                        ${ship.abilityCooldown > 0 ? ` (CD: ${ship.abilityCooldown})` : ''}
                     </div>
                 `;
                 
@@ -2576,105 +2115,91 @@
             });
         }
 
-        // Update grid
-        function updateGrid() {
-            const cells = document.querySelectorAll('#mainGrid .cell');
-            
-            // First pass: Reset all cells
-            cells.forEach(cell => {
-                cell.className = 'cell';
+        function updateGameGrid() {
+            // Clear grid
+            document.querySelectorAll('.game-cell').forEach(cell => {
+                cell.className = 'game-cell';
                 cell.innerHTML = '';
-                
-                const row = parseInt(cell.dataset.row);
-                const col = parseInt(cell.dataset.col);
-                
-                // Check for scan areas
-                let inScanArea = false;
-                scanAreas.forEach(area => {
-                    if (area.cells.some(c => c.row === row && c.col === c.col)) {
-                        inScanArea = true;
-                    }
-                });
-                
-                // Check for mines
-                const mine = mines.find(m => m.row === row && m.col === col && m.active);
-                if (mine) {
-                    cell.classList.add('mine');
-                }
-                
-                // Check for explosions
-                const explosion = explosions.find(e => e.row === row && e.col === col);
-                if (explosion) {
-                    cell.classList.add('explosion');
-                }
-                
-                // Check for movement path
-                if (movementPath.some(pos => pos.row === row && pos.col === col)) {
-                    cell.classList.add('moving-path');
-                }
-                
-                // If in scan view, show everything
-                if (isScanView) {
-                    // Show scan areas
+            });
+            
+            // Update cells
+            for (let row = 0; row < 20; row++) {
+                for (let col = 0; col < 20; col++) {
+                    const cell = document.querySelector(
+                        `.game-cell[data-row="${row}"][data-col="${col}"]`
+                    );
+                    
+                    // Check for scan areas
+                    let inScanArea = false;
+                    gameState.scanAreas.forEach(area => {
+                        if (area.cells.some(c => c.row === row && c.col === col)) {
+                            inScanArea = true;
+                        }
+                    });
+                    
                     if (inScanArea) {
                         cell.classList.add('scan-area');
                     }
                     
-                    // Show all ships (for debugging)
-                    const ship = getShipAt(row, col);
-                    if (ship) {
-                        cell.classList.add(`ship-p${ship.player}`);
-                        if (ship.player !== currentPlayer) {
-                            cell.classList.add('enemy-ship');
-                            if (ship.revealed) {
-                                cell.classList.add('scanned');
-                            }
-                        }
+                    // Check for mines
+                    const mine = gameState.mines.find(m => m.row === row && m.col === col && m.active);
+                    if (mine) {
+                        cell.classList.add('mine');
                     }
-                } else {
-                    // Normal view: only show current player's ships and scan areas
+                    
+                    // Check for explosions
+                    const explosion = gameState.explosions.find(e => e.row === row && e.col === col);
+                    if (explosion) {
+                        cell.classList.add('hit');
+                    }
+                    
+                    // Check for ships
                     const ship = getShipAt(row, col);
                     if (ship) {
-                        if (ship.player === currentPlayer) {
+                        if (ship.player === gameState.currentPlayer) {
                             // Show own ships
                             cell.classList.add(`ship-p${ship.player}`);
                             
-                            // Show damage state
-                            const healthPercent = (ship.health / ship.maxHealth) * 100;
-                            if (healthPercent <= 50) cell.classList.add('damaged');
-                            if (healthPercent <= 25) cell.classList.add('critical');
+                            // Show damage
+                            if (ship.health <= ship.maxHealth * 0.25) {
+                                cell.classList.add('critical');
+                            } else if (ship.health <= ship.maxHealth * 0.5) {
+                                cell.classList.add('damaged');
+                            }
                         } else {
-                            // Enemy ships - only show if revealed or in scan area
-                            cell.classList.add('enemy-ship');
-                            if (ship.revealed || inScanArea) {
-                                cell.classList.add('scanned');
-                                
-                                // Add hit indicator if damaged
-                                const healthPercent = (ship.health / ship.maxHealth) * 100;
-                                if (healthPercent < 100) {
-                                    cell.classList.add('hit');
+                            // Enemy ships - only show if revealed
+                            cell.classList.add(`ship-p${ship.player}`);
+                            if (ship.revealed || gameState.isScanView || inScanArea) {
+                                cell.classList.add('revealed');
+                                if (inScanArea) {
+                                    cell.classList.add('scanned');
                                 }
                             }
                         }
                     }
-                    
-                    // Show scan areas
-                    if (inScanArea) {
-                        cell.classList.add('scan-area');
-                    }
+                }
+            }
+        }
+
+        // ========== GAME FLOW ==========
+        function startGame() {
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('placementScreen').style.display = 'flex';
+            gameState.phase = 'placement';
+            initGame();
+            showMessage('Player 1: Drag and drop your ships!');
+            
+            // Add keyboard shortcut
+            document.addEventListener('keydown', (e) => {
+                if (e.key.toLowerCase() === 'r' && gameState.phase === 'placement') {
+                    rotateShip();
                 }
             });
         }
 
-        // Get ship by ID
-        function getShipById(id) {
-            return ships.find(ship => ship.id === id);
-        }
-
-        // Show message
-        function showMessage(message) {
+        function showMessage(text) {
             const display = document.getElementById('messageDisplay');
-            display.textContent = message;
+            display.textContent = text;
             display.classList.remove('hidden');
             
             setTimeout(() => {
@@ -2682,109 +2207,33 @@
             }, 3000);
         }
 
-        // Show rules
-        function showRules() {
-            document.getElementById('rulesModal').style.display = 'flex';
-        }
-
-        // Close rules
-        function closeRules() {
-            document.getElementById('rulesModal').style.display = 'none';
-        }
-
-        // Surrender
-        function surrender() {
-            if (confirm('Are you sure you want to surrender?')) {
-                endGame(currentPlayer === 1 ? 2 : 1, "Player surrendered!");
-            }
-        }
-
-        // Use special action
-        function useSpecialAction() {
-            if (actionPoints < 2) {
-                showMessage("Need 2 action points for special action!");
-                return;
-            }
-            
-            // Radar sweep: reveal random 5x5 area
-            const centerRow = Math.floor(Math.random() * 16) + 2;
-            const centerCol = Math.floor(Math.random() * 16) + 2;
-            
-            const cells = [];
-            for (let r = Math.max(0, centerRow-2); r <= Math.min(19, centerRow+2); r++) {
-                for (let c = Math.max(0, centerCol-2); c <= Math.min(19, centerCol+2); c++) {
-                    cells.push({row: r, col: c});
-                    
-                    // Reveal enemy ships in area
-                    const ship = getShipAt(r, c);
-                    if (ship && ship.player !== currentPlayer) {
-                        ship.revealed = true;
-                    }
-                }
-            }
-            
-            scanAreas.push({
-                player: currentPlayer,
-                cells: cells,
-                turnsRemaining: 1,
-                type: 'radar'
-            });
-            
-            actionPoints -= 2;
-            updateDisplay();
-            showMessage(`Radar sweep at (${centerRow+1}, ${centerCol+1})! Enemy ships revealed in 5x5 area.`);
-        }
-
-        // Show ready screen
-        function showReadyScreen() {
-            document.getElementById('readyScreen').style.display = 'flex';
-            document.getElementById('readyTitle').textContent = `PLAYER ${currentPlayer}'S TURN`;
-            document.getElementById('readyButton').textContent = 'BEGIN TURN';
-            document.getElementById('readyButton').onclick = startTurn;
-        }
-
-        // Start turn from ready screen
-        function startTurn() {
-            document.getElementById('readyScreen').style.display = 'none';
-            document.getElementById('gameScreen').style.display = 'block';
-            updateDisplay();
-            showMessage(`Player ${currentPlayer}'s turn. You have 3 action points.`);
-            
-            // Vibrate on mobile if supported
-            if (navigator.vibrate) navigator.vibrate(100);
-        }
-
-        // Reset game
         function resetGame() {
-            currentPlayer = 1;
-            currentTurn = 1;
-            actionPoints = 3;
-            selectedShipId = null;
-            gamePhase = 'select';
-            scanAreas = [];
-            mines = [];
-            explosions = [];
-            movementPath = [];
-            isScanView = false;
-            placingPlayer = 1;
-            placingShips = [];
-            placedShips = [];
+            gameState = {
+                phase: 'start',
+                currentPlayer: 1,
+                turn: 1,
+                actionPoints: 3,
+                selectedShip: null,
+                gamePhase: 'select',
+                isVertical: true,
+                scanAreas: [],
+                mines: [],
+                explosions: [],
+                isScanView: false,
+                placedShips: [],
+                ships: []
+            };
             
-            document.getElementById('readyScreen').style.display = 'flex';
-            document.getElementById('setupScreen').style.display = 'none';
+            document.getElementById('startScreen').style.display = 'flex';
+            document.getElementById('placementScreen').style.display = 'none';
             document.getElementById('gameScreen').style.display = 'none';
-            document.getElementById('readyTitle').textContent = 'BATTLESHIP: TACTICAL WARFARE';
-            document.getElementById('readyButton').textContent = 'DEPLOY FLEET';
-            document.getElementById('readyButton').onclick = startSetup;
+            document.getElementById('placementTitle').textContent = 'PLAYER 1: DEPLOY YOUR FLEET';
             
-            createShipDock();
+            showMessage('Game reset. Ready to play!');
         }
 
-        // Initialize on load
-        window.onload = function() {
-            // Show initial ready screen
-            showReadyScreen();
-        };
+        // Initialize
+        window.onload = initGame;
     </script>
 </body>
 </html>
