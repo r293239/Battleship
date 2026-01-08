@@ -2178,7 +2178,7 @@
                 cell.innerHTML = '';
             });
             
-            // First, mark scan areas
+            // Show scan areas
             gameState.scanAreas.forEach(area => {
                 if (area.player === gameState.currentPlayer) {
                     area.cells.forEach(cellPos => {
@@ -2192,9 +2192,9 @@
                 }
             });
             
-            // Mark mines
+            // Show mines (only current player's mines)
             gameState.mines.forEach(mine => {
-                if (mine.active) {
+                if (mine.active && mine.player === gameState.currentPlayer) {
                     const cell = document.querySelector(
                         `.game-cell[data-row="${mine.row}"][data-col="${mine.col}"]`
                     );
@@ -2204,7 +2204,7 @@
                 }
             });
             
-            // Mark explosions
+            // Show explosions
             gameState.explosions.forEach(explosion => {
                 const cell = document.querySelector(
                     `.game-cell[data-row="${explosion.row}"][data-col="${explosion.col}"]`
@@ -2214,15 +2214,18 @@
                 }
             });
             
-            // Now show ships with proper visibility
+            // Show missed shots
+            // This would need to track misses in gameState
+            
+            // Now show ships - THIS IS THE FIXED PART
             gameState.ships.forEach(ship => {
                 ship.cells.forEach(cellPos => {
                     const cell = document.querySelector(
                         `.game-cell[data-row="${cellPos.row}"][data-col="${cellPos.col}"]`
                     );
                     if (cell) {
+                        // Always show current player's ships
                         if (ship.player === gameState.currentPlayer) {
-                            // Show own ships in blue
                             cell.classList.add(`ship-p${ship.player}`);
                             
                             // Show damage state
@@ -2232,20 +2235,19 @@
                             } else if (healthPercent <= 50) {
                                 cell.classList.add('damaged');
                             }
-                        } else {
-                            // Enemy ships - only show if revealed or in scan area
-                            if (ship.revealed) {
-                                cell.classList.add(`ship-p${ship.player}`);
-                                cell.classList.add('revealed');
-                                
-                                // Check if in scan area
-                                const inScanArea = gameState.scanAreas.some(area => 
-                                    area.player === gameState.currentPlayer &&
-                                    area.cells.some(c => c.row === cellPos.row && c.col === cellPos.col)
-                                );
-                                if (inScanArea) {
-                                    cell.classList.add('scanned');
-                                }
+                        } 
+                        // Show enemy ships only if revealed
+                        else if (ship.revealed) {
+                            cell.classList.add(`ship-p${ship.player}`);
+                            cell.classList.add('revealed');
+                            
+                            // Check if in scan area for special styling
+                            const inScanArea = gameState.scanAreas.some(area => 
+                                area.player === gameState.currentPlayer &&
+                                area.cells.some(c => c.row === cellPos.row && c.col === cellPos.col)
+                            );
+                            if (inScanArea) {
+                                cell.classList.add('scanned');
                             }
                         }
                     }
