@@ -85,6 +85,116 @@
             color: #4FC3F7;
         }
 
+        /* Matchmaking Options Container */
+        .matchmaking-options {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            margin: 30px 0;
+        }
+
+        .option-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+        }
+
+        .option-card:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(79, 195, 247, 0.3);
+            transform: translateY(-5px);
+        }
+
+        .option-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+
+        .option-description {
+            margin: 15px 0;
+            color: #B3E5FC;
+            font-size: 0.9rem;
+        }
+
+        /* Join Room Form */
+        #joinRoomForm {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .room-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+            text-align: center;
+            letter-spacing: 2px;
+            font-family: monospace;
+        }
+
+        .room-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .room-input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 15px rgba(79, 195, 247, 0.3);
+        }
+
+        .info-text {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #81D4FA;
+        }
+
+        /* Room Actions */
+        .room-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .room-btn {
+            padding: 12px 25px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 140px;
+            font-weight: bold;
+        }
+
+        .room-btn-primary {
+            background: linear-gradient(45deg, #00C853, #64DD17);
+            color: white;
+        }
+
+        .room-btn-secondary {
+            background: linear-gradient(45deg, #FF3D00, #FF9100);
+            color: white;
+        }
+
+        .room-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Searching Animation */
         .searching-dots {
             display: flex;
             justify-content: center;
@@ -173,6 +283,32 @@
             display: inline-block;
         }
 
+        .room-id-display {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .copy-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
         #countdown {
             font-size: 4rem;
             font-weight: bold;
@@ -187,7 +323,18 @@
             50% { transform: scale(1.2); }
         }
 
-        /* Game Screen */
+        /* Error Messages */
+        .error-message {
+            background: rgba(255, 61, 0, 0.2);
+            border: 1px solid #FF3D00;
+            color: #FFCDD2;
+            padding: 12px 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: none;
+        }
+
+        /* Game Screen (unchanged from original) */
         #gameScreen {
             display: none;
             padding: 20px;
@@ -546,6 +693,15 @@
                 font-size: 1rem;
             }
             
+            .option-card {
+                padding: 20px;
+            }
+            
+            .room-id-display {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
             .grid-section h3 {
                 font-size: 1.2rem;
             }
@@ -588,6 +744,16 @@
                 width: 100%;
                 max-width: 200px;
             }
+            
+            .room-actions {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .room-btn {
+                width: 100%;
+                max-width: 200px;
+            }
         }
     </style>
     <!-- Back4App Parse SDK -->
@@ -606,7 +772,12 @@
             </div>
             
             <!-- Matchmaking Status -->
-            <h2 id="matchmakingStatus">READY FOR BATTLE?</h2>
+            <h2 id="matchmakingStatus">CHOOSE GAME MODE</h2>
+            
+            <!-- Error Message -->
+            <div class="error-message" id="errorMessage">
+                <span id="errorText"></span>
+            </div>
             
             <!-- Searching Animation -->
             <div class="searching-dots hidden" id="searchingDots">
@@ -615,42 +786,92 @@
                 <div class="dot"></div>
             </div>
             
-            <!-- Quick Match Section -->
-            <div id="quickMatch">
-                <h3>⚡ QUICK MATCH</h3>
-                <p>Find an opponent instantly</p>
-                <button class="btn btn-primary" onclick="startQuickMatch()" id="findBtn">
-                    FIND MATCH
-                </button>
-            </div>
-            
-            <!-- Queue Status (hidden initially) -->
-            <div id="queueStatus" class="hidden">
-                <h3>🔍 CREATING GAME ROOM...</h3>
-                <p>Please wait while we set up your game</p>
-            </div>
-            
-            <!-- Room Created Status (hidden initially) -->
-            <div id="roomStatus" class="hidden">
-                <div class="room-creator">
-                    <h3>✅ ROOM CREATED!</h3>
-                    <p>Share this Room ID with a friend:</p>
-                    <div id="roomId">---</div>
-                    <p>Waiting for opponent to join...</p>
+            <!-- Matchmaking Options -->
+            <div class="matchmaking-options" id="matchmakingOptions">
+                <!-- Quick Match Option -->
+                <div class="option-card">
+                    <div class="option-icon">⚡</div>
+                    <h3>QUICK MATCH</h3>
+                    <p class="option-description">
+                        Find a random opponent instantly. Perfect for quick battles!
+                    </p>
+                    <button class="btn btn-primary" onclick="startQuickMatch()">
+                        FIND MATCH
+                    </button>
+                </div>
+                
+                <!-- Join Room Option -->
+                <div class="option-card">
+                    <div class="option-icon">🔑</div>
+                    <h3>JOIN ROOM</h3>
+                    <p class="option-description">
+                        Enter a room ID to join a specific game with friends
+                    </p>
+                    <div id="joinRoomForm">
+                        <div class="input-group">
+                            <input type="text" class="room-input" id="roomCodeInput" 
+                                   placeholder="ENTER ROOM CODE" maxlength="6"
+                                   oninput="this.value = this.value.toUpperCase()">
+                        </div>
+                        <div class="room-actions">
+                            <button class="room-btn room-btn-primary" onclick="joinRoom()">
+                                JOIN ROOM
+                            </button>
+                            <button class="room-btn room-btn-secondary" onclick="generateRoom()">
+                                CREATE ROOM
+                            </button>
+                        </div>
+                        <p class="info-text">
+                            Room codes are 6 characters (A-Z, 0-9)
+                        </p>
+                    </div>
                 </div>
             </div>
             
-            <!-- Opponent Found Status (hidden initially) -->
+            <!-- Room Created Status -->
+            <div id="roomStatus" class="hidden">
+                <div class="room-creator">
+                    <h3>🎮 ROOM CREATED!</h3>
+                    <p>Share this Room ID with your friend:</p>
+                    <div class="room-id-display">
+                        <div id="roomId">ABC123</div>
+                        <button class="copy-btn" onclick="copyRoomId()">
+                            📋 COPY
+                        </button>
+                    </div>
+                    <p>Waiting for opponent to join...</p>
+                    <div class="searching-dots">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Queue Status -->
+            <div id="queueStatus" class="hidden">
+                <div class="room-creator">
+                    <h3>🔍 SEARCHING FOR OPPONENT...</h3>
+                    <p>Looking for another player to battle</p>
+                    <div class="searching-dots">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Opponent Found Status -->
             <div id="foundOpponent" class="hidden">
                 <h3>🎮 OPPONENT FOUND!</h3>
                 <p>Starting game in <span id="countdown">3</span></p>
                 <div class="room-creator">
-                    <p>Playing against: <span id="roomCreator">Opponent</span></p>
+                    <p>Playing against: <span id="opponentNameDisplay">Opponent</span></p>
                 </div>
             </div>
             
             <!-- Control Buttons -->
-            <div class="controls-row">
+            <div class="controls-row" id="matchmakingControls">
                 <button class="btn btn-secondary" onclick="cancelMatchmaking()" id="cancelBtn" class="hidden">
                     ❌ CANCEL
                 </button>
@@ -661,7 +882,7 @@
         </div>
     </div>
 
-    <!-- Game Screen -->
+    <!-- Game Screen (unchanged from original) -->
     <div id="gameScreen">
         <!-- Game Header -->
         <div class="game-header">
@@ -777,14 +998,39 @@
         // Global orientation state
         let shipOrientation = 'vertical';
         
-        // Frontend functions
+        // Frontend functions for matchmaking
         function startQuickMatch() {
-            onlineBackend.startMatchmaking();
-            document.getElementById('findBtn').classList.add('hidden');
-            document.getElementById('cancelBtn').classList.remove('hidden');
-            document.getElementById('queueStatus').classList.remove('hidden');
-            document.getElementById('searchingDots').classList.remove('hidden');
-            document.getElementById('quickMatch').classList.add('hidden');
+            hideError();
+            hideOptions();
+            showQueueStatus();
+            onlineBackend.startQuickMatch();
+        }
+        
+        function generateRoom() {
+            hideError();
+            hideOptions();
+            showRoomStatus();
+            onlineBackend.createRoom();
+        }
+        
+        function joinRoom() {
+            const roomCode = document.getElementById('roomCodeInput').value.trim().toUpperCase();
+            if (!roomCode || roomCode.length !== 6) {
+                showError('Please enter a valid 6-character room code');
+                return;
+            }
+            
+            hideError();
+            hideOptions();
+            showQueueStatus();
+            onlineBackend.joinRoom(roomCode);
+        }
+        
+        function copyRoomId() {
+            const roomId = document.getElementById('roomId').textContent;
+            navigator.clipboard.writeText(roomId).then(() => {
+                alert('Room ID copied to clipboard!');
+            });
         }
         
         function cancelMatchmaking() {
@@ -793,16 +1039,54 @@
         }
         
         function resetMatchmakingUI() {
-            document.getElementById('findBtn').classList.remove('hidden');
+            hideAllStatuses();
+            showOptions();
+            hideError();
+            document.getElementById('matchmakingStatus').textContent = 'CHOOSE GAME MODE';
+            document.getElementById('roomCodeInput').value = '';
+        }
+        
+        // UI Helper Functions
+        function hideOptions() {
+            document.getElementById('matchmakingOptions').classList.add('hidden');
+            document.getElementById('cancelBtn').classList.remove('hidden');
+        }
+        
+        function showOptions() {
+            document.getElementById('matchmakingOptions').classList.remove('hidden');
             document.getElementById('cancelBtn').classList.add('hidden');
+        }
+        
+        function showQueueStatus() {
+            hideAllStatuses();
+            document.getElementById('queueStatus').classList.remove('hidden');
+            document.getElementById('searchingDots').classList.remove('hidden');
+            document.getElementById('matchmakingStatus').textContent = 'MATCHMAKING';
+        }
+        
+        function showRoomStatus() {
+            hideAllStatuses();
+            document.getElementById('roomStatus').classList.remove('hidden');
+            document.getElementById('matchmakingStatus').textContent = 'ROOM CREATED';
+        }
+        
+        function hideAllStatuses() {
             document.getElementById('queueStatus').classList.add('hidden');
             document.getElementById('roomStatus').classList.add('hidden');
             document.getElementById('foundOpponent').classList.add('hidden');
             document.getElementById('searchingDots').classList.add('hidden');
-            document.getElementById('quickMatch').classList.remove('hidden');
-            document.getElementById('matchmakingStatus').textContent = 'READY FOR BATTLE?';
         }
         
+        function showError(message) {
+            document.getElementById('errorText').textContent = message;
+            document.getElementById('errorMessage').style.display = 'block';
+        }
+        
+        function hideError() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+        
+        // Game functions (unchanged from original)
         function exitToMenu() {
             if (confirm('Return to main menu?')) {
                 onlineBackend.cleanup();
@@ -838,7 +1122,6 @@
             document.getElementById('orientationBtn').textContent = 
                 shipOrientation === 'vertical' ? '🔄 VERTICAL' : '🔄 HORIZONTAL';
             
-            // Update backend orientation if needed
             if (onlineBackend.state && onlineBackend.state.orientation !== undefined) {
                 onlineBackend.state.orientation = shipOrientation;
             }
@@ -871,6 +1154,42 @@
             messageEl.textContent = message;
             
             overlay.classList.remove('hidden');
+        };
+        
+        // New functions for backend to call
+        window.showRoomCreated = function(roomId) {
+            document.getElementById('roomId').textContent = roomId;
+            showRoomStatus();
+        };
+        
+        window.showOpponentFound = function(opponentName) {
+            hideAllStatuses();
+            document.getElementById('foundOpponent').classList.remove('hidden');
+            document.getElementById('opponentNameDisplay').textContent = opponentName;
+            
+            // Start countdown
+            let countdown = 3;
+            const countdownEl = document.getElementById('countdown');
+            countdownEl.textContent = countdown;
+            
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    document.getElementById('matchmakingScreen').style.opacity = '0';
+                    setTimeout(() => {
+                        document.getElementById('matchmakingScreen').style.display = 'none';
+                        document.getElementById('gameScreen').style.display = 'block';
+                    }, 500);
+                } else {
+                    countdownEl.textContent = countdown;
+                }
+            }, 1000);
+        };
+        
+        window.showMatchmakingError = function(error) {
+            resetMatchmakingUI();
+            showError(error);
         };
         
         // Initialize when page loads
