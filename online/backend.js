@@ -32,7 +32,8 @@ const onlineBackend = {
             { name: "Destroyer", size: 2, id: "destroyer" }
         ],
         placedShips: 0,
-        orientation: "vertical"
+        orientation: "vertical",
+        matchmakingType: null // "quick" or "room"
     },
     
     // Initialize
@@ -126,61 +127,102 @@ const onlineBackend = {
     },
     
     // ============================
-    // MATCHMAKING
+    // MATCHMAKING - QUICK MATCH
     // ============================
     
-    startMatchmaking: async function() {
-        console.log("Starting matchmaking for player:", this.state.playerId);
-        
-        // Update UI
-        document.getElementById('matchmakingStatus').textContent = "Creating game room...";
-        document.getElementById('searchingDots').classList.remove('hidden');
+    startQuickMatch: async function() {
+        console.log("Starting quick match...");
+        this.state.matchmakingType = "quick";
         
         try {
-            await this.createNewRoom();
+            // First try to find existing waiting room
+            const foundRoom = await this.findWaitingRoom();
+            if (foundRoom) {
+                console.log("Found existing room, joining:", foundRoom.id);
+                await this.joinRoomAsPlayer2(foundRoom);
+                return;
+            }
+            
+            // No room found, create new one
+            console.log("No waiting rooms, creating new room...");
+            await this.createRoom(true); // true = quick match
+            
         } catch (error) {
-            console.error("Matchmaking failed:", error);
-            alert("Failed to create game room. Please try again.");
-            this.cancelMatchmaking();
+            console.error("Quick match error:", error);
+            window.showMatchmakingError("Quick match failed. Try again.");
         }
     },
     
-    createNewRoom: async function() {
-        console.log("Creating new game room...");
+    findWaitingRoom: async function() {
+        try {
+            const GameRoom = Parse.Object.extend("GameRoom");
+            const query = new Parse.Query(GameRoom);
+            
+            // Look for rooms in waiting state that aren't full
+            query.equalTo("status", "waiting");
+            query.equalTo("matchmakingType", "quick");
+            query.notEqualTo("player1Id", this.state.playerId); // Don't find our own room
+            
+            const results = await query.find();
+            
+            if (results.length > 0) {
+                return results[0]; // Return first available room
+            }
+            
+            return null;
+            
+        } catch (error) {
+            console.error("Error finding waiting rooms:", error);
+            return null;
+        }
+    },
+    
+    // ============================
+    // ROOM SYSTEM
+    // ============================
+    
+    createRoom: async function(isQuickMatch = false) {
+        console.log("Creating new room...");
         
         try {
             const GameRoom = Parse.Object.extend("GameRoom");
             const gameRoom = new GameRoom();
             
-            // Set required fields
+            // Generate room code
+            const roomCode = this.generateRoomCode();
+            
+            // Set room data
+            gameRoom.set("roomCode", roomCode);
             gameRoom.set("player1Id", this.state.playerId);
             gameRoom.set("player1Name", this.state.playerName);
             gameRoom.set("status", "waiting");
-            gameRoom.set("currentTurn", 1);
+            gameRoom.set("matchmakingType", isQuickMatch ? "quick" : "private");
             gameRoom.set("createdAt", new Date());
             
-            // Set optional fields
+            // Default values
             gameRoom.set("player2Id", "");
             gameRoom.set("player2Name", "");
             gameRoom.set("player1Ready", false);
             gameRoom.set("player2Ready", false);
             gameRoom.set("winner", "");
+            gameRoom.set("currentTurn", 1);
             gameRoom.set("ships", JSON.stringify({ player1: [], player2: [] }));
             gameRoom.set("attacks", JSON.stringify({ player1: [], player2: [] }));
             
             const savedRoom = await gameRoom.save();
             this.state.gameId = savedRoom.id;
-            console.log("Game room created successfully! ID:", this.state.gameId);
+            
+            console.log("Room created! Code:", roomCode, "ID:", this.state.gameId);
             
             // Update UI
-            document.getElementById('queueStatus').classList.add('hidden');
-            document.getElementById('roomStatus').classList.remove('hidden');
-            document.getElementById('roomId').textContent = this.state.gameId.substring(0, 12) + '...';
-            document.getElementById('roomCreator').textContent = this.state.playerName;
-            document.getElementById('matchmakingStatus').textContent = "Room created!";
+            window.showRoomCreated(roomCode);
             
             // Start polling for opponent
-            this.pollForOpponent();
+            if (isQuickMatch) {
+                this.pollForQuickMatchOpponent();
+            } else {
+                this.pollForPrivateRoomOpponent();
+            }
             
         } catch (error) {
             console.error("Error creating room:", error);
@@ -188,23 +230,105 @@ const onlineBackend = {
         }
     },
     
-    pollForOpponent: function() {
+    joinRoom: async function(roomCode) {
+        console.log("Attempting to join room:", roomCode);
+        this.state.matchmakingType = "room";
+        
+        try {
+            const GameRoom = Parse.Object.extend("GameRoom");
+            const query = new Parse.Query(GameRoom);
+            
+            query.equalTo("roomCode", roomCode);
+            const results = await query.find();
+            
+            if (results.length === 0) {
+                window.showMatchmakingError("Room not found!");
+                return;
+            }
+            
+            const room = results[0];
+            const status = room.get("status");
+            const matchmakingType = room.get("matchmakingType");
+            
+            if (status !== "waiting") {
+                window.showMatchmakingError("Room is not available!");
+                return;
+            }
+            
+            const player2Id = room.get("player2Id");
+            if (player2Id && player2Id !== "") {
+                window.showMatchmakingError("Room is already full!");
+                return;
+            }
+            
+            // Check if trying to join own room
+            if (room.get("player1Id") === this.state.playerId) {
+                window.showMatchmakingError("Cannot join your own room!");
+                return;
+            }
+            
+            // Join the room as player 2
+            await this.joinRoomAsPlayer2(room);
+            
+        } catch (error) {
+            console.error("Error joining room:", error);
+            window.showMatchmakingError("Failed to join room!");
+        }
+    },
+    
+    joinRoomAsPlayer2: async function(room) {
+        try {
+            room.set("player2Id", this.state.playerId);
+            room.set("player2Name", this.state.playerName);
+            room.set("status", "active");
+            
+            await room.save();
+            
+            this.state.gameId = room.id;
+            this.state.playerNumber = 2;
+            this.state.opponentId = room.get("player1Id");
+            this.state.opponentName = room.get("player1Name") || "Player 1";
+            
+            console.log("Successfully joined room as Player 2");
+            
+            // Start game immediately
+            window.showOpponentFound(this.state.opponentName);
+            
+        } catch (error) {
+            console.error("Error joining room as player 2:", error);
+            throw error;
+        }
+    },
+    
+    generateRoomCode: function() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let result = '';
+        for (let i = 0; i < 6; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    },
+    
+    // ============================
+    // POLLING FUNCTIONS
+    // ============================
+    
+    pollForQuickMatchOpponent: function() {
         if (!this.state.gameId) return;
         
-        console.log("Starting to poll for opponent...");
+        console.log("Polling for quick match opponent...");
         
         this.state.pollingInterval = setInterval(async () => {
             try {
                 const query = new Parse.Query("GameRoom");
-                const gameRoom = await query.get(this.state.gameId);
+                const room = await query.get(this.state.gameId);
                 
-                const player2Id = gameRoom.get("player2Id");
-                const status = gameRoom.get("status");
+                const status = room.get("status");
+                const player2Id = room.get("player2Id");
                 
                 if (status === "cancelled") {
                     clearInterval(this.state.pollingInterval);
-                    alert("Room was cancelled.");
-                    this.cancelMatchmaking();
+                    window.showMatchmakingError("Room was cancelled!");
                     return;
                 }
                 
@@ -214,90 +338,72 @@ const onlineBackend = {
                     
                     this.state.playerNumber = 1;
                     this.state.opponentId = player2Id;
-                    this.state.opponentName = gameRoom.get("player2Name") || "Opponent";
+                    this.state.opponentName = room.get("player2Name") || "Opponent";
                     
                     // Update room status
-                    gameRoom.set("status", "active");
-                    await gameRoom.save();
+                    room.set("status", "active");
+                    await room.save();
                     
-                    // Update UI
-                    document.getElementById('opponentName').textContent = this.state.opponentName;
-                    this.opponentFound();
+                    console.log("Quick match opponent found:", this.state.opponentName);
+                    window.showOpponentFound(this.state.opponentName);
                 }
                 
             } catch (error) {
                 console.error("Polling error:", error);
                 if (error.code === 101) {
                     clearInterval(this.state.pollingInterval);
-                    alert("Game room was deleted.");
-                    this.cancelMatchmaking();
+                    window.showMatchmakingError("Room was deleted!");
                 }
             }
         }, 2000);
     },
     
-    joinRoom: async function(roomId) {
-        console.log("Attempting to join room:", roomId);
+    pollForPrivateRoomOpponent: function() {
+        if (!this.state.gameId) return;
         
-        try {
-            const query = new Parse.Query("GameRoom");
-            const gameRoom = await query.get(roomId);
-            
-            const status = gameRoom.get("status");
-            if (status !== "waiting") {
-                alert("Room is not available.");
-                return;
+        console.log("Polling for private room opponent...");
+        
+        this.state.pollingInterval = setInterval(async () => {
+            try {
+                const query = new Parse.Query("GameRoom");
+                const room = await query.get(this.state.gameId);
+                
+                const status = room.get("status");
+                const player2Id = room.get("player2Id");
+                
+                if (status === "cancelled") {
+                    clearInterval(this.state.pollingInterval);
+                    window.showMatchmakingError("Room was cancelled!");
+                    return;
+                }
+                
+                if (player2Id && player2Id !== "") {
+                    // Opponent found!
+                    clearInterval(this.state.pollingInterval);
+                    
+                    this.state.playerNumber = 1;
+                    this.state.opponentId = player2Id;
+                    this.state.opponentName = room.get("player2Name") || "Opponent";
+                    
+                    // Update room status
+                    room.set("status", "active");
+                    await room.save();
+                    
+                    console.log("Private room opponent found:", this.state.opponentName);
+                    window.showOpponentFound(this.state.opponentName);
+                }
+                
+            } catch (error) {
+                console.error("Polling error:", error);
+                if (error.code === 101) {
+                    clearInterval(this.state.pollingInterval);
+                    window.showMatchmakingError("Room was deleted!");
+                }
             }
-            
-            const player2Id = gameRoom.get("player2Id");
-            if (player2Id && player2Id !== "") {
-                alert("Room is already full!");
-                return;
-            }
-            
-            // Join the room
-            gameRoom.set("player2Id", this.state.playerId);
-            gameRoom.set("player2Name", this.state.playerName);
-            gameRoom.set("status", "active");
-            await gameRoom.save();
-            
-            this.state.gameId = roomId;
-            this.state.playerNumber = 2;
-            this.state.opponentId = gameRoom.get("player1Id");
-            this.state.opponentName = gameRoom.get("player1Name") || "Player 1";
-            
-            // Start game immediately
-            this.startGame();
-            
-        } catch (error) {
-            console.error("Error joining room:", error);
-            alert("Could not join room. It may have been deleted.");
-        }
+        }, 2000);
     },
     
-    opponentFound: function() {
-        console.log("Opponent found! Starting game...");
-        
-        document.getElementById('roomStatus').classList.add('hidden');
-        document.getElementById('foundOpponent').classList.remove('hidden');
-        
-        // Quick countdown
-        let countdown = 3;
-        const countdownElement = document.getElementById('countdown');
-        countdownElement.textContent = countdown;
-        
-        const countdownInterval = setInterval(() => {
-            countdown--;
-            countdownElement.textContent = countdown;
-            
-            if (countdown <= 0) {
-                clearInterval(countdownInterval);
-                this.startGame();
-            }
-        }, 1000);
-    },
-    
-    cancelMatchmaking: function() {
+    cancelMatchmaking: async function() {
         console.log("Cancelling matchmaking...");
         
         if (this.state.pollingInterval) {
@@ -305,32 +411,21 @@ const onlineBackend = {
         }
         
         if (this.state.gameId) {
-            this.markRoomAsCancelled();
+            await this.deleteRoom();
         }
         
-        this.resetUI();
+        this.state.matchmakingType = null;
     },
     
-    markRoomAsCancelled: async function() {
+    deleteRoom: async function() {
         try {
             const query = new Parse.Query("GameRoom");
-            const gameRoom = await query.get(this.state.gameId);
-            gameRoom.set("status", "cancelled");
-            await gameRoom.save();
+            const room = await query.get(this.state.gameId);
+            await room.destroy();
+            console.log("Room deleted successfully");
         } catch (error) {
-            console.error("Error cancelling room:", error);
+            console.error("Error deleting room:", error);
         }
-    },
-    
-    resetUI: function() {
-        document.getElementById('matchmakingStatus').textContent = "READY FOR BATTLE?";
-        document.getElementById('queueStatus').classList.add('hidden');
-        document.getElementById('roomStatus').classList.add('hidden');
-        document.getElementById('foundOpponent').classList.add('hidden');
-        document.getElementById('searchingDots').classList.add('hidden');
-        document.getElementById('findBtn').classList.remove('hidden');
-        document.getElementById('cancelBtn').classList.add('hidden');
-        document.getElementById('quickMatch').classList.remove('hidden');
     },
     
     // ============================
@@ -341,11 +436,26 @@ const onlineBackend = {
         console.log("Starting game! Player:", this.state.playerNumber);
         
         // Hide matchmaking, show game
-        document.getElementById('matchmakingScreen').classList.add('hidden');
-        document.getElementById('gameScreen').style.display = 'block';
+        const matchmakingScreen = document.getElementById('matchmakingScreen');
+        if (matchmakingScreen) {
+            matchmakingScreen.style.opacity = '0';
+            setTimeout(() => {
+                matchmakingScreen.style.display = 'none';
+                const gameScreen = document.getElementById('gameScreen');
+                if (gameScreen) {
+                    gameScreen.style.display = 'block';
+                    setTimeout(() => {
+                        gameScreen.style.opacity = '1';
+                    }, 10);
+                }
+            }, 500);
+        }
         
         // Update opponent name
-        document.getElementById('opponentName').textContent = this.state.opponentName;
+        const opponentNameElement = document.getElementById('opponentName');
+        if (opponentNameElement) {
+            opponentNameElement.textContent = this.state.opponentName;
+        }
         
         // Initialize grids
         this.createGrids();
@@ -374,37 +484,41 @@ const onlineBackend = {
         const attackGrid = document.getElementById('attackGrid');
         
         // Clear grids
-        playerGrid.innerHTML = '';
-        attackGrid.innerHTML = '';
+        if (playerGrid) playerGrid.innerHTML = '';
+        if (attackGrid) attackGrid.innerHTML = '';
         
         // Create player grid
-        for (let row = 0; row < 10; row++) {
-            for (let col = 0; col < 10; col++) {
-                const cell = document.createElement('div');
-                cell.className = 'cell';
-                cell.dataset.row = row;
-                cell.dataset.col = col;
-                
-                cell.addEventListener('click', () => {
-                    if (this.state.gamePhase === "placement") {
-                        this.placeShip(row, col, this.state.orientation);
-                    }
-                });
-                
-                playerGrid.appendChild(cell);
+        if (playerGrid) {
+            for (let row = 0; row < 10; row++) {
+                for (let col = 0; col < 10; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    
+                    cell.addEventListener('click', () => {
+                        if (this.state.gamePhase === "placement") {
+                            this.placeShip(row, col, this.state.orientation);
+                        }
+                    });
+                    
+                    playerGrid.appendChild(cell);
+                }
             }
         }
         
         // Create attack grid
-        for (let row = 0; row < 10; row++) {
-            for (let col = 0; col < 10; col++) {
-                const cell = document.createElement('div');
-                cell.className = 'cell';
-                cell.dataset.row = row;
-                cell.dataset.col = col;
-                
-                cell.addEventListener('click', () => this.attack(row, col));
-                attackGrid.appendChild(cell);
+        if (attackGrid) {
+            for (let row = 0; row < 10; row++) {
+                for (let col = 0; col < 10; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    
+                    cell.addEventListener('click', () => this.attack(row, col));
+                    attackGrid.appendChild(cell);
+                }
             }
         }
         
@@ -494,16 +608,16 @@ const onlineBackend = {
     markReady: async function() {
         try {
             const query = new Parse.Query("GameRoom");
-            const gameRoom = await query.get(this.state.gameId);
+            const room = await query.get(this.state.gameId);
             
             if (this.state.playerNumber === 1) {
-                gameRoom.set("player1Ready", true);
+                room.set("player1Ready", true);
             } else {
-                gameRoom.set("player2Ready", true);
+                room.set("player2Ready", true);
             }
             
-            gameRoom.set("ships", JSON.stringify(this.state.ships));
-            await gameRoom.save();
+            room.set("ships", JSON.stringify(this.state.ships));
+            await room.save();
             
         } catch (error) {
             console.error("Error marking ready:", error);
@@ -535,20 +649,26 @@ const onlineBackend = {
         let hit = false;
         let shipHit = null;
         
-        this.state.ships[enemyKey].forEach(ship => {
-            ship.cells.forEach(cell => {
-                if (cell.row === row && cell.col === col) {
-                    hit = true;
-                    ship.hits++;
-                    shipHit = ship;
-                    
-                    if (ship.hits === ship.size) {
-                        ship.sunk = true;
-                        this.addChatMessage("System", `Sunk ${ship.name}!`);
-                    }
+        if (this.state.ships[enemyKey]) {
+            this.state.ships[enemyKey].forEach(ship => {
+                if (ship.cells) {
+                    ship.cells.forEach(cell => {
+                        if (cell.row === row && cell.col === col) {
+                            hit = true;
+                            if (ship.hits !== undefined) {
+                                ship.hits++;
+                                shipHit = ship;
+                                
+                                if (ship.hits === ship.size) {
+                                    ship.sunk = true;
+                                    this.addChatMessage("System", `Sunk ${ship.name}!`);
+                                }
+                            }
+                        }
+                    });
                 }
             });
-        });
+        }
         
         this.updateGrids();
         
@@ -567,15 +687,22 @@ const onlineBackend = {
     saveAttack: async function(row, col, hit) {
         try {
             const query = new Parse.Query("GameRoom");
-            const gameRoom = await query.get(this.state.gameId);
+            const room = await query.get(this.state.gameId);
             
-            const attacks = JSON.parse(gameRoom.get("attacks") || '{"player1":[],"player2":[]}');
+            let attacks = {};
+            try {
+                attacks = JSON.parse(room.get("attacks") || '{"player1":[],"player2":[]}');
+            } catch (e) {
+                attacks = { player1: [], player2: [] };
+            }
+            
             const playerKey = `player${this.state.playerNumber}`;
+            if (!attacks[playerKey]) attacks[playerKey] = [];
             
             attacks[playerKey].push(`${row},${col},${hit ? 'hit' : 'miss'}`);
             
-            gameRoom.set("attacks", JSON.stringify(attacks));
-            await gameRoom.save();
+            room.set("attacks", JSON.stringify(attacks));
+            await room.save();
             
         } catch (error) {
             console.error("Error saving attack:", error);
@@ -585,11 +712,11 @@ const onlineBackend = {
     switchTurns: async function() {
         try {
             const query = new Parse.Query("GameRoom");
-            const gameRoom = await query.get(this.state.gameId);
+            const room = await query.get(this.state.gameId);
             
-            const newTurn = gameRoom.get("currentTurn") === 1 ? 2 : 1;
-            gameRoom.set("currentTurn", newTurn);
-            await gameRoom.save();
+            const newTurn = room.get("currentTurn") === 1 ? 2 : 1;
+            room.set("currentTurn", newTurn);
+            await room.save();
             
             this.state.currentTurn = newTurn;
             this.updateTurnIndicator();
@@ -600,6 +727,7 @@ const onlineBackend = {
     },
     
     checkWin: function(playerKey) {
+        if (!this.state.ships[playerKey]) return false;
         return this.state.ships[playerKey].every(ship => ship.sunk);
     },
     
@@ -617,14 +745,14 @@ const onlineBackend = {
             
             try {
                 const query = new Parse.Query("GameRoom");
-                const gameRoom = await query.get(this.state.gameId);
+                const room = await query.get(this.state.gameId);
                 
-                const status = gameRoom.get("status");
+                const status = room.get("status");
                 if (status === "ended") {
                     this.state.gameActive = false;
                     clearInterval(this.state.pollingInterval);
                     
-                    const winner = gameRoom.get("winner");
+                    const winner = room.get("winner");
                     if (winner === this.state.playerId) {
                         this.showGameOver("🎉 You Win! 🎉", true);
                     } else {
@@ -633,11 +761,25 @@ const onlineBackend = {
                     return;
                 }
                 
-                const ships = JSON.parse(gameRoom.get("ships") || '{"player1":[],"player2":[]}');
-                const attacks = JSON.parse(gameRoom.get("attacks") || '{"player1":[],"player2":[]}');
-                const currentTurn = gameRoom.get("currentTurn");
-                const player1Ready = gameRoom.get("player1Ready");
-                const player2Ready = gameRoom.get("player2Ready");
+                // Parse ships
+                let ships = { player1: [], player2: [] };
+                try {
+                    ships = JSON.parse(room.get("ships") || '{"player1":[],"player2":[]}');
+                } catch (e) {
+                    console.error("Error parsing ships:", e);
+                }
+                
+                // Parse attacks
+                let attacks = { player1: [], player2: [] };
+                try {
+                    attacks = JSON.parse(room.get("attacks") || '{"player1":[],"player2":[]}');
+                } catch (e) {
+                    console.error("Error parsing attacks:", e);
+                }
+                
+                const currentTurn = room.get("currentTurn") || 1;
+                const player1Ready = room.get("player1Ready") || false;
+                const player2Ready = room.get("player2Ready") || false;
                 
                 this.state.ships = ships;
                 this.state.attacks = attacks;
@@ -669,67 +811,91 @@ const onlineBackend = {
         const enemyKey = `player${this.state.playerNumber === 1 ? 2 : 1}`;
         
         // Player grid
-        for (let i = 0; i < 100; i++) {
-            const row = Math.floor(i / 10);
-            const col = i % 10;
-            const cell = playerGrid.children[i];
-            
-            if (!cell) continue;
-            
-            cell.className = 'cell';
-            
-            // Show ships
-            const shipHere = this.state.ships[playerKey].find(ship =>
-                ship.cells.some(c => c.row === row && c.col === col)
-            );
-            
-            if (shipHere) {
-                cell.classList.add('ship');
+        if (playerGrid && playerGrid.children.length > 0) {
+            for (let i = 0; i < 100; i++) {
+                const row = Math.floor(i / 10);
+                const col = i % 10;
+                const cell = playerGrid.children[i];
                 
-                // Check hits
+                if (!cell) continue;
+                
+                cell.className = 'cell';
+                
+                // Show ships
+                if (this.state.ships[playerKey]) {
+                    const shipHere = this.state.ships[playerKey].find(ship =>
+                        ship.cells && ship.cells.some(c => c.row === row && c.col === col)
+                    );
+                    
+                    if (shipHere) {
+                        cell.classList.add('ship');
+                        
+                        // Check hits
+                        const enemyAttacks = this.state.attacks[enemyKey] || [];
+                        const wasHit = enemyAttacks.some(attack => {
+                            const parts = attack.split(',');
+                            if (parts.length >= 2) {
+                                const r = parseInt(parts[0]);
+                                const c = parseInt(parts[1]);
+                                return r === row && c === col;
+                            }
+                            return false;
+                        });
+                        
+                        if (wasHit) {
+                            cell.classList.add('hit');
+                        }
+                    }
+                }
+                
+                // Show misses
                 const enemyAttacks = this.state.attacks[enemyKey] || [];
-                const wasHit = enemyAttacks.some(attack => {
-                    const [r, c] = attack.split(',');
-                    return parseInt(r) === row && parseInt(c) === col;
+                enemyAttacks.forEach(attackStr => {
+                    const parts = attackStr.split(',');
+                    if (parts.length >= 3) {
+                        const r = parseInt(parts[0]);
+                        const c = parseInt(parts[1]);
+                        const result = parts[2];
+                        if (r === row && c === col && result === 'miss') {
+                            cell.classList.add('miss');
+                        }
+                    }
                 });
-                
-                if (wasHit) {
-                    cell.classList.add('hit');
-                }
             }
-            
-            // Show misses
-            const enemyAttacks = this.state.attacks[enemyKey] || [];
-            enemyAttacks.forEach(attackStr => {
-                const [r, c, result] = attackStr.split(',');
-                if (parseInt(r) === row && parseInt(c) === col && result === 'miss') {
-                    cell.classList.add('miss');
-                }
-            });
         }
         
         // Attack grid
-        for (let i = 0; i < 100; i++) {
-            const row = Math.floor(i / 10);
-            const col = i % 10;
-            const cell = attackGrid.children[i];
-            
-            if (!cell) continue;
-            
-            cell.className = 'cell';
-            
-            // Show attacks
-            const playerAttacks = this.state.attacks[playerKey] || [];
-            playerAttacks.forEach(attackStr => {
-                const [r, c, result] = attackStr.split(',');
-                if (parseInt(r) === row && parseInt(c) === col) {
-                    cell.classList.add(result);
-                }
-            });
+        if (attackGrid && attackGrid.children.length > 0) {
+            for (let i = 0; i < 100; i++) {
+                const row = Math.floor(i / 10);
+                const col = i % 10;
+                const cell = attackGrid.children[i];
+                
+                if (!cell) continue;
+                
+                cell.className = 'cell';
+                
+                // Show attacks
+                const playerAttacks = this.state.attacks[playerKey] || [];
+                playerAttacks.forEach(attackStr => {
+                    const parts = attackStr.split(',');
+                    if (parts.length >= 3) {
+                        const r = parseInt(parts[0]);
+                        const c = parseInt(parts[1]);
+                        const result = parts[2];
+                        if (r === row && c === col) {
+                            cell.classList.add(result);
+                        }
+                    }
+                });
+            }
         }
     },
     
     updateTurnIndicator: function() {
+        const turnIndicator = document.getElementById('turnIndicator');
+        if (!turnIndicator) return;
+        
         let text = "";
         if (this.state.gamePhase === "placement") {
             text = `Place ships (${this.state.placedShips}/5)`;
@@ -738,24 +904,26 @@ const onlineBackend = {
         } else {
             text = "⏳ Opponent's Turn";
         }
-        document.getElementById('turnIndicator').textContent = text;
+        turnIndicator.textContent = text;
     },
     
     updateShipStatus: function() {
         const shipStatus = document.getElementById('shipStatus');
+        if (!shipStatus) return;
+        
         shipStatus.innerHTML = '';
         
         const enemyKey = `player${this.state.playerNumber === 1 ? 2 : 1}`;
         
-        this.state.ships[enemyKey].forEach(ship => {
-            const item = document.createElement('div');
-            item.className = `ship-status-item ${ship.sunk ? 'sunk' : ''}`;
-            const icon = ship.sunk ? '💀' : (ship.hits > 0 ? '🔥' : '🚢');
-            item.innerHTML = `${icon} ${ship.name} (${ship.hits}/${ship.size})`;
-            shipStatus.appendChild(item);
-        });
-        
-        if (this.state.ships[enemyKey].length === 0) {
+        if (this.state.ships[enemyKey] && this.state.ships[enemyKey].length > 0) {
+            this.state.ships[enemyKey].forEach(ship => {
+                const item = document.createElement('div');
+                item.className = `ship-status-item ${ship.sunk ? 'sunk' : ''}`;
+                const icon = ship.sunk ? '💀' : (ship.hits > 0 ? '🔥' : '🚢');
+                item.innerHTML = `${icon} ${ship.name} (${ship.hits || 0}/${ship.size})`;
+                shipStatus.appendChild(item);
+            });
+        } else {
             this.state.shipTypes.forEach(ship => {
                 const item = document.createElement('div');
                 item.className = 'ship-status-item';
@@ -767,6 +935,8 @@ const onlineBackend = {
     
     addChatMessage: function(sender, message) {
         const chatMessages = document.getElementById('chatMessages');
+        if (!chatMessages) return;
+        
         const messageDiv = document.createElement('div');
         messageDiv.className = 'message';
         
@@ -784,6 +954,8 @@ const onlineBackend = {
     
     sendChatMessage: function() {
         const input = document.getElementById('chatInput');
+        if (!input) return;
+        
         const message = input.value.trim();
         
         if (message) {
@@ -797,7 +969,9 @@ const onlineBackend = {
     // ============================
     
     showGameOver: function(message, isWin) {
-        window.showGameOver(message, isWin);
+        if (window.showGameOver) {
+            window.showGameOver(message, isWin);
+        }
     },
     
     rematch: function() {
@@ -807,16 +981,27 @@ const onlineBackend = {
         this.state.placedShips = 0;
         this.state.ships = { player1: [], player2: [] };
         this.state.attacks = { player1: [], player2: [] };
+        this.state.matchmakingType = null;
         
         if (this.state.pollingInterval) {
             clearInterval(this.state.pollingInterval);
         }
         
-        document.getElementById('matchmakingScreen').classList.remove('hidden');
-        document.getElementById('gameScreen').style.display = 'none';
-        document.getElementById('gameOverOverlay').classList.add('hidden');
+        const gameOverOverlay = document.getElementById('gameOverOverlay');
+        if (gameOverOverlay) {
+            gameOverOverlay.classList.add('hidden');
+        }
         
-        this.resetUI();
+        const matchmakingScreen = document.getElementById('matchmakingScreen');
+        if (matchmakingScreen) {
+            matchmakingScreen.style.display = 'flex';
+            matchmakingScreen.style.opacity = '1';
+        }
+        
+        const gameScreen = document.getElementById('gameScreen');
+        if (gameScreen) {
+            gameScreen.style.display = 'none';
+        }
     },
     
     surrenderGame: async function() {
@@ -824,10 +1009,10 @@ const onlineBackend = {
         
         try {
             const query = new Parse.Query("GameRoom");
-            const gameRoom = await query.get(this.state.gameId);
-            gameRoom.set("status", "ended");
-            gameRoom.set("winner", this.state.opponentId);
-            await gameRoom.save();
+            const room = await query.get(this.state.gameId);
+            room.set("status", "ended");
+            room.set("winner", this.state.opponentId);
+            await room.save();
             
             this.showGameOver("You surrendered!", false);
             
@@ -838,6 +1023,7 @@ const onlineBackend = {
     
     leaveGame: function() {
         if (confirm("Leave game?")) {
+            this.cleanup();
             window.location.href = "../index.html";
         }
     },
@@ -845,14 +1031,14 @@ const onlineBackend = {
     endGame: async function(winnerNumber) {
         try {
             const query = new Parse.Query("GameRoom");
-            const gameRoom = await query.get(this.state.gameId);
+            const room = await query.get(this.state.gameId);
             
             const winnerId = winnerNumber === 1 ? 
-                gameRoom.get("player1Id") : gameRoom.get("player2Id");
+                room.get("player1Id") : room.get("player2Id");
             
-            gameRoom.set("status", "ended");
-            gameRoom.set("winner", winnerId);
-            await gameRoom.save();
+            room.set("status", "ended");
+            room.set("winner", winnerId);
+            await room.save();
             
             this.state.gameActive = false;
             
@@ -871,6 +1057,22 @@ const onlineBackend = {
         if (this.state.pollingInterval) {
             clearInterval(this.state.pollingInterval);
         }
+        
+        if (this.state.gameId && this.state.gameActive) {
+            // Mark game as abandoned
+            this.markGameAsAbandoned();
+        }
+    },
+    
+    markGameAsAbandoned: async function() {
+        try {
+            const query = new Parse.Query("GameRoom");
+            const room = await query.get(this.state.gameId);
+            room.set("status", "abandoned");
+            await room.save();
+        } catch (error) {
+            console.error("Error marking game as abandoned:", error);
+        }
     }
 };
 
@@ -881,3 +1083,12 @@ window.onlineBackend = onlineBackend;
 window.addEventListener('beforeunload', () => {
     onlineBackend.cleanup();
 });
+
+// Initialize when page loads
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        onlineBackend.initialize();
+    });
+} else {
+    onlineBackend.initialize();
+}
