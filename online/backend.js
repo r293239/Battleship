@@ -33,7 +33,8 @@ const onlineBackend = {
         ],
         placedShips: 0,
         orientation: "vertical",
-        matchmakingType: null // "quick" or "room"
+        matchmakingType: null, // "quick" or "room"
+        isWaitingForOpponent: false
     },
     
     // Initialize
@@ -99,17 +100,19 @@ const onlineBackend = {
     
     testConnection: async function() {
         try {
-            // Simple test to check if Back4App is accessible
-            const TestObject = Parse.Object.extend("Test");
-            const test = new TestObject();
-            test.set("testField", "connection_test");
+            // Create a test game class to ensure it exists
+            const GameRoom = Parse.Object.extend("GameRoom");
+            const testRoom = new GameRoom();
+            testRoom.set("testField", "connection_test");
             
-            // This will fail (no Test class) but that's OK - we just want to test connectivity
-            await test.save();
+            await testRoom.save();
             console.log("Back4App connection test successful");
+            
+            // Clean up test object
+            await testRoom.destroy();
+            
         } catch (error) {
-            // We expect an error since Test class doesn't exist, but connection worked
-            console.log("Back4App is accessible (expected error):", error.code);
+            console.log("Back4App is accessible:", error.message);
         }
     },
     
@@ -134,22 +137,31 @@ const onlineBackend = {
         console.log("Starting quick match...");
         this.state.matchmakingType = "quick";
         
+        // Show searching UI
+        const quickMatchEl = document.getElementById('quickMatch');
+        const queueStatusEl = document.getElementById('queueStatus');
+        if (quickMatchEl) quickMatchEl.classList.add('hidden');
+        if (queueStatusEl) queueStatusEl.classList.remove('hidden');
+        
         try {
             // First try to find existing waiting room
+            console.log("Searching for existing rooms...");
             const foundRoom = await this.findWaitingRoom();
+            
             if (foundRoom) {
-                console.log("Found existing room, joining:", foundRoom.id);
-                await this.joinRoomAsPlayer2(foundRoom);
+                console.log("Found existing room! Joining as Player 2...");
+                await this.joinExistingRoom(foundRoom);
                 return;
             }
             
             // No room found, create new one
-            console.log("No waiting rooms, creating new room...");
-            await this.createRoom(true); // true = quick match
+            console.log("No waiting rooms found. Creating new room...");
+            await this.createQuickMatchRoom();
             
         } catch (error) {
             console.error("Quick match error:", error);
-            window.showMatchmakingError("Quick match failed. Try again.");
+            this.showError("Quick match failed. Please try again.");
+            this.resetMatchmakingUI();
         }
     },
     
@@ -158,15 +170,21 @@ const onlineBackend = {
             const GameRoom = Parse.Object.extend("GameRoom");
             const query = new Parse.Query(GameRoom);
             
-            // Look for rooms in waiting state that aren't full
+            // Look for quick match rooms that are waiting
             query.equalTo("status", "waiting");
             query.equalTo("matchmakingType", "quick");
             query.notEqualTo("player1Id", this.state.playerId); // Don't find our own room
             
+            // Sort by oldest first
+            query.ascending("createdAt");
+            
             const results = await query.find();
+            console.log("Found", results.length, "waiting rooms");
             
             if (results.length > 0) {
-                return results[0]; // Return first available room
+                const room = results[0];
+                console.log("Available room:", room.id, "by", room.get("player1Name"));
+                return room;
             }
             
             return null;
@@ -177,13 +195,7 @@ const onlineBackend = {
         }
     },
     
-    // ============================
-    // ROOM SYSTEM
-    // ============================
-    
-    createRoom: async function(isQuickMatch = false) {
-        console.log("Creating new room...");
-        
+    createQuickMatchRoom: async function() {
         try {
             const GameRoom = Parse.Object.extend("GameRoom");
             const gameRoom = new GameRoom();
@@ -196,7 +208,7 @@ const onlineBackend = {
             gameRoom.set("player1Id", this.state.playerId);
             gameRoom.set("player1Name", this.state.playerName);
             gameRoom.set("status", "waiting");
-            gameRoom.set("matchmakingType", isQuickMatch ? "quick" : "private");
+            gameRoom.set("matchmakingType", "quick");
             gameRoom.set("createdAt", new Date());
             
             // Default values
@@ -212,17 +224,13 @@ const onlineBackend = {
             const savedRoom = await gameRoom.save();
             this.state.gameId = savedRoom.id;
             
-            console.log("Room created! Code:", roomCode, "ID:", this.state.gameId);
+            console.log("Quick match room created! Code:", roomCode, "ID:", this.state.gameId);
             
-            // Update UI
-            window.showRoomCreated(roomCode);
+            // Show room created UI
+            this.showRoomCreatedUI(roomCode);
             
             // Start polling for opponent
-            if (isQuickMatch) {
-                this.pollForQuickMatchOpponent();
-            } else {
-                this.pollForPrivateRoomOpponent();
-            }
+            this.pollForOpponent();
             
         } catch (error) {
             console.error("Error creating room:", error);
@@ -230,54 +238,128 @@ const onlineBackend = {
         }
     },
     
+    joinExistingRoom: async function(room) {
+        try {
+            // Join as Player 2
+            room.set("player2Id", this.state.playerId);
+            room.set("player2Name", this.state.playerName);
+            room.set("status", "active");
+            
+            await room.save();
+            
+            this.state.gameId = room.id;
+            this.state.playerNumber = 2;
+            this.state.opponentId = room.get("player1Id");
+            this.state.opponentName = room.get("player1Name") || "Opponent";
+            
+            console.log("Successfully joined room as Player 2");
+            
+            // Start game immediately
+            this.startGame();
+            
+        } catch (error) {
+            console.error("Error joining existing room:", error);
+            throw error;
+        }
+    },
+    
+    // ============================
+    // ROOM SYSTEM
+    // ============================
+    
+    createRoom: async function() {
+        console.log("Creating private room...");
+        this.state.matchmakingType = "room";
+        
+        try {
+            const GameRoom = Parse.Object.extend("GameRoom");
+            const gameRoom = new GameRoom();
+            
+            // Generate room code
+            const roomCode = this.generateRoomCode();
+            
+            // Set room data
+            gameRoom.set("roomCode", roomCode);
+            gameRoom.set("player1Id", this.state.playerId);
+            gameRoom.set("player1Name", this.state.playerName);
+            gameRoom.set("status", "waiting");
+            gameRoom.set("matchmakingType", "private");
+            gameRoom.set("createdAt", new Date());
+            
+            // Default values
+            gameRoom.set("player2Id", "");
+            gameRoom.set("player2Name", "");
+            gameRoom.set("player1Ready", false);
+            gameRoom.set("player2Ready", false);
+            gameRoom.set("winner", "");
+            gameRoom.set("currentTurn", 1);
+            gameRoom.set("ships", JSON.stringify({ player1: [], player2: [] }));
+            gameRoom.set("attacks", JSON.stringify({ player1: [], player2: [] }));
+            
+            const savedRoom = await gameRoom.save();
+            this.state.gameId = savedRoom.id;
+            
+            console.log("Private room created! Code:", roomCode, "ID:", this.state.gameId);
+            
+            // Update UI
+            this.showRoomCreatedUI(roomCode);
+            
+            // Start polling for opponent
+            this.pollForOpponent();
+            
+        } catch (error) {
+            console.error("Error creating room:", error);
+            this.showError("Failed to create room. Please try again.");
+        }
+    },
+    
     joinRoom: async function(roomCode) {
         console.log("Attempting to join room:", roomCode);
         this.state.matchmakingType = "room";
+        
+        // Show searching UI
+        const joinRoomForm = document.getElementById('joinRoomForm');
+        const queueStatusEl = document.getElementById('queueStatus');
+        if (joinRoomForm) joinRoomForm.classList.add('hidden');
+        if (queueStatusEl) queueStatusEl.classList.remove('hidden');
         
         try {
             const GameRoom = Parse.Object.extend("GameRoom");
             const query = new Parse.Query(GameRoom);
             
-            query.equalTo("roomCode", roomCode);
+            query.equalTo("roomCode", roomCode.toUpperCase());
             const results = await query.find();
             
             if (results.length === 0) {
-                window.showMatchmakingError("Room not found!");
+                this.showError("Room not found!");
+                this.resetMatchmakingUI();
                 return;
             }
             
             const room = results[0];
             const status = room.get("status");
-            const matchmakingType = room.get("matchmakingType");
             
             if (status !== "waiting") {
-                window.showMatchmakingError("Room is not available!");
+                this.showError("Room is not available!");
+                this.resetMatchmakingUI();
                 return;
             }
             
             const player2Id = room.get("player2Id");
             if (player2Id && player2Id !== "") {
-                window.showMatchmakingError("Room is already full!");
+                this.showError("Room is already full!");
+                this.resetMatchmakingUI();
                 return;
             }
             
             // Check if trying to join own room
             if (room.get("player1Id") === this.state.playerId) {
-                window.showMatchmakingError("Cannot join your own room!");
+                this.showError("Cannot join your own room!");
+                this.resetMatchmakingUI();
                 return;
             }
             
             // Join the room as player 2
-            await this.joinRoomAsPlayer2(room);
-            
-        } catch (error) {
-            console.error("Error joining room:", error);
-            window.showMatchmakingError("Failed to join room!");
-        }
-    },
-    
-    joinRoomAsPlayer2: async function(room) {
-        try {
             room.set("player2Id", this.state.playerId);
             room.set("player2Name", this.state.playerName);
             room.set("status", "active");
@@ -292,11 +374,12 @@ const onlineBackend = {
             console.log("Successfully joined room as Player 2");
             
             // Start game immediately
-            window.showOpponentFound(this.state.opponentName);
+            this.startGame();
             
         } catch (error) {
-            console.error("Error joining room as player 2:", error);
-            throw error;
+            console.error("Error joining room:", error);
+            this.showError("Failed to join room!");
+            this.resetMatchmakingUI();
         }
     },
     
@@ -313,10 +396,11 @@ const onlineBackend = {
     // POLLING FUNCTIONS
     // ============================
     
-    pollForQuickMatchOpponent: function() {
+    pollForOpponent: function() {
         if (!this.state.gameId) return;
         
-        console.log("Polling for quick match opponent...");
+        console.log("Polling for opponent...");
+        this.state.isWaitingForOpponent = true;
         
         this.state.pollingInterval = setInterval(async () => {
             try {
@@ -328,13 +412,15 @@ const onlineBackend = {
                 
                 if (status === "cancelled") {
                     clearInterval(this.state.pollingInterval);
-                    window.showMatchmakingError("Room was cancelled!");
+                    this.showError("Room was cancelled!");
+                    this.resetMatchmakingUI();
                     return;
                 }
                 
                 if (player2Id && player2Id !== "") {
                     // Opponent found!
                     clearInterval(this.state.pollingInterval);
+                    this.state.isWaitingForOpponent = false;
                     
                     this.state.playerNumber = 1;
                     this.state.opponentId = player2Id;
@@ -344,88 +430,19 @@ const onlineBackend = {
                     room.set("status", "active");
                     await room.save();
                     
-                    console.log("Quick match opponent found:", this.state.opponentName);
-                    window.showOpponentFound(this.state.opponentName);
+                    console.log("Opponent found:", this.state.opponentName);
+                    this.startGame();
                 }
                 
             } catch (error) {
                 console.error("Polling error:", error);
                 if (error.code === 101) {
                     clearInterval(this.state.pollingInterval);
-                    window.showMatchmakingError("Room was deleted!");
+                    this.showError("Room was deleted!");
+                    this.resetMatchmakingUI();
                 }
             }
-        }, 2000);
-    },
-    
-    pollForPrivateRoomOpponent: function() {
-        if (!this.state.gameId) return;
-        
-        console.log("Polling for private room opponent...");
-        
-        this.state.pollingInterval = setInterval(async () => {
-            try {
-                const query = new Parse.Query("GameRoom");
-                const room = await query.get(this.state.gameId);
-                
-                const status = room.get("status");
-                const player2Id = room.get("player2Id");
-                
-                if (status === "cancelled") {
-                    clearInterval(this.state.pollingInterval);
-                    window.showMatchmakingError("Room was cancelled!");
-                    return;
-                }
-                
-                if (player2Id && player2Id !== "") {
-                    // Opponent found!
-                    clearInterval(this.state.pollingInterval);
-                    
-                    this.state.playerNumber = 1;
-                    this.state.opponentId = player2Id;
-                    this.state.opponentName = room.get("player2Name") || "Opponent";
-                    
-                    // Update room status
-                    room.set("status", "active");
-                    await room.save();
-                    
-                    console.log("Private room opponent found:", this.state.opponentName);
-                    window.showOpponentFound(this.state.opponentName);
-                }
-                
-            } catch (error) {
-                console.error("Polling error:", error);
-                if (error.code === 101) {
-                    clearInterval(this.state.pollingInterval);
-                    window.showMatchmakingError("Room was deleted!");
-                }
-            }
-        }, 2000);
-    },
-    
-    cancelMatchmaking: async function() {
-        console.log("Cancelling matchmaking...");
-        
-        if (this.state.pollingInterval) {
-            clearInterval(this.state.pollingInterval);
-        }
-        
-        if (this.state.gameId) {
-            await this.deleteRoom();
-        }
-        
-        this.state.matchmakingType = null;
-    },
-    
-    deleteRoom: async function() {
-        try {
-            const query = new Parse.Query("GameRoom");
-            const room = await query.get(this.state.gameId);
-            await room.destroy();
-            console.log("Room deleted successfully");
-        } catch (error) {
-            console.error("Error deleting room:", error);
-        }
+        }, 3000); // Poll every 3 seconds
     },
     
     // ============================
@@ -433,22 +450,17 @@ const onlineBackend = {
     // ============================
     
     startGame: function() {
-        console.log("Starting game! Player:", this.state.playerNumber);
+        console.log("Starting game! Player:", this.state.playerNumber, "Opponent:", this.state.opponentName);
         
         // Hide matchmaking, show game
         const matchmakingScreen = document.getElementById('matchmakingScreen');
         if (matchmakingScreen) {
-            matchmakingScreen.style.opacity = '0';
-            setTimeout(() => {
-                matchmakingScreen.style.display = 'none';
-                const gameScreen = document.getElementById('gameScreen');
-                if (gameScreen) {
-                    gameScreen.style.display = 'block';
-                    setTimeout(() => {
-                        gameScreen.style.opacity = '1';
-                    }, 10);
-                }
-            }, 500);
+            matchmakingScreen.style.display = 'none';
+        }
+        
+        const gameScreen = document.getElementById('gameScreen');
+        if (gameScreen) {
+            gameScreen.style.display = 'block';
         }
         
         // Update opponent name
@@ -472,11 +484,10 @@ const onlineBackend = {
         
         this.updateTurnIndicator();
         this.addChatMessage("System", `Game started! You are Player ${this.state.playerNumber}`);
+        this.addChatMessage("System", `Opponent: ${this.state.opponentName}`);
         
-        // Auto-place ships for player 2 (for testing)
-        if (this.state.playerNumber === 2) {
-            setTimeout(() => this.autoPlaceShips(), 1000);
-        }
+        // DO NOT auto-place ships - wait for real opponent
+        console.log("Waiting for real opponent to place ships...");
     },
     
     createGrids: function() {
@@ -507,7 +518,7 @@ const onlineBackend = {
             }
         }
         
-        // Create attack grid
+        // Create attack grid (initially disabled)
         if (attackGrid) {
             for (let row = 0; row < 10; row++) {
                 for (let col = 0; col < 10; col++) {
@@ -516,38 +527,16 @@ const onlineBackend = {
                     cell.dataset.row = row;
                     cell.dataset.col = col;
                     
-                    cell.addEventListener('click', () => this.attack(row, col));
+                    // Initially disable clicking on attack grid
+                    cell.style.cursor = 'not-allowed';
+                    cell.style.opacity = '0.5';
+                    
                     attackGrid.appendChild(cell);
                 }
             }
         }
         
         this.updateShipStatus();
-    },
-    
-    autoPlaceShips: function() {
-        console.log("Auto-placing ships...");
-        
-        const placements = [
-            { row: 0, col: 0, vertical: true },
-            { row: 0, col: 2, vertical: true },
-            { row: 0, col: 4, vertical: true },
-            { row: 0, col: 6, vertical: true },
-            { row: 2, col: 8, vertical: false }
-        ];
-        
-        let index = 0;
-        const placeNext = () => {
-            if (index < 5 && this.state.placedShips < 5) {
-                const pos = placements[index];
-                if (this.placeShip(pos.row, pos.col, pos.vertical)) {
-                    index++;
-                }
-                setTimeout(placeNext, 500);
-            }
-        };
-        
-        placeNext();
     },
     
     placeShip: function(row, col, vertical = true) {
@@ -598,7 +587,7 @@ const onlineBackend = {
             if (row >= 10 || col >= 10) return false;
             
             const existingShip = this.state.ships[playerKey].find(ship =>
-                ship.cells.some(cell => cell.row === row && cell.col === col)
+                ship.cells && ship.cells.some(cell => cell.row === row && cell.col === col)
             );
             if (existingShip) return false;
         }
@@ -610,17 +599,53 @@ const onlineBackend = {
             const query = new Parse.Query("GameRoom");
             const room = await query.get(this.state.gameId);
             
-            if (this.state.playerNumber === 1) {
-                room.set("player1Ready", true);
-            } else {
-                room.set("player2Ready", true);
-            }
-            
+            const readyField = this.state.playerNumber === 1 ? "player1Ready" : "player2Ready";
+            room.set(readyField, true);
             room.set("ships", JSON.stringify(this.state.ships));
             await room.save();
             
+            console.log("Player", this.state.playerNumber, "marked as ready");
+            
+            // Enable attack grid when both players are ready
+            this.checkIfBothPlayersReady();
+            
         } catch (error) {
             console.error("Error marking ready:", error);
+        }
+    },
+    
+    checkIfBothPlayersReady: async function() {
+        try {
+            const query = new Parse.Query("GameRoom");
+            const room = await query.get(this.state.gameId);
+            
+            const player1Ready = room.get("player1Ready") || false;
+            const player2Ready = room.get("player2Ready") || false;
+            
+            if (player1Ready && player2Ready && this.state.gamePhase === "placement") {
+                this.state.gamePhase = "battle";
+                this.addChatMessage("System", "⚔️ Battle begins!");
+                this.addChatMessage("System", "It's Player 1's turn to attack!");
+                
+                // Enable attack grid
+                this.enableAttackGrid();
+                
+                this.updateTurnIndicator();
+            }
+            
+        } catch (error) {
+            console.error("Error checking if both players ready:", error);
+        }
+    },
+    
+    enableAttackGrid: function() {
+        const attackGrid = document.getElementById('attackGrid');
+        if (!attackGrid) return;
+        
+        for (let i = 0; i < attackGrid.children.length; i++) {
+            const cell = attackGrid.children[i];
+            cell.style.cursor = 'pointer';
+            cell.style.opacity = '1';
         }
     },
     
@@ -639,9 +664,14 @@ const onlineBackend = {
         const playerKey = `player${this.state.playerNumber}`;
         const enemyKey = `player${this.state.playerNumber === 1 ? 2 : 1}`;
         
-        if (this.state.attacks[playerKey].includes(attackKey)) {
+        if (this.state.attacks[playerKey] && this.state.attacks[playerKey].includes(attackKey)) {
             this.addChatMessage("System", "Already attacked here!");
             return;
+        }
+        
+        // Initialize attacks array if needed
+        if (!this.state.attacks[playerKey]) {
+            this.state.attacks[playerKey] = [];
         }
         
         this.state.attacks[playerKey].push(attackKey);
@@ -721,6 +751,10 @@ const onlineBackend = {
             this.state.currentTurn = newTurn;
             this.updateTurnIndicator();
             
+            this.addChatMessage("System", newTurn === this.state.playerNumber 
+                ? "🎯 Your turn!" 
+                : "⏳ Opponent's turn");
+            
         } catch (error) {
             console.error("Error switching turns:", error);
         }
@@ -761,6 +795,13 @@ const onlineBackend = {
                     return;
                 }
                 
+                if (status === "abandoned") {
+                    this.state.gameActive = false;
+                    clearInterval(this.state.pollingInterval);
+                    this.showGameOver("Opponent left the game", false);
+                    return;
+                }
+                
                 // Parse ships
                 let ships = { player1: [], player2: [] };
                 try {
@@ -781,12 +822,15 @@ const onlineBackend = {
                 const player1Ready = room.get("player1Ready") || false;
                 const player2Ready = room.get("player2Ready") || false;
                 
+                // Update state
                 this.state.ships = ships;
                 this.state.attacks = attacks;
                 this.state.currentTurn = currentTurn;
                 
+                // Check if both players are ready to start battle
                 if (player1Ready && player2Ready && this.state.gamePhase === "placement") {
                     this.state.gamePhase = "battle";
+                    this.enableAttackGrid();
                     this.addChatMessage("System", "⚔️ Battle begins!");
                 }
                 
@@ -796,8 +840,14 @@ const onlineBackend = {
                 
             } catch (error) {
                 console.error("Polling error:", error);
+                if (error.code === 101) {
+                    // Object not found - opponent probably left
+                    this.state.gameActive = false;
+                    clearInterval(this.state.pollingInterval);
+                    this.showGameOver("Game room was deleted", false);
+                }
             }
-        }, 2000);
+        }, 3000);
     },
     
     // ============================
@@ -879,12 +929,11 @@ const onlineBackend = {
                 const playerAttacks = this.state.attacks[playerKey] || [];
                 playerAttacks.forEach(attackStr => {
                     const parts = attackStr.split(',');
-                    if (parts.length >= 3) {
+                    if (parts.length >= 2) {
                         const r = parseInt(parts[0]);
                         const c = parseInt(parts[1]);
-                        const result = parts[2];
                         if (r === row && c === col) {
-                            cell.classList.add(result);
+                            cell.classList.add('hit');
                         }
                     }
                 });
@@ -965,12 +1014,76 @@ const onlineBackend = {
     },
     
     // ============================
+    // UI HELPERS
+    // ============================
+    
+    showRoomCreatedUI: function(roomCode) {
+        // Update UI elements
+        const queueStatusEl = document.getElementById('queueStatus');
+        const roomStatusEl = document.getElementById('roomStatus');
+        const roomIdEl = document.getElementById('roomId');
+        
+        if (queueStatusEl) queueStatusEl.classList.add('hidden');
+        if (roomStatusEl) roomStatusEl.classList.remove('hidden');
+        if (roomIdEl) roomIdEl.textContent = roomCode;
+        
+        // Enable copy button
+        const copyBtn = document.querySelector('.copy-btn');
+        if (copyBtn) {
+            copyBtn.onclick = () => {
+                navigator.clipboard.writeText(roomCode).then(() => {
+                    alert('Room ID copied to clipboard!');
+                });
+            };
+        }
+    },
+    
+    showError: function(message) {
+        const errorElement = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        
+        if (errorElement && errorText) {
+            errorText.textContent = message;
+            errorElement.style.display = 'block';
+            
+            // Auto-hide error after 5 seconds
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 5000);
+        }
+    },
+    
+    resetMatchmakingUI: function() {
+        // Show options again
+        const matchmakingOptions = document.getElementById('matchmakingOptions');
+        const queueStatus = document.getElementById('queueStatus');
+        const roomStatus = document.getElementById('roomStatus');
+        const cancelBtn = document.getElementById('cancelBtn');
+        
+        if (matchmakingOptions) matchmakingOptions.classList.remove('hidden');
+        if (queueStatus) queueStatus.classList.add('hidden');
+        if (roomStatus) roomStatus.classList.add('hidden');
+        if (cancelBtn) cancelBtn.classList.add('hidden');
+        
+        // Clear room code input
+        const roomCodeInput = document.getElementById('roomCodeInput');
+        if (roomCodeInput) roomCodeInput.value = '';
+    },
+    
+    // ============================
     // GAME MANAGEMENT
     // ============================
     
     showGameOver: function(message, isWin) {
-        if (window.showGameOver) {
-            window.showGameOver(message, isWin);
+        const overlay = document.getElementById('gameOverOverlay');
+        const title = document.getElementById('gameOverTitle');
+        const messageEl = document.getElementById('gameOverMessage');
+        
+        if (overlay && title && messageEl) {
+            title.textContent = isWin ? '🎉 VICTORY! 🎉' : '💀 DEFEAT! 💀';
+            title.style.color = isWin ? '#00E676' : '#FF3D00';
+            messageEl.textContent = message;
+            overlay.classList.remove('hidden');
         }
     },
     
@@ -982,6 +1095,7 @@ const onlineBackend = {
         this.state.ships = { player1: [], player2: [] };
         this.state.attacks = { player1: [], player2: [] };
         this.state.matchmakingType = null;
+        this.state.isWaitingForOpponent = false;
         
         if (this.state.pollingInterval) {
             clearInterval(this.state.pollingInterval);
@@ -995,17 +1109,18 @@ const onlineBackend = {
         const matchmakingScreen = document.getElementById('matchmakingScreen');
         if (matchmakingScreen) {
             matchmakingScreen.style.display = 'flex';
-            matchmakingScreen.style.opacity = '1';
         }
         
         const gameScreen = document.getElementById('gameScreen');
         if (gameScreen) {
             gameScreen.style.display = 'none';
         }
+        
+        this.resetMatchmakingUI();
     },
     
     surrenderGame: async function() {
-        if (!confirm("Surrender?")) return;
+        if (!confirm("Are you sure you want to surrender?")) return;
         
         try {
             const query = new Parse.Query("GameRoom");
@@ -1053,13 +1168,40 @@ const onlineBackend = {
         }
     },
     
+    cancelMatchmaking: async function() {
+        console.log("Cancelling matchmaking...");
+        
+        if (this.state.pollingInterval) {
+            clearInterval(this.state.pollingInterval);
+        }
+        
+        if (this.state.gameId && this.state.isWaitingForOpponent) {
+            await this.deleteRoom();
+        }
+        
+        this.state.matchmakingType = null;
+        this.state.isWaitingForOpponent = false;
+        
+        this.resetMatchmakingUI();
+    },
+    
+    deleteRoom: async function() {
+        try {
+            const query = new Parse.Query("GameRoom");
+            const room = await query.get(this.state.gameId);
+            await room.destroy();
+            console.log("Room deleted successfully");
+        } catch (error) {
+            console.error("Error deleting room:", error);
+        }
+    },
+    
     cleanup: function() {
         if (this.state.pollingInterval) {
             clearInterval(this.state.pollingInterval);
         }
         
         if (this.state.gameId && this.state.gameActive) {
-            // Mark game as abandoned
             this.markGameAsAbandoned();
         }
     },
