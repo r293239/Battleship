@@ -25,16 +25,20 @@ const onlineBackend = {
         pollingInterval: null,
         gamePhase: "placement",
         shipTypes: [
-            { name: "Carrier", size: 5, id: "carrier" },
-            { name: "Battleship", size: 4, id: "battleship" },
-            { name: "Cruiser", size: 3, id: "cruiser" },
-            { name: "Submarine", size: 3, id: "submarine" },
-            { name: "Destroyer", size: 2, id: "destroyer" }
+            { name: "Carrier", size: 5, id: "carrier", placed: false },
+            { name: "Battleship", size: 4, id: "battleship", placed: false },
+            { name: "Cruiser", size: 3, id: "cruiser", placed: false },
+            { name: "Submarine", size: 3, id: "submarine", placed: false },
+            { name: "Destroyer", size: 2, id: "destroyer", placed: false }
         ],
         placedShips: 0,
         orientation: "vertical",
-        matchmakingType: null, // "quick" or "room"
-        isWaitingForOpponent: false
+        matchmakingType: null,
+        isWaitingForOpponent: false,
+        currentDraggingShip: null,
+        dragStartPosition: null,
+        availableShips: [],
+        selectedShipIndex: -1
     },
     
     // Initialize
@@ -86,7 +90,6 @@ const onlineBackend = {
         // Update player ID in matchmaking screen
         const playerIdElement = document.getElementById('playerIdDisplay');
         if (playerIdElement) {
-            // Show shortened version for display
             const shortId = this.state.playerId.length > 15 
                 ? this.state.playerId.substring(0, 15) + '...' 
                 : this.state.playerId;
@@ -170,12 +173,10 @@ const onlineBackend = {
             const GameRoom = Parse.Object.extend("GameRoom");
             const query = new Parse.Query(GameRoom);
             
-            // Look for quick match rooms that are waiting
             query.equalTo("status", "waiting");
             query.equalTo("matchmakingType", "quick");
-            query.notEqualTo("player1Id", this.state.playerId); // Don't find our own room
+            query.notEqualTo("player1Id", this.state.playerId);
             
-            // Sort by oldest first
             query.ascending("createdAt");
             
             const results = await query.find();
@@ -200,10 +201,8 @@ const onlineBackend = {
             const GameRoom = Parse.Object.extend("GameRoom");
             const gameRoom = new GameRoom();
             
-            // Generate room code
             const roomCode = this.generateRoomCode();
             
-            // Set room data
             gameRoom.set("roomCode", roomCode);
             gameRoom.set("player1Id", this.state.playerId);
             gameRoom.set("player1Name", this.state.playerName);
@@ -211,7 +210,6 @@ const onlineBackend = {
             gameRoom.set("matchmakingType", "quick");
             gameRoom.set("createdAt", new Date());
             
-            // Default values
             gameRoom.set("player2Id", "");
             gameRoom.set("player2Name", "");
             gameRoom.set("player1Ready", false);
@@ -226,10 +224,7 @@ const onlineBackend = {
             
             console.log("Quick match room created! Code:", roomCode, "ID:", this.state.gameId);
             
-            // Show room created UI
             this.showRoomCreatedUI(roomCode);
-            
-            // Start polling for opponent
             this.pollForOpponent();
             
         } catch (error) {
@@ -240,7 +235,6 @@ const onlineBackend = {
     
     joinExistingRoom: async function(room) {
         try {
-            // Join as Player 2
             room.set("player2Id", this.state.playerId);
             room.set("player2Name", this.state.playerName);
             room.set("status", "active");
@@ -253,8 +247,6 @@ const onlineBackend = {
             this.state.opponentName = room.get("player1Name") || "Opponent";
             
             console.log("Successfully joined room as Player 2");
-            
-            // Start game immediately
             this.startGame();
             
         } catch (error) {
@@ -275,10 +267,8 @@ const onlineBackend = {
             const GameRoom = Parse.Object.extend("GameRoom");
             const gameRoom = new GameRoom();
             
-            // Generate room code
             const roomCode = this.generateRoomCode();
             
-            // Set room data
             gameRoom.set("roomCode", roomCode);
             gameRoom.set("player1Id", this.state.playerId);
             gameRoom.set("player1Name", this.state.playerName);
@@ -286,7 +276,6 @@ const onlineBackend = {
             gameRoom.set("matchmakingType", "private");
             gameRoom.set("createdAt", new Date());
             
-            // Default values
             gameRoom.set("player2Id", "");
             gameRoom.set("player2Name", "");
             gameRoom.set("player1Ready", false);
@@ -301,10 +290,7 @@ const onlineBackend = {
             
             console.log("Private room created! Code:", roomCode, "ID:", this.state.gameId);
             
-            // Update UI
             this.showRoomCreatedUI(roomCode);
-            
-            // Start polling for opponent
             this.pollForOpponent();
             
         } catch (error) {
@@ -317,7 +303,6 @@ const onlineBackend = {
         console.log("Attempting to join room:", roomCode);
         this.state.matchmakingType = "room";
         
-        // Show searching UI
         const joinRoomForm = document.getElementById('joinRoomForm');
         const queueStatusEl = document.getElementById('queueStatus');
         if (joinRoomForm) joinRoomForm.classList.add('hidden');
@@ -352,14 +337,12 @@ const onlineBackend = {
                 return;
             }
             
-            // Check if trying to join own room
             if (room.get("player1Id") === this.state.playerId) {
                 this.showError("Cannot join your own room!");
                 this.resetMatchmakingUI();
                 return;
             }
             
-            // Join the room as player 2
             room.set("player2Id", this.state.playerId);
             room.set("player2Name", this.state.playerName);
             room.set("status", "active");
@@ -372,8 +355,6 @@ const onlineBackend = {
             this.state.opponentName = room.get("player1Name") || "Player 1";
             
             console.log("Successfully joined room as Player 2");
-            
-            // Start game immediately
             this.startGame();
             
         } catch (error) {
@@ -418,7 +399,6 @@ const onlineBackend = {
                 }
                 
                 if (player2Id && player2Id !== "") {
-                    // Opponent found!
                     clearInterval(this.state.pollingInterval);
                     this.state.isWaitingForOpponent = false;
                     
@@ -426,7 +406,6 @@ const onlineBackend = {
                     this.state.opponentId = player2Id;
                     this.state.opponentName = room.get("player2Name") || "Opponent";
                     
-                    // Update room status
                     room.set("status", "active");
                     await room.save();
                     
@@ -442,7 +421,7 @@ const onlineBackend = {
                     this.resetMatchmakingUI();
                 }
             }
-        }, 3000); // Poll every 3 seconds
+        }, 3000);
     },
     
     // ============================
@@ -463,42 +442,40 @@ const onlineBackend = {
             gameScreen.style.display = 'block';
         }
         
-        // Update opponent name
         const opponentNameElement = document.getElementById('opponentName');
         if (opponentNameElement) {
             opponentNameElement.textContent = this.state.opponentName;
         }
         
-        // Initialize grids
         this.createGrids();
+        this.createShipSelectionPanel();
         
-        // Start game polling
         this.startGamePolling();
         
-        // Reset game state
         this.state.gameActive = true;
         this.state.gamePhase = "placement";
         this.state.placedShips = 0;
         this.state.ships = { player1: [], player2: [] };
         this.state.attacks = { player1: [], player2: [] };
         
+        this.state.availableShips = [...this.state.shipTypes];
+        this.state.selectedShipIndex = 0;
+        
         this.updateTurnIndicator();
         this.addChatMessage("System", `Game started! You are Player ${this.state.playerNumber}`);
         this.addChatMessage("System", `Opponent: ${this.state.opponentName}`);
         
-        // DO NOT auto-place ships - wait for real opponent
-        console.log("Waiting for real opponent to place ships...");
+        this.highlightSelectedShip();
     },
     
     createGrids: function() {
         const playerGrid = document.getElementById('playerGrid');
         const attackGrid = document.getElementById('attackGrid');
         
-        // Clear grids
         if (playerGrid) playerGrid.innerHTML = '';
         if (attackGrid) attackGrid.innerHTML = '';
         
-        // Create player grid
+        // Create player grid with drag and drop support
         if (playerGrid) {
             for (let row = 0; row < 10; row++) {
                 for (let col = 0; col < 10; col++) {
@@ -507,9 +484,37 @@ const onlineBackend = {
                     cell.dataset.row = row;
                     cell.dataset.col = col;
                     
+                    // Drag and drop event listeners
+                    cell.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        if (this.state.gamePhase === "placement" && this.state.currentDraggingShip !== null) {
+                            cell.classList.add('drag-over');
+                        }
+                    });
+                    
+                    cell.addEventListener('dragleave', () => {
+                        cell.classList.remove('drag-over');
+                    });
+                    
+                    cell.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        cell.classList.remove('drag-over');
+                        
+                        if (this.state.gamePhase === "placement" && this.state.currentDraggingShip !== null) {
+                            const shipType = this.state.availableShips[this.state.selectedShipIndex];
+                            if (shipType && !shipType.placed) {
+                                this.placeShip(row, col, this.state.orientation);
+                            }
+                        }
+                    });
+                    
+                    // Click to place for mobile/touch
                     cell.addEventListener('click', () => {
-                        if (this.state.gamePhase === "placement") {
-                            this.placeShip(row, col, this.state.orientation);
+                        if (this.state.gamePhase === "placement" && this.state.selectedShipIndex >= 0) {
+                            const shipType = this.state.availableShips[this.state.selectedShipIndex];
+                            if (shipType && !shipType.placed) {
+                                this.placeShip(row, col, this.state.orientation);
+                            }
                         }
                     });
                     
@@ -518,7 +523,7 @@ const onlineBackend = {
             }
         }
         
-        // Create attack grid (initially disabled)
+        // Create attack grid
         if (attackGrid) {
             for (let row = 0; row < 10; row++) {
                 for (let col = 0; col < 10; col++) {
@@ -527,7 +532,7 @@ const onlineBackend = {
                     cell.dataset.row = row;
                     cell.dataset.col = col;
                     
-                    // Initially disable clicking on attack grid
+                    cell.addEventListener('click', () => this.attack(row, col));
                     cell.style.cursor = 'not-allowed';
                     cell.style.opacity = '0.5';
                     
@@ -539,11 +544,124 @@ const onlineBackend = {
         this.updateShipStatus();
     },
     
+    createShipSelectionPanel: function() {
+        const shipStatus = document.getElementById('shipStatus');
+        if (!shipStatus) return;
+        
+        shipStatus.innerHTML = '<h3>SHIPS TO PLACE (Drag to grid)</h3>';
+        
+        const shipContainer = document.createElement('div');
+        shipContainer.className = 'ship-selection-container';
+        shipContainer.style.display = 'flex';
+        shipContainer.style.flexWrap = 'wrap';
+        shipContainer.style.gap = '10px';
+        shipContainer.style.marginTop = '15px';
+        shipContainer.style.justifyContent = 'center';
+        
+        this.state.availableShips.forEach((ship, index) => {
+            const shipElement = document.createElement('div');
+            shipElement.className = `ship-selection-item ${ship.placed ? 'placed' : ''}`;
+            shipElement.dataset.shipIndex = index;
+            shipElement.draggable = !ship.placed;
+            shipElement.style.cssText = `
+                padding: 10px 15px;
+                background: ${ship.placed ? 'rgba(0, 230, 118, 0.3)' : 'rgba(41, 121, 255, 0.3)'};
+                border: 2px solid ${ship.placed ? '#00E676' : '#2979FF'};
+                border-radius: 8px;
+                cursor: ${ship.placed ? 'default' : 'grab'};
+                user-select: none;
+                transition: all 0.3s;
+                text-align: center;
+                min-width: 120px;
+            `;
+            
+            shipElement.innerHTML = `
+                <div style="font-size: 1.2rem; margin-bottom: 5px;">${this.getShipIcon(ship.size)}</div>
+                <div style="font-weight: bold;">${ship.name}</div>
+                <div style="font-size: 0.9rem;">Size: ${ship.size}</div>
+                <div style="font-size: 0.8rem; color: ${ship.placed ? '#00E676' : '#FF9800'}">
+                    ${ship.placed ? '✓ Placed' : 'Click or drag'}
+                </div>
+            `;
+            
+            // Drag events
+            shipElement.addEventListener('dragstart', (e) => {
+                if (!ship.placed) {
+                    this.state.currentDraggingShip = ship.id;
+                    this.state.selectedShipIndex = index;
+                    e.dataTransfer.setData('text/plain', ship.id);
+                    shipElement.style.opacity = '0.5';
+                    this.highlightSelectedShip();
+                }
+            });
+            
+            shipElement.addEventListener('dragend', () => {
+                this.state.currentDraggingShip = null;
+                shipElement.style.opacity = '1';
+            });
+            
+            // Click to select
+            shipElement.addEventListener('click', () => {
+                if (!ship.placed) {
+                    this.state.selectedShipIndex = index;
+                    this.highlightSelectedShip();
+                }
+            });
+            
+            shipContainer.appendChild(shipElement);
+        });
+        
+        shipStatus.appendChild(shipContainer);
+        
+        // Add ship placement instructions
+        const instructions = document.createElement('div');
+        instructions.style.cssText = `
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #FFD54F;
+            text-align: center;
+        `;
+        instructions.innerHTML = `
+            <div><strong>How to place ships:</strong></div>
+            <div>1. Click a ship to select it</div>
+            <div>2. Click on your grid to place it</div>
+            <div>3. Use rotation button to change orientation</div>
+            <div>4. Drag ships directly onto grid (desktop)</div>
+        `;
+        shipStatus.appendChild(instructions);
+    },
+    
+    getShipIcon: function(size) {
+        const icons = ['🚢', '⚓', '🛳️', '⛴️', '🚤'];
+        return icons[Math.min(size - 2, icons.length - 1)] || '🚢';
+    },
+    
+    highlightSelectedShip: function() {
+        const shipItems = document.querySelectorAll('.ship-selection-item');
+        shipItems.forEach((item, index) => {
+            if (index === this.state.selectedShipIndex && !this.state.availableShips[index].placed) {
+                item.style.transform = 'scale(1.05)';
+                item.style.boxShadow = '0 0 15px rgba(79, 195, 247, 0.5)';
+                item.style.borderColor = '#4FC3F7';
+            } else {
+                item.style.transform = '';
+                item.style.boxShadow = '';
+                item.style.borderColor = this.state.availableShips[index].placed ? '#00E676' : '#2979FF';
+            }
+        });
+    },
+    
     placeShip: function(row, col, vertical = true) {
         if (this.state.gamePhase !== "placement") return false;
-        if (this.state.placedShips >= 5) return false;
+        if (this.state.selectedShipIndex < 0) return false;
         
-        const shipType = this.state.shipTypes[this.state.placedShips];
+        const shipType = this.state.availableShips[this.state.selectedShipIndex];
+        if (!shipType || shipType.placed) return false;
+        
         const playerKey = `player${this.state.playerNumber}`;
         
         if (this.canPlaceShip(row, col, shipType.size, vertical, playerKey)) {
@@ -562,10 +680,18 @@ const onlineBackend = {
                 sunk: false
             });
             
+            // Mark ship as placed
+            this.state.availableShips[this.state.selectedShipIndex].placed = true;
             this.state.placedShips++;
             
             this.updateGrids();
+            this.createShipSelectionPanel();
             this.addChatMessage("You", `Placed ${shipType.name}`);
+            
+            // Auto-select next unplaced ship
+            const nextShipIndex = this.state.availableShips.findIndex(ship => !ship.placed);
+            this.state.selectedShipIndex = nextShipIndex;
+            this.highlightSelectedShip();
             
             if (this.state.placedShips >= 5) {
                 this.markReady();
@@ -606,7 +732,6 @@ const onlineBackend = {
             
             console.log("Player", this.state.playerNumber, "marked as ready");
             
-            // Enable attack grid when both players are ready
             this.checkIfBothPlayersReady();
             
         } catch (error) {
@@ -625,11 +750,8 @@ const onlineBackend = {
             if (player1Ready && player2Ready && this.state.gamePhase === "placement") {
                 this.state.gamePhase = "battle";
                 this.addChatMessage("System", "⚔️ Battle begins!");
-                this.addChatMessage("System", "It's Player 1's turn to attack!");
                 
-                // Enable attack grid
                 this.enableAttackGrid();
-                
                 this.updateTurnIndicator();
             }
             
@@ -650,6 +772,8 @@ const onlineBackend = {
     },
     
     attack: async function(row, col) {
+        console.log("Attack attempt at:", row, col);
+        
         if (this.state.gamePhase !== "battle") {
             this.addChatMessage("System", "Wait for battle phase!");
             return;
@@ -664,53 +788,71 @@ const onlineBackend = {
         const playerKey = `player${this.state.playerNumber}`;
         const enemyKey = `player${this.state.playerNumber === 1 ? 2 : 1}`;
         
-        if (this.state.attacks[playerKey] && this.state.attacks[playerKey].includes(attackKey)) {
-            this.addChatMessage("System", "Already attacked here!");
-            return;
-        }
-        
-        // Initialize attacks array if needed
+        // Initialize attacks if needed
         if (!this.state.attacks[playerKey]) {
             this.state.attacks[playerKey] = [];
         }
         
-        this.state.attacks[playerKey].push(attackKey);
+        // Check if already attacked here
+        const alreadyAttacked = this.state.attacks[playerKey].some(attack => {
+            const parts = attack.split(',');
+            return parseInt(parts[0]) === row && parseInt(parts[1]) === col;
+        });
         
-        let hit = false;
-        let shipHit = null;
-        
-        if (this.state.ships[enemyKey]) {
-            this.state.ships[enemyKey].forEach(ship => {
-                if (ship.cells) {
-                    ship.cells.forEach(cell => {
-                        if (cell.row === row && cell.col === col) {
-                            hit = true;
-                            if (ship.hits !== undefined) {
-                                ship.hits++;
-                                shipHit = ship;
-                                
-                                if (ship.hits === ship.size) {
-                                    ship.sunk = true;
-                                    this.addChatMessage("System", `Sunk ${ship.name}!`);
-                                }
-                            }
-                        }
-                    });
-                }
-            });
+        if (alreadyAttacked) {
+            this.addChatMessage("System", "Already attacked here!");
+            return;
         }
         
+        // Determine hit or miss
+        let hit = false;
+        let sunkShip = null;
+        
+        if (this.state.ships[enemyKey]) {
+            for (const ship of this.state.ships[enemyKey]) {
+                if (ship.cells) {
+                    for (const cell of ship.cells) {
+                        if (cell.row === row && cell.col === col) {
+                            hit = true;
+                            ship.hits = (ship.hits || 0) + 1;
+                            
+                            if (ship.hits >= ship.size) {
+                                ship.sunk = true;
+                                sunkShip = ship;
+                            }
+                            break;
+                        }
+                    }
+                }
+                if (hit) break;
+            }
+        }
+        
+        // Record attack
+        this.state.attacks[playerKey].push(`${row},${col},${hit ? 'hit' : 'miss'}`);
+        
+        // Update grids immediately
         this.updateGrids();
         
+        // Save to server
         await this.saveAttack(row, col, hit);
         
-        this.addChatMessage("You", `${hit ? 'Hit' : 'Miss'} at (${row},${col})`);
+        // Chat message
+        const hitMsg = hit ? '🎯 HIT!' : '🌊 MISS';
+        const locationMsg = `at (${String.fromCharCode(65 + col)}${row + 1})`;
+        this.addChatMessage("You", `${hitMsg} ${locationMsg}`);
         
+        if (sunkShip) {
+            this.addChatMessage("System", `💥 SUNK ENEMY ${sunkShip.name}!`);
+        }
+        
+        // Check for win
         if (this.checkWin(enemyKey)) {
             await this.endGame(this.state.playerNumber);
             return;
         }
         
+        // Switch turns
         await this.switchTurns();
     },
     
@@ -752,8 +894,8 @@ const onlineBackend = {
             this.updateTurnIndicator();
             
             this.addChatMessage("System", newTurn === this.state.playerNumber 
-                ? "🎯 Your turn!" 
-                : "⏳ Opponent's turn");
+                ? "🎯 Your turn to attack!" 
+                : "⏳ Waiting for opponent's attack...");
             
         } catch (error) {
             console.error("Error switching turns:", error);
@@ -822,12 +964,10 @@ const onlineBackend = {
                 const player1Ready = room.get("player1Ready") || false;
                 const player2Ready = room.get("player2Ready") || false;
                 
-                // Update state
                 this.state.ships = ships;
                 this.state.attacks = attacks;
                 this.state.currentTurn = currentTurn;
                 
-                // Check if both players are ready to start battle
                 if (player1Ready && player2Ready && this.state.gamePhase === "placement") {
                     this.state.gamePhase = "battle";
                     this.enableAttackGrid();
@@ -836,12 +976,11 @@ const onlineBackend = {
                 
                 this.updateGrids();
                 this.updateTurnIndicator();
-                this.updateShipStatus();
+                this.updateShipStatusDisplay();
                 
             } catch (error) {
                 console.error("Polling error:", error);
                 if (error.code === 101) {
-                    // Object not found - opponent probably left
                     this.state.gameActive = false;
                     clearInterval(this.state.pollingInterval);
                     this.showGameOver("Game room was deleted", false);
@@ -860,7 +999,7 @@ const onlineBackend = {
         const playerKey = `player${this.state.playerNumber}`;
         const enemyKey = `player${this.state.playerNumber === 1 ? 2 : 1}`;
         
-        // Player grid
+        // Update player grid (show YOUR ships)
         if (playerGrid && playerGrid.children.length > 0) {
             for (let i = 0; i < 100; i++) {
                 const row = Math.floor(i / 10);
@@ -871,7 +1010,7 @@ const onlineBackend = {
                 
                 cell.className = 'cell';
                 
-                // Show ships
+                // Show your own ships
                 if (this.state.ships[playerKey]) {
                     const shipHere = this.state.ships[playerKey].find(ship =>
                         ship.cells && ship.cells.some(c => c.row === row && c.col === col)
@@ -880,14 +1019,15 @@ const onlineBackend = {
                     if (shipHere) {
                         cell.classList.add('ship');
                         
-                        // Check hits
+                        // Show hits on your ships
                         const enemyAttacks = this.state.attacks[enemyKey] || [];
                         const wasHit = enemyAttacks.some(attack => {
                             const parts = attack.split(',');
-                            if (parts.length >= 2) {
+                            if (parts.length >= 3) {
                                 const r = parseInt(parts[0]);
                                 const c = parseInt(parts[1]);
-                                return r === row && c === col;
+                                const result = parts[2];
+                                return r === row && c === col && result === 'hit';
                             }
                             return false;
                         });
@@ -898,7 +1038,7 @@ const onlineBackend = {
                     }
                 }
                 
-                // Show misses
+                // Show misses on your grid
                 const enemyAttacks = this.state.attacks[enemyKey] || [];
                 enemyAttacks.forEach(attackStr => {
                     const parts = attackStr.split(',');
@@ -914,7 +1054,7 @@ const onlineBackend = {
             }
         }
         
-        // Attack grid
+        // Update attack grid (show YOUR attacks on enemy)
         if (attackGrid && attackGrid.children.length > 0) {
             for (let i = 0; i < 100; i++) {
                 const row = Math.floor(i / 10);
@@ -925,18 +1065,36 @@ const onlineBackend = {
                 
                 cell.className = 'cell';
                 
-                // Show attacks
+                // Show your attacks
                 const playerAttacks = this.state.attacks[playerKey] || [];
                 playerAttacks.forEach(attackStr => {
                     const parts = attackStr.split(',');
-                    if (parts.length >= 2) {
+                    if (parts.length >= 3) {
                         const r = parseInt(parts[0]);
                         const c = parseInt(parts[1]);
+                        const result = parts[2];
                         if (r === row && c === col) {
-                            cell.classList.add('hit');
+                            cell.classList.add(result === 'hit' ? 'hit' : 'miss');
                         }
                     }
                 });
+            }
+        }
+    },
+    
+    updateShipStatusDisplay: function() {
+        const enemyKey = `player${this.state.playerNumber === 1 ? 2 : 1}`;
+        
+        if (this.state.ships[enemyKey]) {
+            let statusText = "Enemy Ships: ";
+            this.state.ships[enemyKey].forEach((ship, index) => {
+                const sunk = ship.sunk ? '💀' : (ship.hits > 0 ? '🔥' : '🚢');
+                statusText += `${sunk} ${ship.name}(${ship.hits || 0}/${ship.size}) `;
+            });
+            
+            const statusElement = document.querySelector('.ship-status-container h3');
+            if (statusElement) {
+                statusElement.innerHTML = statusText;
             }
         }
     },
@@ -947,39 +1105,18 @@ const onlineBackend = {
         
         let text = "";
         if (this.state.gamePhase === "placement") {
-            text = `Place ships (${this.state.placedShips}/5)`;
+            text = `Place ships (${this.state.placedShips}/5 placed)`;
+            turnIndicator.style.background = 'linear-gradient(45deg, #FF9800, #FF5722)';
         } else if (this.state.currentTurn === this.state.playerNumber) {
-            text = "🎯 Your Turn!";
+            text = "🎯 YOUR TURN - ATTACK!";
+            turnIndicator.style.background = 'linear-gradient(45deg, #00E676, #00C853)';
+            turnIndicator.style.animation = 'pulse 1s infinite';
         } else {
-            text = "⏳ Opponent's Turn";
+            text = "⏳ OPPONENT'S TURN";
+            turnIndicator.style.background = 'linear-gradient(45deg, #FF3D00, #DD2C00)';
+            turnIndicator.style.animation = 'none';
         }
         turnIndicator.textContent = text;
-    },
-    
-    updateShipStatus: function() {
-        const shipStatus = document.getElementById('shipStatus');
-        if (!shipStatus) return;
-        
-        shipStatus.innerHTML = '';
-        
-        const enemyKey = `player${this.state.playerNumber === 1 ? 2 : 1}`;
-        
-        if (this.state.ships[enemyKey] && this.state.ships[enemyKey].length > 0) {
-            this.state.ships[enemyKey].forEach(ship => {
-                const item = document.createElement('div');
-                item.className = `ship-status-item ${ship.sunk ? 'sunk' : ''}`;
-                const icon = ship.sunk ? '💀' : (ship.hits > 0 ? '🔥' : '🚢');
-                item.innerHTML = `${icon} ${ship.name} (${ship.hits || 0}/${ship.size})`;
-                shipStatus.appendChild(item);
-            });
-        } else {
-            this.state.shipTypes.forEach(ship => {
-                const item = document.createElement('div');
-                item.className = 'ship-status-item';
-                item.innerHTML = `🚢 ${ship.name} (0/${ship.size})`;
-                shipStatus.appendChild(item);
-            });
-        }
     },
     
     addChatMessage: function(sender, message) {
@@ -1018,7 +1155,6 @@ const onlineBackend = {
     // ============================
     
     showRoomCreatedUI: function(roomCode) {
-        // Update UI elements
         const queueStatusEl = document.getElementById('queueStatus');
         const roomStatusEl = document.getElementById('roomStatus');
         const roomIdEl = document.getElementById('roomId');
@@ -1027,7 +1163,6 @@ const onlineBackend = {
         if (roomStatusEl) roomStatusEl.classList.remove('hidden');
         if (roomIdEl) roomIdEl.textContent = roomCode;
         
-        // Enable copy button
         const copyBtn = document.querySelector('.copy-btn');
         if (copyBtn) {
             copyBtn.onclick = () => {
@@ -1046,7 +1181,6 @@ const onlineBackend = {
             errorText.textContent = message;
             errorElement.style.display = 'block';
             
-            // Auto-hide error after 5 seconds
             setTimeout(() => {
                 errorElement.style.display = 'none';
             }, 5000);
@@ -1054,7 +1188,6 @@ const onlineBackend = {
     },
     
     resetMatchmakingUI: function() {
-        // Show options again
         const matchmakingOptions = document.getElementById('matchmakingOptions');
         const queueStatus = document.getElementById('queueStatus');
         const roomStatus = document.getElementById('roomStatus');
@@ -1065,7 +1198,6 @@ const onlineBackend = {
         if (roomStatus) roomStatus.classList.add('hidden');
         if (cancelBtn) cancelBtn.classList.add('hidden');
         
-        // Clear room code input
         const roomCodeInput = document.getElementById('roomCodeInput');
         if (roomCodeInput) roomCodeInput.value = '';
     },
@@ -1096,6 +1228,8 @@ const onlineBackend = {
         this.state.attacks = { player1: [], player2: [] };
         this.state.matchmakingType = null;
         this.state.isWaitingForOpponent = false;
+        this.state.availableShips = [...this.state.shipTypes].map(ship => ({...ship, placed: false}));
+        this.state.selectedShipIndex = 0;
         
         if (this.state.pollingInterval) {
             clearInterval(this.state.pollingInterval);
