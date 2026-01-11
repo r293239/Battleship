@@ -365,7 +365,8 @@
             border-radius: 50px;
             display: inline-block;
             margin-top: 10px;
-            transition: all 0.3s;
+            background: linear-gradient(45deg, #FF9800, #FF5722);
+            box-shadow: 0 5px 15px rgba(255, 152, 0, 0.4);
         }
 
         .player-info-container {
@@ -455,7 +456,6 @@
 
         .cell:hover {
             background: rgba(255, 255, 255, 0.2);
-            transform: scale(1.05);
         }
 
         .cell.ship {
@@ -483,22 +483,14 @@
             font-size: 1rem;
         }
 
-        /* Drag and drop styles */
-        .cell.drag-over {
-            background: rgba(79, 195, 247, 0.5) !important;
-            border: 2px dashed #4FC3F7 !important;
-            transform: scale(1.1);
-            z-index: 10;
+        .cell.placement-hover {
+            background: rgba(79, 195, 247, 0.3);
+            border: 2px dashed #4FC3F7;
         }
 
-        .cell.valid-drop {
-            background: rgba(0, 230, 118, 0.3);
-            border: 2px solid #00E676;
-        }
-
-        .cell.invalid-drop {
+        .cell.invalid-placement {
             background: rgba(255, 61, 0, 0.3);
-            border: 2px solid #FF3D00;
+            border: 2px dashed #FF3D00;
         }
 
         @keyframes hitAnimation {
@@ -507,122 +499,43 @@
             100% { transform: scale(1); }
         }
 
-        /* Ship Selection Panel */
+        /* Ship Selection */
         .ship-selection-container {
             display: flex;
             flex-wrap: wrap;
             gap: 15px;
-            margin-top: 15px;
+            margin: 20px 0;
             justify-content: center;
         }
 
-        .ship-selection-item {
-            padding: 12px 20px;
+        .ship-item {
+            padding: 15px 20px;
             background: rgba(41, 121, 255, 0.3);
             border: 2px solid #2979FF;
             border-radius: 10px;
-            cursor: grab;
-            user-select: none;
+            cursor: pointer;
             transition: all 0.3s;
             text-align: center;
-            min-width: 140px;
+            min-width: 150px;
         }
 
-        .ship-selection-item:hover {
+        .ship-item:hover {
             transform: translateY(-3px);
             box-shadow: 0 5px 15px rgba(41, 121, 255, 0.4);
         }
 
-        .ship-selection-item.placed {
+        .ship-item.selected {
+            background: rgba(79, 195, 247, 0.5);
+            border-color: #4FC3F7;
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(79, 195, 247, 0.6);
+        }
+
+        .ship-item.placed {
             background: rgba(0, 230, 118, 0.3);
             border-color: #00E676;
             cursor: default;
             opacity: 0.7;
-        }
-
-        .ship-selection-item.selected {
-            transform: scale(1.05);
-            box-shadow: 0 0 20px rgba(79, 195, 247, 0.6);
-            border-color: #4FC3F7;
-        }
-
-        .ship-selection-item.dragging {
-            opacity: 0.5;
-        }
-
-        /* Ship placement preview */
-        .ship-preview {
-            position: absolute;
-            background: rgba(79, 195, 247, 0.5);
-            border: 2px solid #4FC3F7;
-            pointer-events: none;
-            z-index: 5;
-        }
-
-        /* Attack grid active state */
-        #attackGrid.active .cell {
-            cursor: pointer;
-            opacity: 1;
-        }
-
-        #attackGrid.active .cell:hover:not(.hit):not(.miss) {
-            background: rgba(255, 193, 7, 0.3);
-            border-color: #FFC107;
-        }
-
-        /* Turn indicator animation */
-        @keyframes pulse-turn {
-            0%, 100% { 
-                transform: scale(1); 
-                box-shadow: 0 5px 15px rgba(0, 230, 118, 0.4);
-            }
-            50% { 
-                transform: scale(1.05); 
-                box-shadow: 0 8px 25px rgba(0, 230, 118, 0.6);
-            }
-        }
-
-        .turn-your {
-            background: linear-gradient(45deg, #00E676, #00C853) !important;
-            animation: pulse-turn 1s infinite;
-        }
-
-        .turn-opponent {
-            background: linear-gradient(45deg, #FF3D00, #DD2C00) !important;
-        }
-
-        .turn-placement {
-            background: linear-gradient(45deg, #FF9800, #FF5722) !important;
-        }
-
-        /* Enemy ships status */
-        .enemy-ships-status {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
-            margin-top: 15px;
-        }
-
-        .enemy-ship-item {
-            padding: 10px 15px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            min-width: 160px;
-            justify-content: center;
-        }
-
-        .enemy-ship-item.sunk {
-            background: rgba(255, 61, 0, 0.2);
-            text-decoration: line-through;
-            opacity: 0.7;
-        }
-
-        .enemy-ship-item.damaged {
-            background: rgba(255, 193, 7, 0.2);
         }
 
         /* Game Controls */
@@ -643,30 +556,41 @@
             flex-wrap: wrap;
         }
 
-        /* Ship Status Container */
+        /* Ship Status */
         .ship-status-container {
             background: rgba(0, 0, 0, 0.5);
             border-radius: 15px;
-            padding: 25px;
+            padding: 20px;
             margin: 20px 0;
             border: 2px solid rgba(0, 230, 118, 0.3);
         }
 
         .ship-status-container h3 {
             text-align: center;
-            margin-bottom: 20px;
-            color: #B3E5FC;
+            margin-bottom: 15px;
         }
 
-        .ship-instructions {
-            margin-top: 20px;
-            padding: 15px;
-            background: rgba(255, 193, 7, 0.1);
-            border: 1px solid rgba(255, 193, 7, 0.3);
+        .ship-status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .ship-status-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
             border-radius: 10px;
-            font-size: 0.9rem;
-            color: #FFD54F;
-            text-align: center;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+        }
+
+        .ship-status-item.sunk {
+            background: rgba(255, 61, 0, 0.3);
+            text-decoration: line-through;
+            opacity: 0.7;
         }
 
         /* Chat System */
@@ -839,14 +763,9 @@
                 padding: 10px 20px;
             }
             
-            .ship-selection-item {
+            .ship-item {
                 min-width: 120px;
                 padding: 10px 15px;
-            }
-            
-            .player-card {
-                min-width: 150px;
-                padding: 15px;
             }
         }
 
@@ -880,16 +799,6 @@
             }
             
             .room-btn {
-                width: 100%;
-                max-width: 200px;
-            }
-            
-            .ship-selection-container {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .ship-selection-item {
                 width: 100%;
                 max-width: 200px;
             }
@@ -1026,7 +935,7 @@
         <!-- Game Header -->
         <div class="game-header">
             <h1 class="game-title">🚢 NAVAL BATTLE</h1>
-            <div id="turnIndicator">SETTING UP GAME...</div>
+            <div id="turnIndicator">PLACE YOUR SHIPS (0/5)</div>
         </div>
 
         <!-- Player Info -->
@@ -1037,7 +946,7 @@
             </div>
             <div class="player-card">
                 <h3>STATUS</h3>
-                <p style="color: #00E676;" id="playerStatus">ONLINE</p>
+                <p style="color: #00E676;" id="playerStatus">PLACING SHIPS</p>
             </div>
             <div class="player-card">
                 <h3>OPPONENT</h3>
@@ -1052,7 +961,7 @@
                 <h3>YOUR FLEET</h3>
                 <div class="grid" id="playerGrid"></div>
                 <p style="margin-top: 10px; color: #81D4FA;">
-                    <small>Click or drag ships to place them</small>
+                    <small>Select a ship below, then click to place it</small>
                 </p>
             </div>
 
@@ -1066,19 +975,15 @@
             </div>
         </div>
 
-        <!-- Ship Placement Panel -->
+        <!-- Ship Selection -->
         <div class="ship-status-container">
-            <h3 id="shipStatusTitle">SHIPS TO PLACE</h3>
+            <h3 id="shipStatusTitle">SELECT A SHIP TO PLACE</h3>
             <div class="ship-selection-container" id="shipSelection">
                 <!-- Ships will be dynamically inserted here -->
             </div>
-            <div class="ship-instructions" id="shipInstructions">
-                <strong>How to place ships:</strong><br>
-                1. Click a ship to select it<br>
-                2. Click on your grid to place it<br>
-                3. Use rotation button to change orientation<br>
-                4. Drag ships directly onto grid (desktop)
-            </div>
+            <p style="text-align: center; margin-top: 15px; color: #81D4FA;">
+                Click a ship to select it, then click on your grid to place it
+            </p>
         </div>
 
         <!-- Game Controls -->
@@ -1095,16 +1000,8 @@
                     🔄 VERTICAL
                 </button>
                 <button class="btn btn-primary" onclick="autoPlaceShips()" id="autoPlaceBtn">
-                    🤖 AUTO PLACE
+                    🤖 AUTO PLACE ALL
                 </button>
-            </div>
-        </div>
-
-        <!-- Enemy Fleet Status -->
-        <div class="ship-status-container" id="enemyStatusContainer" style="display: none;">
-            <h3 id="enemyStatusTitle">ENEMY FLEET STATUS</h3>
-            <div class="enemy-ships-status" id="enemyShipsStatus">
-                <!-- Enemy ships will be displayed here -->
             </div>
         </div>
 
@@ -1112,7 +1009,7 @@
         <div class="chat-container">
             <div class="chat-header">
                 <h3>💬 BATTLE CHAT</h3>
-                <div style="color: #81D4FA;" id="chatStatus">Online</div>
+                <div style="color: #81D4FA;">Online</div>
             </div>
             <div class="chat-messages" id="chatMessages">
                 <div class="message system">
@@ -1143,28 +1040,70 @@
         </div>
     </div>
 
-    <!-- Backend Logic -->
-    <script src="backend.js"></script>
-    
+    <!-- Simplified Game Logic -->
     <script>
         // Global game state
-        let shipOrientation = 'vertical';
-        let selectedShipIndex = -1;
-        let isDragging = false;
-        let dragShipElement = null;
-        let dragOffset = { x: 0, y: 0 };
-        
-        // Initialize drag and drop
-        function initializeDragAndDrop() {
+        const gameState = {
+            playerId: null,
+            playerName: "Player",
+            gameId: null,
+            playerNumber: 1,
+            opponentName: "Opponent",
+            gamePhase: "placement", // "placement" or "battle"
+            currentTurn: 1,
+            placedShips: 0,
+            orientation: "vertical",
+            selectedShip: null,
+            ships: [],
+            attacks: [],
+            shipTypes: [
+                { name: "Carrier", size: 5, id: "carrier", placed: false },
+                { name: "Battleship", size: 4, id: "battleship", placed: false },
+                { name: "Cruiser", size: 3, id: "cruiser", placed: false },
+                { name: "Submarine", size: 3, id: "submarine", placed: false },
+                { name: "Destroyer", size: 2, id: "destroyer", placed: false }
+            ]
+        };
+
+        // Initialize the game
+        function initializeGame() {
+            console.log("Initializing game...");
+            
+            // Generate player ID
+            gameState.playerId = 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+            
+            // Get player name from localStorage or generate
+            const savedName = localStorage.getItem('battleship_playerName');
+            if (savedName) {
+                gameState.playerName = savedName;
+            } else {
+                const names = ["Captain", "Admiral", "Commander", "Sailor", "Pirate"];
+                const randomName = names[Math.floor(Math.random() * names.length)];
+                gameState.playerName = `${randomName}_${Math.floor(Math.random() * 1000)}`;
+                localStorage.setItem('battleship_playerName', gameState.playerName);
+            }
+            
+            // Update UI
+            document.getElementById('playerIdDisplay').textContent = gameState.playerId;
+            document.getElementById('playerName').textContent = gameState.playerName;
+            
+            // Initialize grids
+            createGrids();
+            createShipSelection();
+            
+            console.log("Game initialized!");
+        }
+
+        // Create game grids
+        function createGrids() {
             const playerGrid = document.getElementById('playerGrid');
-            const shipSelection = document.getElementById('shipSelection');
+            const attackGrid = document.getElementById('attackGrid');
             
-            if (!playerGrid || !shipSelection) return;
-            
-            // Clear any existing event listeners
+            // Clear grids
             playerGrid.innerHTML = '';
+            attackGrid.innerHTML = '';
             
-            // Create player grid with drag and drop support
+            // Create player grid (10x10)
             for (let row = 0; row < 10; row++) {
                 for (let col = 0; col < 10; col++) {
                     const cell = document.createElement('div');
@@ -1172,89 +1111,76 @@
                     cell.dataset.row = row;
                     cell.dataset.col = col;
                     
-                    // Drag and drop events
-                    cell.addEventListener('dragover', handleDragOver);
-                    cell.addEventListener('dragenter', handleDragEnter);
-                    cell.addEventListener('dragleave', handleDragLeave);
-                    cell.addEventListener('drop', handleDrop);
+                    // Add click event for ship placement
+                    cell.addEventListener('click', () => {
+                        if (gameState.gamePhase === "placement" && gameState.selectedShip !== null) {
+                            placeShip(row, col);
+                        } else if (gameState.gamePhase === "battle" && gameState.currentTurn === gameState.playerNumber) {
+                            makeAttack(row, col);
+                        }
+                    });
                     
-                    // Click to place
-                    cell.addEventListener('click', () => handleCellClick(row, col));
+                    // Add hover effects
+                    cell.addEventListener('mouseenter', () => {
+                        if (gameState.gamePhase === "placement" && gameState.selectedShip !== null) {
+                            showPlacementPreview(row, col);
+                        }
+                    });
+                    
+                    cell.addEventListener('mouseleave', () => {
+                        if (gameState.gamePhase === "placement") {
+                            clearPlacementPreview();
+                        }
+                    });
                     
                     playerGrid.appendChild(cell);
                 }
             }
             
             // Create attack grid
-            const attackGrid = document.getElementById('attackGrid');
-            if (attackGrid) {
-                attackGrid.innerHTML = '';
-                for (let row = 0; row < 10; row++) {
-                    for (let col = 0; col < 10; col++) {
-                        const cell = document.createElement('div');
-                        cell.className = 'cell';
-                        cell.dataset.row = row;
-                        cell.dataset.col = col;
-                        
-                        cell.addEventListener('click', () => onlineBackend.attack(row, col));
-                        cell.style.cursor = 'not-allowed';
-                        cell.style.opacity = '0.5';
-                        
-                        attackGrid.appendChild(cell);
-                    }
+            for (let row = 0; row < 10; row++) {
+                for (let col = 0; col < 10; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    
+                    cell.addEventListener('click', () => {
+                        if (gameState.gamePhase === "battle" && gameState.currentTurn === gameState.playerNumber) {
+                            makeAttack(row, col);
+                        }
+                    });
+                    
+                    attackGrid.appendChild(cell);
                 }
             }
             
-            // Setup ship selection panel
-            setupShipSelection();
+            // Initially disable attack grid
+            updateAttackGrid();
         }
-        
-        function setupShipSelection() {
+
+        // Create ship selection panel
+        function createShipSelection() {
             const shipSelection = document.getElementById('shipSelection');
-            if (!shipSelection) return;
-            
             shipSelection.innerHTML = '';
             
-            const ships = onlineBackend.state?.shipTypes || [];
-            
-            ships.forEach((ship, index) => {
+            gameState.shipTypes.forEach((ship, index) => {
                 const shipElement = document.createElement('div');
-                shipElement.className = 'ship-selection-item';
-                shipElement.dataset.shipIndex = index;
-                shipElement.draggable = true;
+                shipElement.className = 'ship-item';
+                if (ship.placed) shipElement.classList.add('placed');
                 shipElement.innerHTML = `
-                    <div style="font-size: 1.3rem; margin-bottom: 5px;">${getShipIcon(ship.size)}</div>
-                    <div style="font-weight: bold; font-size: 1.1rem;">${ship.name}</div>
-                    <div style="font-size: 0.9rem; opacity: 0.8;">Size: ${ship.size}</div>
-                    <div style="font-size: 0.8rem; margin-top: 5px; color: #4FC3F7;">
-                        ${ship.placed ? '✓ Placed' : 'Drag or click'}
+                    <div style="font-size: 1.5rem; margin-bottom: 5px;">${getShipIcon(ship.size)}</div>
+                    <div style="font-weight: bold;">${ship.name}</div>
+                    <div style="font-size: 0.9rem;">Size: ${ship.size}</div>
+                    <div style="font-size: 0.8rem; margin-top: 5px; color: ${ship.placed ? '#00E676' : '#4FC3F7'}">
+                        ${ship.placed ? '✓ Placed' : 'Click to select'}
                     </div>
                 `;
                 
-                if (ship.placed) {
-                    shipElement.classList.add('placed');
-                    shipElement.draggable = false;
-                }
-                
-                // Drag events
-                shipElement.addEventListener('dragstart', (e) => {
-                    if (!ship.placed) {
-                        selectedShipIndex = index;
-                        e.dataTransfer.setData('text/plain', index);
-                        shipElement.classList.add('dragging');
-                        updateSelectedShip();
-                    }
-                });
-                
-                shipElement.addEventListener('dragend', () => {
-                    shipElement.classList.remove('dragging');
-                });
-                
-                // Click to select
+                // Add click event
                 shipElement.addEventListener('click', () => {
                     if (!ship.placed) {
-                        selectedShipIndex = index;
-                        updateSelectedShip();
+                        selectShip(index);
                     }
                 });
                 
@@ -1262,13 +1188,12 @@
             });
             
             // Select first available ship
-            const firstAvailable = ships.findIndex(ship => !ship.placed);
+            const firstAvailable = gameState.shipTypes.findIndex(ship => !ship.placed);
             if (firstAvailable !== -1) {
-                selectedShipIndex = firstAvailable;
-                updateSelectedShip();
+                selectShip(firstAvailable);
             }
         }
-        
+
         function getShipIcon(size) {
             const icons = {
                 5: '🚢', // Carrier
@@ -1278,11 +1203,14 @@
             };
             return icons[size] || '🚢';
         }
-        
-        function updateSelectedShip() {
-            const shipItems = document.querySelectorAll('.ship-selection-item');
-            shipItems.forEach((item, index) => {
-                if (index === selectedShipIndex) {
+
+        // Select a ship
+        function selectShip(index) {
+            gameState.selectedShip = index;
+            
+            // Update UI
+            document.querySelectorAll('.ship-item').forEach((item, i) => {
+                if (i === index) {
                     item.classList.add('selected');
                 } else {
                     item.classList.remove('selected');
@@ -1290,125 +1218,374 @@
             });
             
             // Update instructions
-            const ships = onlineBackend.state?.shipTypes || [];
-            const selectedShip = ships[selectedShipIndex];
-            if (selectedShip) {
-                const instructions = document.getElementById('shipInstructions');
-                if (instructions) {
-                    instructions.innerHTML = `
-                        <strong>Selected: ${selectedShip.name} (Size: ${selectedShip.size})</strong><br>
-                        Click on your grid to place it<br>
-                        Or drag it directly onto the grid<br>
-                        Use rotation button to change orientation
-                    `;
-                }
-            }
+            const ship = gameState.shipTypes[index];
+            document.getElementById('shipStatusTitle').textContent = `SELECTED: ${ship.name} (Size: ${ship.size})`;
+            
+            console.log(`Selected ship: ${ship.name}`);
         }
-        
-        function handleDragOver(e) {
-            e.preventDefault();
-        }
-        
-        function handleDragEnter(e) {
-            e.preventDefault();
-            const cell = e.target;
-            if (cell.classList.contains('cell')) {
-                cell.classList.add('drag-over');
-                
-                // Show preview
-                const ships = onlineBackend.state?.shipTypes || [];
-                const ship = ships[selectedShipIndex];
-                if (ship && !ship.placed) {
-                    const row = parseInt(cell.dataset.row);
-                    const col = parseInt(cell.dataset.col);
-                    showPlacementPreview(row, col, ship.size, shipOrientation);
-                }
-            }
-        }
-        
-        function handleDragLeave(e) {
-            const cell = e.target;
-            if (cell.classList.contains('cell')) {
-                cell.classList.remove('drag-over');
-                clearPlacementPreview();
-            }
-        }
-        
-        function handleDrop(e) {
-            e.preventDefault();
-            const cell = e.target;
-            if (cell.classList.contains('cell')) {
-                cell.classList.remove('drag-over');
-                clearPlacementPreview();
-                
-                const row = parseInt(cell.dataset.row);
-                const col = parseInt(cell.dataset.col);
-                
-                if (selectedShipIndex !== -1) {
-                    onlineBackend.placeShip(row, col, shipOrientation === 'vertical');
-                }
-            }
-        }
-        
-        function handleCellClick(row, col) {
-            if (selectedShipIndex !== -1) {
-                onlineBackend.placeShip(row, col, shipOrientation === 'vertical');
-            }
-        }
-        
-        function showPlacementPreview(row, col, size, orientation) {
+
+        // Show placement preview
+        function showPlacementPreview(row, col) {
             clearPlacementPreview();
             
+            if (gameState.selectedShip === null) return;
+            
+            const ship = gameState.shipTypes[gameState.selectedShip];
             const playerGrid = document.getElementById('playerGrid');
-            if (!playerGrid) return;
             
+            let canPlace = true;
             const previewCells = [];
-            const isVertical = orientation === 'vertical';
             
-            for (let i = 0; i < size; i++) {
-                const cellRow = isVertical ? row + i : row;
-                const cellCol = isVertical ? col : col + i;
+            for (let i = 0; i < ship.size; i++) {
+                let cellRow = row;
+                let cellCol = col;
                 
+                if (gameState.orientation === "vertical") {
+                    cellRow = row + i;
+                } else {
+                    cellCol = col + i;
+                }
+                
+                // Check bounds
                 if (cellRow >= 10 || cellCol >= 10) {
-                    // Invalid placement
-                    clearPlacementPreview();
+                    canPlace = false;
+                    break;
+                }
+                
+                const cellIndex = cellRow * 10 + cellCol;
+                const cell = playerGrid.children[cellIndex];
+                
+                if (cell) {
+                    // Check if cell already has a ship
+                    if (cell.classList.contains('ship')) {
+                        canPlace = false;
+                    }
+                    
+                    previewCells.push(cell);
+                }
+            }
+            
+            // Highlight preview cells
+            previewCells.forEach(cell => {
+                if (canPlace) {
+                    cell.classList.add('placement-hover');
+                } else {
+                    cell.classList.add('invalid-placement');
+                }
+            });
+            
+            // Store for cleanup
+            window.previewCells = previewCells;
+        }
+
+        function clearPlacementPreview() {
+            if (window.previewCells) {
+                window.previewCells.forEach(cell => {
+                    cell.classList.remove('placement-hover', 'invalid-placement');
+                });
+                window.previewCells = null;
+            }
+        }
+
+        // Place a ship
+        function placeShip(row, col) {
+            if (gameState.selectedShip === null) return;
+            
+            const ship = gameState.shipTypes[gameState.selectedShip];
+            if (ship.placed) return;
+            
+            const playerGrid = document.getElementById('playerGrid');
+            const cells = [];
+            
+            // Check if placement is valid
+            for (let i = 0; i < ship.size; i++) {
+                let cellRow = row;
+                let cellCol = col;
+                
+                if (gameState.orientation === "vertical") {
+                    cellRow = row + i;
+                } else {
+                    cellCol = col + i;
+                }
+                
+                // Check bounds
+                if (cellRow >= 10 || cellCol >= 10) {
+                    addChatMessage("System", `Cannot place ${ship.name} - out of bounds!`);
                     return;
                 }
                 
                 const cellIndex = cellRow * 10 + cellCol;
                 const cell = playerGrid.children[cellIndex];
-                if (cell) {
-                    cell.classList.add('drag-over');
-                    previewCells.push(cell);
+                
+                // Check if cell already has a ship
+                if (cell && cell.classList.contains('ship')) {
+                    addChatMessage("System", `Cannot place ${ship.name} - overlapping another ship!`);
+                    return;
+                }
+                
+                cells.push({ cell: cell, row: cellRow, col: cellCol });
+            }
+            
+            // Place the ship
+            cells.forEach(cellData => {
+                if (cellData.cell) {
+                    cellData.cell.classList.add('ship');
+                }
+            });
+            
+            // Record ship placement
+            gameState.ships.push({
+                ...ship,
+                cells: cells.map(c => ({ row: c.row, col: c.col })),
+                hits: 0,
+                sunk: false
+            });
+            
+            // Mark ship as placed
+            ship.placed = true;
+            gameState.placedShips++;
+            
+            // Clear preview
+            clearPlacementPreview();
+            
+            // Update UI
+            updateTurnIndicator();
+            createShipSelection();
+            addChatMessage("System", `Placed ${ship.name} at (${row},${col})`);
+            
+            // Select next available ship
+            const nextShipIndex = gameState.shipTypes.findIndex(s => !s.placed);
+            if (nextShipIndex !== -1) {
+                selectShip(nextShipIndex);
+            } else {
+                gameState.selectedShip = null;
+                document.getElementById('shipStatusTitle').textContent = "ALL SHIPS PLACED!";
+            }
+            
+            // Check if all ships are placed
+            if (gameState.placedShips >= 5) {
+                addChatMessage("System", "All ships placed! Waiting for opponent...");
+                // In a real game, this would trigger a ready state
+            }
+            
+            console.log(`Placed ${ship.name} at (${row},${col})`);
+        }
+
+        // Make an attack
+        function makeAttack(row, col) {
+            if (gameState.gamePhase !== "battle") {
+                addChatMessage("System", "Battle hasn't started yet!");
+                return;
+            }
+            
+            if (gameState.currentTurn !== gameState.playerNumber) {
+                addChatMessage("System", "Not your turn!");
+                return;
+            }
+            
+            // Check if already attacked here
+            const alreadyAttacked = gameState.attacks.some(attack => 
+                attack.row === row && attack.col === col
+            );
+            
+            if (alreadyAttacked) {
+                addChatMessage("System", "Already attacked here!");
+                return;
+            }
+            
+            // Simulate attack (in real game, this would be against opponent's ships)
+            const hit = Math.random() > 0.7; // 30% chance to hit for testing
+            
+            // Record attack
+            gameState.attacks.push({ row, col, hit });
+            
+            // Update attack grid
+            const attackGrid = document.getElementById('attackGrid');
+            const cellIndex = row * 10 + col;
+            const cell = attackGrid.children[cellIndex];
+            
+            if (cell) {
+                if (hit) {
+                    cell.classList.add('hit');
+                    addChatMessage("You", `🎯 HIT at (${row},${col})!`);
+                } else {
+                    cell.classList.add('miss');
+                    addChatMessage("You", `🌊 MISS at (${row},${col})`);
                 }
             }
             
-            // Store preview cells for cleanup
-            window.previewCells = previewCells;
+            // Switch turns (for testing)
+            gameState.currentTurn = gameState.currentTurn === 1 ? 2 : 1;
+            updateTurnIndicator();
+            updateAttackGrid();
+            
+            console.log(`Attack at (${row},${col}): ${hit ? 'HIT' : 'MISS'}`);
         }
-        
-        function clearPlacementPreview() {
-            if (window.previewCells) {
-                window.previewCells.forEach(cell => {
-                    cell.classList.remove('drag-over');
-                });
-                window.previewCells = null;
+
+        // Auto-place all ships
+        function autoPlaceShips() {
+            if (gameState.placedShips >= 5) {
+                addChatMessage("System", "All ships already placed!");
+                return;
+            }
+            
+            addChatMessage("System", "Auto-placing all ships...");
+            
+            // Clear existing ships
+            gameState.ships = [];
+            gameState.placedShips = 0;
+            gameState.shipTypes.forEach(ship => ship.placed = false);
+            
+            // Clear grid
+            const playerGrid = document.getElementById('playerGrid');
+            Array.from(playerGrid.children).forEach(cell => {
+                cell.classList.remove('ship');
+            });
+            
+            // Auto-place ships
+            const placements = [
+                { row: 0, col: 0, vertical: true },   // Carrier
+                { row: 0, col: 2, vertical: true },   // Battleship
+                { row: 0, col: 4, vertical: true },   // Cruiser
+                { row: 0, col: 6, vertical: true },   // Submarine
+                { row: 2, col: 8, vertical: false }   // Destroyer
+            ];
+            
+            placements.forEach((placement, index) => {
+                if (index < gameState.shipTypes.length) {
+                    const ship = gameState.shipTypes[index];
+                    
+                    // Temporarily set orientation
+                    const originalOrientation = gameState.orientation;
+                    gameState.orientation = placement.vertical ? "vertical" : "horizontal";
+                    
+                    // Place the ship
+                    const playerGrid = document.getElementById('playerGrid');
+                    const cells = [];
+                    
+                    for (let i = 0; i < ship.size; i++) {
+                        let cellRow = placement.row;
+                        let cellCol = placement.col;
+                        
+                        if (gameState.orientation === "vertical") {
+                            cellRow = placement.row + i;
+                        } else {
+                            cellCol = placement.col + i;
+                        }
+                        
+                        const cellIndex = cellRow * 10 + cellCol;
+                        const cell = playerGrid.children[cellIndex];
+                        
+                        if (cell) {
+                            cell.classList.add('ship');
+                            cells.push({ row: cellRow, col: cellCol });
+                        }
+                    }
+                    
+                    // Record ship
+                    gameState.ships.push({
+                        ...ship,
+                        cells: cells,
+                        hits: 0,
+                        sunk: false
+                    });
+                    
+                    ship.placed = true;
+                    gameState.placedShips++;
+                    
+                    // Restore orientation
+                    gameState.orientation = originalOrientation;
+                }
+            });
+            
+            // Update UI
+            updateTurnIndicator();
+            createShipSelection();
+            addChatMessage("System", "All ships auto-placed!");
+            
+            // Clear selected ship
+            gameState.selectedShip = null;
+            document.getElementById('shipStatusTitle').textContent = "ALL SHIPS PLACED!";
+        }
+
+        // Update turn indicator
+        function updateTurnIndicator() {
+            const turnIndicator = document.getElementById('turnIndicator');
+            
+            if (gameState.gamePhase === "placement") {
+                turnIndicator.textContent = `PLACE YOUR SHIPS (${gameState.placedShips}/5)`;
+                turnIndicator.style.background = 'linear-gradient(45deg, #FF9800, #FF5722)';
+            } else if (gameState.currentTurn === gameState.playerNumber) {
+                turnIndicator.textContent = "🎯 YOUR TURN - ATTACK!";
+                turnIndicator.style.background = 'linear-gradient(45deg, #00E676, #00C853)';
+            } else {
+                turnIndicator.textContent = "⏳ OPPONENT'S TURN";
+                turnIndicator.style.background = 'linear-gradient(45deg, #FF3D00, #DD2C00)';
             }
         }
-        
+
+        // Update attack grid state
+        function updateAttackGrid() {
+            const attackGrid = document.getElementById('attackGrid');
+            const cells = attackGrid.children;
+            
+            for (let i = 0; i < cells.length; i++) {
+                const cell = cells[i];
+                if (gameState.gamePhase === "battle" && gameState.currentTurn === gameState.playerNumber) {
+                    cell.style.cursor = 'pointer';
+                    cell.style.opacity = '1';
+                } else {
+                    cell.style.cursor = 'not-allowed';
+                    cell.style.opacity = '0.5';
+                }
+            }
+        }
+
+        // Add chat message
+        function addChatMessage(sender, message) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            
+            if (sender === "System") {
+                messageDiv.classList.add('system');
+                messageDiv.innerHTML = `<strong>System:</strong> ${message}`;
+            } else if (sender === "You") {
+                messageDiv.classList.add('player');
+                messageDiv.innerHTML = `<strong>You:</strong> ${message}`;
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
         // Frontend functions for matchmaking
         function startQuickMatch() {
             hideError();
             hideOptions();
             showQueueStatus();
-            onlineBackend.startQuickMatch();
+            
+            // Simulate matchmaking
+            setTimeout(() => {
+                // Simulate finding opponent
+                gameState.opponentName = "Random Opponent";
+                showOpponentFound();
+            }, 2000);
         }
         
         function generateRoom() {
             hideError();
             hideOptions();
             showRoomStatus();
-            onlineBackend.createRoom();
+            
+            // Generate random room code
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let roomCode = '';
+            for (let i = 0; i < 6; i++) {
+                roomCode += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            
+            document.getElementById('roomId').textContent = roomCode;
         }
         
         function joinRoom() {
@@ -1421,7 +1598,12 @@
             hideError();
             hideOptions();
             showQueueStatus();
-            onlineBackend.joinRoom(roomCode);
+            
+            // Simulate joining room
+            setTimeout(() => {
+                gameState.opponentName = "Room Opponent";
+                showOpponentFound();
+            }, 1500);
         }
         
         function copyRoomId() {
@@ -1432,7 +1614,6 @@
         }
         
         function cancelMatchmaking() {
-            onlineBackend.cancelMatchmaking();
             resetMatchmakingUI();
         }
         
@@ -1498,23 +1679,68 @@
             }
         }
         
+        function showOpponentFound() {
+            hideAllStatuses();
+            document.getElementById('foundOpponent').classList.remove('hidden');
+            document.getElementById('opponentNameDisplay').textContent = gameState.opponentName;
+            
+            // Start countdown
+            let countdown = 3;
+            const countdownEl = document.getElementById('countdown');
+            countdownEl.textContent = countdown;
+            
+            const countdownInterval = setInterval(() => {
+                countdown--;
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    // Start game
+                    startGame();
+                } else {
+                    countdownEl.textContent = countdown;
+                }
+            }, 1000);
+        }
+        
+        function startGame() {
+            // Hide matchmaking, show game
+            document.getElementById('matchmakingScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'block';
+            
+            // Update opponent name
+            document.getElementById('opponentName').textContent = gameState.opponentName;
+            
+            // Reset game state
+            gameState.gamePhase = "placement";
+            gameState.currentTurn = 1;
+            gameState.placedShips = 0;
+            gameState.selectedShip = null;
+            gameState.ships = [];
+            gameState.attacks = [];
+            gameState.shipTypes.forEach(ship => ship.placed = false);
+            
+            // Re-initialize game
+            createGrids();
+            createShipSelection();
+            updateTurnIndicator();
+            
+            addChatMessage("System", "Game started! Place your ships.");
+        }
+        
         // Game functions
         function exitToMenu() {
             if (confirm('Return to main menu?')) {
-                onlineBackend.cleanup();
                 window.location.href = '../index.html';
             }
         }
         
         function surrenderGame() {
             if (confirm('Are you sure you want to surrender?')) {
-                onlineBackend.surrenderGame();
+                showGameOver("You surrendered!", false);
             }
         }
         
         function exitGame() {
             if (confirm('Exit this game?')) {
-                onlineBackend.leaveGame();
                 window.location.href = '../index.html';
             }
         }
@@ -1523,213 +1749,52 @@
             const input = document.getElementById('chatInput');
             const message = input.value.trim();
             if (message) {
-                onlineBackend.sendChatMessage(message);
+                addChatMessage("You", message);
                 input.value = '';
                 input.focus();
             }
         }
         
         function toggleOrientation() {
-            shipOrientation = shipOrientation === 'vertical' ? 'horizontal' : 'vertical';
-            const orientationBtn = document.getElementById('orientationBtn');
-            if (orientationBtn) {
-                orientationBtn.textContent = shipOrientation === 'vertical' ? '🔄 VERTICAL' : '🔄 HORIZONTAL';
-            }
-            
-            if (onlineBackend.state && onlineBackend.state.orientation !== undefined) {
-                onlineBackend.state.orientation = shipOrientation;
-            }
-        }
-        
-        function autoPlaceShips() {
-            if (confirm('Auto-place all remaining ships?')) {
-                onlineBackend.autoPlaceShips();
-            }
+            gameState.orientation = gameState.orientation === 'vertical' ? 'horizontal' : 'vertical';
+            document.getElementById('orientationBtn').textContent = 
+                gameState.orientation === 'vertical' ? '🔄 VERTICAL' : '🔄 HORIZONTAL';
         }
         
         function rematch() {
             document.getElementById('gameOverOverlay').classList.add('hidden');
-            onlineBackend.rematch();
+            resetMatchmakingUI();
+            document.getElementById('matchmakingScreen').style.display = 'flex';
+            document.getElementById('gameScreen').style.display = 'none';
         }
         
         function goToMenu() {
             window.location.href = '../index.html';
         }
         
+        function showGameOver(message, isWin) {
+            const overlay = document.getElementById('gameOverOverlay');
+            const title = document.getElementById('gameOverTitle');
+            const messageEl = document.getElementById('gameOverMessage');
+            
+            title.textContent = isWin ? '🎉 VICTORY! 🎉' : '💀 DEFEAT! 💀';
+            title.style.color = isWin ? '#00E676' : '#FF3D00';
+            messageEl.textContent = message;
+            
+            overlay.classList.remove('hidden');
+        }
+
         // Handle Enter key in chat
         document.getElementById('chatInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 sendChatMessage();
             }
         });
-        
-        // Expose functions to backend
-        window.showGameOver = function(message, isWin) {
-            const overlay = document.getElementById('gameOverOverlay');
-            const title = document.getElementById('gameOverTitle');
-            const messageEl = document.getElementById('gameOverMessage');
-            
-            if (overlay && title && messageEl) {
-                title.textContent = isWin ? '🎉 VICTORY! 🎉' : '💀 DEFEAT! 💀';
-                title.style.color = isWin ? '#00E676' : '#FF3D00';
-                messageEl.textContent = message;
-                overlay.classList.remove('hidden');
-            }
-        };
-        
-        window.showRoomCreated = function(roomId) {
-            const roomIdEl = document.getElementById('roomId');
-            if (roomIdEl) {
-                roomIdEl.textContent = roomId;
-            }
-            showRoomStatus();
-        };
-        
-        window.showOpponentFound = function(opponentName) {
-            hideAllStatuses();
-            document.getElementById('foundOpponent').classList.remove('hidden');
-            const opponentNameDisplay = document.getElementById('opponentNameDisplay');
-            if (opponentNameDisplay) {
-                opponentNameDisplay.textContent = opponentName;
-            }
-            
-            // Start countdown
-            let countdown = 3;
-            const countdownEl = document.getElementById('countdown');
-            if (countdownEl) {
-                countdownEl.textContent = countdown;
-                
-                const countdownInterval = setInterval(() => {
-                    countdown--;
-                    if (countdown <= 0) {
-                        clearInterval(countdownInterval);
-                        const matchmakingScreen = document.getElementById('matchmakingScreen');
-                        if (matchmakingScreen) {
-                            matchmakingScreen.style.opacity = '0';
-                            setTimeout(() => {
-                                matchmakingScreen.style.display = 'none';
-                                const gameScreen = document.getElementById('gameScreen');
-                                if (gameScreen) {
-                                    gameScreen.style.display = 'block';
-                                    setTimeout(() => {
-                                        gameScreen.style.opacity = '1';
-                                    }, 10);
-                                }
-                            }, 500);
-                        }
-                    } else {
-                        countdownEl.textContent = countdown;
-                    }
-                }, 1000);
-            }
-        };
-        
-        window.showMatchmakingError = function(error) {
-            resetMatchmakingUI();
-            showError(error);
-        };
-        
-        window.updateGameUI = function() {
-            // Update ship selection panel
-            setupShipSelection();
-            
-            // Update turn indicator
-            const turnIndicator = document.getElementById('turnIndicator');
-            if (turnIndicator) {
-                const state = onlineBackend.state;
-                if (state.gamePhase === "placement") {
-                    turnIndicator.textContent = `Place ships (${state.placedShips || 0}/5)`;
-                    turnIndicator.className = 'turn-placement';
-                } else if (state.currentTurn === state.playerNumber) {
-                    turnIndicator.textContent = "🎯 YOUR TURN - ATTACK!";
-                    turnIndicator.className = 'turn-your';
-                } else {
-                    turnIndicator.textContent = "⏳ OPPONENT'S TURN";
-                    turnIndicator.className = 'turn-opponent';
-                }
-            }
-            
-            // Update ship status title
-            const shipStatusTitle = document.getElementById('shipStatusTitle');
-            if (shipStatusTitle) {
-                const state = onlineBackend.state;
-                if (state.gamePhase === "placement") {
-                    shipStatusTitle.textContent = `SHIPS TO PLACE (${state.placedShips || 0}/5 placed)`;
-                } else {
-                    shipStatusTitle.textContent = "YOUR FLEET STATUS";
-                }
-            }
-            
-            // Update enemy status
-            const enemyStatusContainer = document.getElementById('enemyStatusContainer');
-            const enemyStatusTitle = document.getElementById('enemyStatusTitle');
-            const enemyShipsStatus = document.getElementById('enemyShipsStatus');
-            
-            if (enemyStatusContainer && enemyStatusTitle && enemyShipsStatus) {
-                const state = onlineBackend.state;
-                if (state.gamePhase === "battle") {
-                    enemyStatusContainer.style.display = 'block';
-                    
-                    const enemyKey = `player${state.playerNumber === 1 ? 2 : 1}`;
-                    const enemyShips = state.ships[enemyKey] || [];
-                    
-                    enemyShipsStatus.innerHTML = '';
-                    
-                    if (enemyShips.length > 0) {
-                        enemyShips.forEach(ship => {
-                            const shipItem = document.createElement('div');
-                            shipItem.className = `enemy-ship-item ${ship.sunk ? 'sunk' : (ship.hits > 0 ? 'damaged' : '')}`;
-                            
-                            let icon = '🚢';
-                            if (ship.sunk) icon = '💀';
-                            else if (ship.hits > 0) icon = '🔥';
-                            
-                            shipItem.innerHTML = `
-                                <span style="font-size: 1.2rem;">${icon}</span>
-                                <span style="font-weight: bold;">${ship.name}</span>
-                                <span style="opacity: 0.8;">(${ship.hits || 0}/${ship.size})</span>
-                            `;
-                            
-                            enemyShipsStatus.appendChild(shipItem);
-                        });
-                    }
-                } else {
-                    enemyStatusContainer.style.display = 'none';
-                }
-            }
-            
-            // Enable/disable attack grid
-            const attackGrid = document.getElementById('attackGrid');
-            if (attackGrid) {
-                const state = onlineBackend.state;
-                const isActive = state.gamePhase === "battle" && state.currentTurn === state.playerNumber;
-                
-                if (isActive) {
-                    attackGrid.classList.add('active');
-                    attackGrid.style.cursor = 'pointer';
-                    attackGrid.style.opacity = '1';
-                } else {
-                    attackGrid.classList.remove('active');
-                    attackGrid.style.cursor = 'not-allowed';
-                    attackGrid.style.opacity = '0.5';
-                }
-            }
-        };
-        
+
         // Initialize when page loads
         window.onload = function() {
-            onlineBackend.initialize();
-            
-            // Initialize drag and drop after a short delay to ensure backend is loaded
-            setTimeout(() => {
-                initializeDragAndDrop();
-            }, 100);
+            initializeGame();
         };
-        
-        // Cleanup on page unload
-        window.addEventListener('beforeunload', function() {
-            onlineBackend.cleanup();
-        });
     </script>
 </body>
 </html>
