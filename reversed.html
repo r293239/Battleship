@@ -195,7 +195,7 @@
             line-height: 1.3;
         }
 
-        /* Ship Dock for Drag & Drop */
+        /* Ship Dock for Drag & Drop - HIDDEN during battle */
         .ship-dock {
             display: flex;
             flex-direction: column;
@@ -205,6 +205,10 @@
             background: rgba(255, 107, 107, 0.1);
             border-radius: 15px;
             max-width: 600px;
+        }
+
+        .ship-dock.hidden {
+            display: none !important;
         }
 
         .ship-dock h3 {
@@ -405,7 +409,12 @@
             border-radius: 15px;
         }
 
-        .placement-controls, .game-controls {
+        .placement-controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .game-controls {
             text-align: center;
             margin-bottom: 20px;
         }
@@ -474,6 +483,11 @@
 
         .back-btn {
             background: linear-gradient(to right, #2c3e50, #34495e);
+            color: white;
+        }
+
+        .end-turn-btn {
+            background: linear-gradient(to right, #2ecc71, #27ae60);
             color: white;
         }
 
@@ -718,7 +732,7 @@
             </div>
             
             <!-- Danger Meter -->
-            <div class="ship-status-container">
+            <div class="ship-status-container" id="dangerMeterContainer">
                 <h3>DANGER METER</h3>
                 <div class="danger-meter">
                     <div class="danger-fill" id="dangerFill"></div>
@@ -753,6 +767,7 @@
             </div>
             
             <div class="controls-container">
+                <!-- Placement Controls (Visible during placement only) -->
                 <div class="placement-controls" id="placementControls">
                     <h3>Ship Placement Controls</h3>
                     <div class="control-buttons">
@@ -768,20 +783,21 @@
                     </div>
                 </div>
                 
+                <!-- Game Controls (Visible during battle only) -->
                 <div class="game-controls hidden" id="gameControls">
                     <h3>Battle Controls</h3>
                     <div class="control-buttons">
                         <button class="control-btn back-btn" onclick="returnToMenu()">
-                            🏠 Back to Menu
+                            🏠 Menu
                         </button>
-                        <button class="control-btn start-btn" id="endTurnBtn" onclick="endTurn()" disabled>
+                        <button class="control-btn end-turn-btn" id="endTurnBtn" onclick="endTurn()" disabled>
                             ⏭️ End Turn (Make a move first)
                         </button>
                     </div>
                 </div>
                 
                 <div class="ship-status-container">
-                    <h3>Enemy Fleet Status</h3>
+                    <h3 id="fleetStatusTitle">Fleet Status</h3>
                     <div class="ship-status" id="shipStatus"></div>
                 </div>
             </div>
@@ -1382,6 +1398,7 @@
             attacks[playerKey].add(attackKey);
             hasMadeMoveThisTurn = true;
             
+            // Enable end turn button
             document.getElementById('endTurnBtn').disabled = false;
             document.getElementById('endTurnBtn').textContent = "⏭️ End Turn";
             
@@ -1455,12 +1472,44 @@
             showReadyScreen();
         }
 
+        // Update ship dock visibility
+        function updateShipDock() {
+            const shipDock = document.getElementById('shipDock');
+            const shipItems = document.querySelectorAll('.ship-dock-item');
+            
+            if (currentPhase === 'placement') {
+                shipDock.classList.remove('hidden');
+                shipItems.forEach((item, index) => {
+                    const ship = shipTypes[index];
+                    if (ship.placed) {
+                        item.classList.add('placed');
+                        item.draggable = false;
+                    } else {
+                        item.classList.remove('placed');
+                        item.draggable = true;
+                    }
+                    
+                    const shipPreview = item.querySelector('.ship-preview');
+                    shipPreview.innerHTML = '';
+                    for (let i = 0; i < ship.size; i++) {
+                        const shipCell = document.createElement('div');
+                        shipCell.className = `ship-cell ${isVertical ? 'vertical' : 'horizontal'}`;
+                        shipPreview.appendChild(shipCell);
+                    }
+                });
+            } else {
+                shipDock.classList.add('hidden');
+            }
+        }
+
         // Update ship status
         function updateShipStatus() {
             const shipStatus = document.getElementById('shipStatus');
+            const fleetStatusTitle = document.getElementById('fleetStatusTitle');
             shipStatus.innerHTML = '';
             
             if (currentPhase === 'placement') {
+                fleetStatusTitle.textContent = "Your Ships";
                 shipTypes.forEach((ship, index) => {
                     const item = document.createElement('div');
                     const placed = ship.placed;
@@ -1470,6 +1519,7 @@
                 });
             } else {
                 const enemyKey = `player${currentPlayer === 1 ? 2 : 1}`;
+                fleetStatusTitle.textContent = "Enemy Fleet Status";
                 ships[enemyKey].forEach(ship => {
                     const item = document.createElement('div');
                     item.className = `ship-status-item ${ship.sunk ? 'sunk' : 'safe'}`;
@@ -1482,10 +1532,14 @@
 
         // Update danger meter
         function updateDangerMeter() {
+            const dangerMeterContainer = document.getElementById('dangerMeterContainer');
+            
             if (currentPhase !== 'battle') {
-                document.getElementById('dangerFill').style.width = '0%';
+                dangerMeterContainer.classList.add('hidden');
                 return;
             }
+            
+            dangerMeterContainer.classList.remove('hidden');
             
             const enemyKey = `player${currentPlayer === 1 ? 2 : 1}`;
             const enemyShips = ships[enemyKey];
