@@ -387,6 +387,34 @@
             opacity: 0.5;
         }
 
+        /* COMMANDER ABILITY DISPLAY */
+        .commander-ability {
+            background: rgba(155, 89, 182, 0.3);
+            border: 2px solid #9b59b6;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+            animation: pulse-purple 2s infinite;
+        }
+
+        @keyframes pulse-purple {
+            0%, 100% { border-color: #9b59b6; box-shadow: 0 0 10px rgba(155, 89, 182, 0.5); }
+            50% { border-color: #8e44ad; box-shadow: 0 0 20px rgba(155, 89, 182, 0.8); }
+        }
+
+        .commander-title {
+            font-size: 1.4rem;
+            color: #ffcc00;
+            margin-bottom: 5px;
+        }
+
+        .commander-desc {
+            font-size: 1rem;
+            color: #bbb;
+            font-style: italic;
+        }
+
         /* MAIN GAME GRID - FIXED VISIBILITY */
         .game-grid-container {
             background: rgba(0, 40, 80, 0.8);
@@ -438,6 +466,46 @@
             border-color: #c0392b !important;
         }
 
+        /* SCAN AREA VISIBILITY */
+        .game-cell.scan-area {
+            background: rgba(255, 255, 0, 0.2) !important;
+            border-color: yellow !important;
+        }
+
+        .game-cell.scan-area.active {
+            background: rgba(255, 255, 0, 0.4) !important;
+            border-color: #ffcc00 !important;
+            box-shadow: 0 0 10px yellow;
+        }
+
+        /* SPECIAL EFFECTS */
+        .game-cell.artillery {
+            background: rgba(255, 165, 0, 0.3) !important;
+            border-color: orange !important;
+            animation: flash 0.5s;
+        }
+
+        .game-cell.smoke {
+            background: rgba(128, 128, 128, 0.4) !important;
+            border-color: #666 !important;
+        }
+
+        .game-cell.supply {
+            background: rgba(46, 204, 113, 0.3) !important;
+            border-color: #2ecc71 !important;
+            animation: pulse-green 1s infinite;
+        }
+
+        @keyframes flash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @keyframes pulse-green {
+            0%, 100% { border-color: #2ecc71; }
+            50% { border-color: #27ae60; }
+        }
+
         /* DAMAGE STATES */
         .game-cell.damaged {
             opacity: 0.7;
@@ -476,11 +544,6 @@
             transform: translate(-50%, -50%);
             font-size: 1.2rem;
             animation: float 2s infinite;
-        }
-
-        .game-cell.scan-area {
-            background: rgba(255, 255, 0, 0.2) !important;
-            border-color: yellow !important;
         }
 
         /* ANIMATIONS */
@@ -897,12 +960,20 @@
             <div class="turn-info">
                 <div class="info-item">Turn: <span id="turnCounter">1</span></div>
                 <div class="info-item">Player: <span id="playerIndicator">1</span></div>
+                <div class="info-item">Commander Ability: <span id="commanderAbilityName">Artillery Strike</span></div>
             </div>
             <div class="action-points">
                 <div class="ap-dot" id="ap1">①</div>
                 <div class="ap-dot" id="ap2">②</div>
                 <div class="ap-dot" id="ap3">③</div>
             </div>
+            
+            <!-- COMMANDER ABILITY DISPLAY -->
+            <div class="commander-ability" id="commanderAbilityDisplay">
+                <div class="commander-title" id="commanderAbilityTitle">Artillery Strike</div>
+                <div class="commander-desc" id="commanderAbilityDesc">Deal 30 damage to all enemy ships in a 3x3 area</div>
+            </div>
+            
             <div id="actionSummary" style="color: #ffcc00; margin-top: 10px;">
                 Select a ship and choose an action
             </div>
@@ -943,11 +1014,11 @@
             <h3 class="controls-title">COMMAND CENTER</h3>
             <div class="controls-grid">
                 <button class="control-btn end-turn" onclick="endTurn()" id="endTurnBtn">⏭️ END TURN</button>
-                <button class="control-btn special" onclick="specialAction()" id="specialBtn">⚡ SPECIAL ACTION</button>
+                <button class="control-btn special" onclick="specialAction()" id="specialBtn">⚡ COMMANDER ABILITY (2 CP)</button>
                 <button class="control-btn surrender" onclick="surrender()">🏳️ SURRENDER</button>
             </div>
             <div style="text-align: center; margin-top: 15px; color: #ffcc00; font-style: italic;">
-                <div id="gameTip">Tip: Enemy ships are hidden until scanned or hit!</div>
+                <div id="gameTip">Tip: Each game gives you a random commander ability!</div>
             </div>
         </div>
     </div>
@@ -958,19 +1029,118 @@
     <script>
         // ========== GAME STATE ==========
         let gameState = {
-            phase: 'start', // 'start', 'placement', 'ready', 'game'
+            phase: 'start',
             currentPlayer: 1,
             turn: 1,
             actionPoints: 3,
             selectedShip: null,
-            gamePhase: 'select', // 'select', 'moving', 'attacking', 'ability'
+            gamePhase: 'select',
             isVertical: true,
             scanAreas: [],
             mines: [],
             explosions: [],
             placedShips: [],
-            ships: []
+            ships: [],
+            tempScanArea: null,
+            commanderAbilities: [], // Will store 5 random abilities for each player
+            usedCommanderAbility: false
         };
+
+        // ========== COMMANDER ABILITIES ==========
+        const commanderAbilityTemplates = [
+            {
+                id: 'artillery_strike',
+                name: 'Artillery Strike',
+                description: 'Deal 30 damage to all enemy ships in a 3x3 area',
+                icon: '🎯',
+                type: 'damage',
+                radius: 1,
+                damage: 30,
+                cost: 2
+            },
+            {
+                id: 'smoke_screen',
+                name: 'Smoke Screen',
+                description: 'Hide your ships in a 5x5 area for 2 turns',
+                icon: '🌫️',
+                type: 'defense',
+                radius: 2,
+                turns: 2,
+                cost: 2
+            },
+            {
+                id: 'emergency_supply',
+                name: 'Emergency Supply',
+                description: 'Restore 25 fuel to all your ships',
+                icon: '📦',
+                type: 'support',
+                fuelRestore: 25,
+                cost: 2
+            },
+            {
+                id: 'tactical_nuke',
+                name: 'Tactical Nuke',
+                description: 'Deal 75 damage to a single cell',
+                icon: '☢️',
+                type: 'damage',
+                damage: 75,
+                cost: 2
+            },
+            {
+                id: 'sonar_buoy',
+                name: 'Sonar Buoy',
+                description: 'Place a sonar that reveals 5x5 area for 3 turns',
+                icon: '📡',
+                type: 'recon',
+                radius: 2,
+                turns: 3,
+                cost: 2
+            },
+            {
+                id: 'minefield',
+                name: 'Minefield',
+                description: 'Place 3 mines in random locations',
+                icon: '💣',
+                type: 'trap',
+                mineCount: 3,
+                cost: 2
+            },
+            {
+                id: 'repair_team',
+                name: 'Repair Team',
+                description: 'Heal 50 HP to all your damaged ships',
+                icon: '🔧',
+                type: 'support',
+                heal: 50,
+                cost: 2
+            },
+            {
+                id: 'radar_jam',
+                name: 'Radar Jam',
+                description: 'Remove all enemy scan areas',
+                icon: '📶',
+                type: 'counter',
+                cost: 2
+            },
+            {
+                id: 'double_tap',
+                name: 'Double Tap',
+                description: 'Gain +1 action point this turn',
+                icon: '⚡',
+                type: 'support',
+                extraAP: 1,
+                cost: 2
+            },
+            {
+                id: 'precision_strike',
+                name: 'Precision Strike',
+                description: 'Deal 60 damage to a single enemy ship',
+                icon: '🎯',
+                type: 'damage',
+                damage: 60,
+                cost: 2
+            }
+        ];
 
         // ========== SHIP TEMPLATES ==========
         const shipTemplates = [
@@ -1041,7 +1211,28 @@
             createPlacementGrid();
             createGameGrid();
             createShipDock();
+            
+            // Initialize commander abilities for both players
+            gameState.commanderAbilities = {
+                1: getRandomCommanderAbilities(),
+                2: getRandomCommanderAbilities()
+            };
+            
             updateDisplay();
+        }
+
+        function getRandomCommanderAbilities() {
+            // Select 5 random unique abilities from the pool
+            const shuffled = [...commanderAbilityTemplates].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, 5);
+        }
+
+        function getCurrentCommanderAbility() {
+            const playerAbilities = gameState.commanderAbilities[gameState.currentPlayer];
+            if (!playerAbilities || playerAbilities.length === 0) return null;
+            
+            // For now, just use the first ability. Could be enhanced to cycle through them.
+            return playerAbilities[0];
         }
 
         function createPlacementGrid() {
@@ -1055,7 +1246,6 @@
                     cell.dataset.row = row;
                     cell.dataset.col = col;
                     
-                    // Drag and drop events
                     cell.addEventListener('dragover', handleDragOver);
                     cell.addEventListener('drop', handleDrop);
                     cell.addEventListener('dragenter', handleDragEnter);
@@ -1078,6 +1268,8 @@
                     cell.dataset.col = col;
                     
                     cell.addEventListener('click', () => handleGameCellClick(row, col));
+                    cell.addEventListener('mouseenter', () => handleGameCellHover(row, col));
+                    cell.addEventListener('mouseleave', () => handleGameCellLeave(row, col));
                     
                     grid.appendChild(cell);
                 }
@@ -1109,12 +1301,150 @@
                 shipElement.appendChild(preview);
                 shipElement.appendChild(name);
                 
-                // Drag events
                 shipElement.addEventListener('dragstart', handleDragStart);
                 shipElement.addEventListener('dragend', handleDragEnd);
                 
                 dock.appendChild(shipElement);
             });
+        }
+
+        // ========== GAME GRID INTERACTION ==========
+        function handleGameCellHover(row, col) {
+            if (gameState.gamePhase === 'ability_sonar' || gameState.gamePhase === 'ability_recon') {
+                clearTempScanArea();
+                gameState.tempScanArea = getScanArea(row, col, gameState.gamePhase === 'ability_sonar' ? 1 : 2);
+                showTempScanArea();
+            } else if (gameState.gamePhase === 'special_artillery' || gameState.gamePhase === 'special_smoke' || 
+                       gameState.gamePhase === 'special_nuke' || gameState.gamePhase === 'special_sonar') {
+                clearTempScanArea();
+                const ability = getCurrentCommanderAbility();
+                if (ability) {
+                    const radius = ability.radius || 0;
+                    gameState.tempScanArea = getScanArea(row, col, radius);
+                    showTempScanArea();
+                }
+            }
+        }
+
+        function handleGameCellLeave(row, col) {
+            if (gameState.gamePhase.startsWith('ability_') || gameState.gamePhase.startsWith('special_')) {
+                clearTempScanArea();
+            }
+        }
+
+        function handleGameCellClick(row, col) {
+            if (gameState.actionPoints <= 0) {
+                showMessage('No action points remaining!');
+                return;
+            }
+            
+            switch(gameState.gamePhase) {
+                case 'select':
+                    const ship = getShipAt(row, col);
+                    if (ship && ship.player === gameState.currentPlayer) {
+                        selectShip(ship.id);
+                    } else {
+                        showMessage('Select one of your ships first!');
+                    }
+                    break;
+                    
+                case 'moving':
+                    moveShipTo(row, col);
+                    break;
+                    
+                case 'attacking':
+                    attackTarget(row, col);
+                    break;
+                    
+                case 'ability_mine':
+                    placeMine(row, col);
+                    break;
+                    
+                case 'ability_sonar':
+                    useSonar(row, col);
+                    break;
+                    
+                case 'ability_recon':
+                    useRecon(row, col);
+                    break;
+                    
+                case 'ability_repair':
+                    repairTarget(row, col);
+                    break;
+                    
+                case 'ability_barrage':
+                    useBarrage(row, col);
+                    break;
+                    
+                // Commander ability phases
+                case 'special_artillery':
+                    useArtilleryStrike(row, col);
+                    break;
+                    
+                case 'special_smoke':
+                    useSmokeScreen(row, col);
+                    break;
+                    
+                case 'special_nuke':
+                    useTacticalNuke(row, col);
+                    break;
+                    
+                case 'special_sonar':
+                    useSonarBuoy(row, col);
+                    break;
+                    
+                default:
+                    if (gameState.gamePhase.startsWith('special_')) {
+                        // Auto-execute abilities that don't need targeting
+                        const ability = getCurrentCommanderAbility();
+                        if (ability) {
+                            executeCommanderAbility(ability.id);
+                        }
+                    }
+                    break;
+            }
+        }
+
+        // ========== SCAN AREA FUNCTIONS ==========
+        function getScanArea(centerRow, centerCol, radius) {
+            const cells = [];
+            for (let r = Math.max(0, centerRow - radius); r <= Math.min(19, centerRow + radius); r++) {
+                for (let c = Math.max(0, centerCol - radius); c <= Math.min(19, centerCol + radius); c++) {
+                    cells.push({row: r, col: c});
+                }
+            }
+            return cells;
+        }
+
+        function showTempScanArea() {
+            if (!gameState.tempScanArea) return;
+            
+            gameState.tempScanArea.forEach(cellPos => {
+                const cell = document.querySelector(
+                    `.game-cell[data-row="${cellPos.row}"][data-col="${cellPos.col}"]`
+                );
+                if (cell) {
+                    if (gameState.gamePhase === 'special_smoke') {
+                        cell.classList.add('smoke');
+                    } else {
+                        cell.classList.add('scan-area', 'active');
+                    }
+                }
+            });
+        }
+
+        function clearTempScanArea() {
+            if (!gameState.tempScanArea) return;
+            
+            gameState.tempScanArea.forEach(cellPos => {
+                const cell = document.querySelector(
+                    `.game-cell[data-row="${cellPos.row}"][data-col="${cellPos.col}"]`
+                );
+                if (cell) {
+                    cell.classList.remove('scan-area', 'active', 'smoke', 'artillery');
+                }
+            });
+            gameState.tempScanArea = null;
         }
 
         // ========== DRAG AND DROP ==========
@@ -1225,14 +1555,12 @@
                     
                 case 'T':
                     if (vertical) {
-                        // T shape vertical
                         cells.push({row, col});
                         cells.push({row, col: col + 1});
                         cells.push({row: row + 1, col});
                         cells.push({row: row + 1, col: col + 1});
                         cells.push({row: row - 1, col});
                     } else {
-                        // T shape horizontal
                         cells.push({row, col});
                         cells.push({row, col: col + 1});
                         cells.push({row: row + 1, col});
@@ -1246,13 +1574,11 @@
         }
 
         function canPlaceShip(cells) {
-            // Check bounds
             for (const cell of cells) {
                 if (cell.row < 0 || cell.row >= 20 || cell.col < 0 || cell.col >= 20) {
                     return false;
                 }
                 
-                // Check if cell is occupied
                 const existingCell = document.querySelector(
                     `.placement-cell[data-row="${cell.row}"][data-col="${cell.col}"].ship`
                 );
@@ -1269,7 +1595,6 @@
             
             if (!shipTemplate) return;
             
-            // Check if already placed
             if (gameState.placedShips.some(s => s.id === shipId && s.placed)) {
                 showMessage('This ship is already placed!');
                 return;
@@ -1282,7 +1607,6 @@
                 return;
             }
             
-            // Mark ship as placed
             let placedShip = gameState.placedShips.find(s => s.id === shipId);
             if (!placedShip) {
                 placedShip = {
@@ -1297,7 +1621,6 @@
                 placedShip.placed = true;
             }
             
-            // Update grid
             cells.forEach(pos => {
                 const cell = document.querySelector(
                     `.placement-cell[data-row="${pos.row}"][data-col="${pos.col}"]`
@@ -1310,10 +1633,8 @@
                 }
             });
             
-            // Update dock
             updateShipDock();
             
-            // Check if all ships placed
             const allPlaced = shipTemplates.every(ship => 
                 gameState.placedShips.some(s => s.id === ship.id && s.placed)
             );
@@ -1366,7 +1687,6 @@
                     const cells = getShipCells(ship.shape, ship.size, row, col, vertical);
                     
                     if (canPlaceShip(cells)) {
-                        // Mark as placed
                         gameState.placedShips.push({
                             ...ship,
                             cells: cells,
@@ -1374,7 +1694,6 @@
                             player: gameState.currentPlayer
                         });
                         
-                        // Update grid
                         cells.forEach(pos => {
                             const cell = document.querySelector(
                                 `.placement-cell[data-row="${pos.row}"][data-col="${pos.col}"]`
@@ -1408,15 +1727,12 @@
         }
 
         function clearPlacement() {
-            // Clear grid
             document.querySelectorAll('.placement-cell').forEach(cell => {
                 cell.classList.remove('ship', 'carrier');
             });
             
-            // Clear placed ships
             gameState.placedShips = [];
             
-            // Update dock
             updateShipDock();
             
             document.getElementById('finishBtn').disabled = true;
@@ -1425,7 +1741,6 @@
 
         function finishPlacement() {
             if (gameState.currentPlayer === 1) {
-                // Save player 1's ships
                 const p1Ships = gameState.placedShips.map(ship => ({
                     ...ship,
                     id: `p1-${ship.id}`,
@@ -1434,32 +1749,27 @@
                     fuel: ship.fuel,
                     maxFuel: ship.fuel,
                     cooldown: 0,
-                    visibleToOwner: true,  // ALWAYS visible to owner
-                    revealed: false,        // Hidden from enemy until revealed
+                    visibleToOwner: true,
+                    revealed: false,
                     player: 1
                 }));
                 
-                // Switch to player 2
                 gameState.currentPlayer = 2;
                 gameState.placedShips = [];
                 
-                // Clear grid
                 document.querySelectorAll('.placement-cell').forEach(cell => {
                     cell.classList.remove('ship', 'carrier');
                 });
                 
-                // Update UI
                 document.getElementById('placementTitle').textContent = 'PLAYER 2: DEPLOY YOUR FLEET';
                 updateShipDock();
                 document.getElementById('finishBtn').disabled = true;
                 
-                // Store player 1 ships
                 window.player1Ships = p1Ships;
                 
                 showMessage('Player 2, deploy your ships! Player 1 look away.');
                 
             } else {
-                // Save player 2's ships
                 const p2Ships = gameState.placedShips.map(ship => ({
                     ...ship,
                     id: `p2-${ship.id}`,
@@ -1468,15 +1778,13 @@
                     fuel: ship.fuel,
                     maxFuel: ship.fuel,
                     cooldown: 0,
-                    visibleToOwner: true,  // ALWAYS visible to owner
-                    revealed: false,        // Hidden from enemy until revealed
+                    visibleToOwner: true,
+                    revealed: false,
                     player: 2
                 }));
                 
-                // Combine all ships
                 gameState.ships = [...window.player1Ships, ...p2Ships];
                 
-                // Show ready screen for player 1
                 showReadyScreen('PLAYER 1', "Get ready for battle! Enemy ships are hidden.");
             }
         }
@@ -1500,68 +1808,22 @@
             document.getElementById('readyScreen').style.display = 'none';
             
             if (gameState.phase === 'ready' && gameState.currentPlayer === 1) {
-                // First turn of the game
                 gameState.phase = 'game';
                 gameState.currentPlayer = 1;
                 document.getElementById('gameScreen').style.display = 'block';
                 updateDisplay();
-                showMessage('Game started! Player 1\'s turn. Enemy ships are hidden.');
+                showMessage('Game started! Player 1\'s turn. Each player has unique commander abilities.');
             } else {
-                // Continue game
                 document.getElementById('gameScreen').style.display = 'block';
                 updateDisplay();
                 showMessage(`Player ${gameState.currentPlayer}'s turn!`);
             }
+            
+            // Reset commander ability usage for new turn
+            gameState.usedCommanderAbility = false;
         }
 
         // ========== GAME LOGIC ==========
-        function handleGameCellClick(row, col) {
-            if (gameState.actionPoints <= 0) {
-                showMessage('No action points remaining!');
-                return;
-            }
-            
-            switch(gameState.gamePhase) {
-                case 'select':
-                    // Try to select a ship
-                    const ship = getShipAt(row, col);
-                    if (ship && ship.player === gameState.currentPlayer) {
-                        selectShip(ship.id);
-                    } else {
-                        showMessage('Select one of your ships first!');
-                    }
-                    break;
-                    
-                case 'moving':
-                    moveShipTo(row, col);
-                    break;
-                    
-                case 'attacking':
-                    attackTarget(row, col);
-                    break;
-                    
-                case 'ability_mine':
-                    placeMine(row, col);
-                    break;
-                    
-                case 'ability_sonar':
-                    useSonar(row, col);
-                    break;
-                    
-                case 'ability_recon':
-                    useRecon(row, col);
-                    break;
-                    
-                case 'ability_repair':
-                    repairTarget(row, col);
-                    break;
-                    
-                case 'ability_barrage':
-                    useBarrage(row, col);
-                    break;
-            }
-        }
-
         function getShipAt(row, col) {
             return gameState.ships.find(ship => 
                 ship.cells.some(cell => cell.row === row && cell.col === col)
@@ -1603,7 +1865,6 @@
             const ship = gameState.ships.find(s => s.id === gameState.selectedShip);
             if (!ship) return;
             
-            // Find closest cell to calculate distance
             let minDistance = Infinity;
             ship.cells.forEach(cell => {
                 const distance = Math.abs(cell.row - targetRow) + Math.abs(cell.col - targetCol);
@@ -1622,11 +1883,9 @@
                 return;
             }
             
-            // Calculate move vector
             const dRow = targetRow - ship.cells[0].row;
             const dCol = targetCol - ship.cells[0].col;
             
-            // Check if new position is valid
             const newCells = ship.cells.map(cell => ({
                 row: cell.row + dRow,
                 col: cell.col + dCol
@@ -1645,11 +1904,9 @@
                 }
             }
             
-            // Move ship
             ship.cells = newCells;
             ship.fuel -= minDistance;
             
-            // Check for mines
             checkMineHits(ship);
             
             gameState.actionPoints--;
@@ -1693,7 +1950,6 @@
             const attacker = gameState.ships.find(s => s.id === gameState.selectedShip);
             if (!attacker) return;
             
-            // Check if target is adjacent
             const inRange = attacker.cells.some(cell => 
                 Math.abs(cell.row - row) <= 1 && Math.abs(cell.col - col) <= 1
             );
@@ -1706,11 +1962,9 @@
             const targetShip = getShipAt(row, col);
             
             if (targetShip && targetShip.player !== gameState.currentPlayer) {
-                // Hit!
                 const damage = 50 + Math.floor(Math.random() * 20);
                 targetShip.health = Math.max(0, targetShip.health - damage);
                 
-                // Reveal enemy ship to current player
                 targetShip.revealed = true;
                 
                 if (targetShip.health <= 0) {
@@ -1719,10 +1973,8 @@
                     showMessage(`Hit! ${targetShip.name} took ${damage} damage!`);
                 }
             } else {
-                // Miss
                 showMessage('Miss! No enemy ship at target.');
                 
-                // Add miss marker
                 const cell = document.querySelector(
                     `.game-cell[data-row="${row}"][data-col="${col}"]`
                 );
@@ -1753,12 +2005,12 @@
                     
                 case 'sonar':
                     gameState.gamePhase = 'ability_sonar';
-                    showMessage('Select center of 3x3 sonar scan area.');
+                    showMessage('Select center of 3x3 sonar scan area. Hover to preview.');
                     break;
                     
                 case 'recon':
                     gameState.gamePhase = 'ability_recon';
-                    showMessage('Select center of 5x5 reconnaissance area.');
+                    showMessage('Select center of 5x5 reconnaissance area. Hover to preview.');
                     break;
                     
                 case 'repair':
@@ -1791,18 +2043,13 @@
             
             gameState.actionPoints--;
             gameState.gamePhase = 'select';
+            clearTempScanArea();
             updateDisplay();
             showMessage(`Mine placed at (${row+1}, ${col+1})`);
         }
 
         function useSonar(row, col) {
-            // Create 3x3 scan area
-            const cells = [];
-            for (let r = Math.max(0, row-1); r <= Math.min(19, row+1); r++) {
-                for (let c = Math.max(0, col-1); c <= Math.min(19, col+1); c++) {
-                    cells.push({row: r, col: c});
-                }
-            }
+            const cells = getScanArea(row, col, 1);
             
             gameState.scanAreas.push({
                 player: gameState.currentPlayer,
@@ -1810,7 +2057,6 @@
                 turns: 2
             });
             
-            // Reveal enemy ships in area
             cells.forEach(cell => {
                 const ship = getShipAt(cell.row, cell.col);
                 if (ship && ship.player !== gameState.currentPlayer) {
@@ -1823,18 +2069,13 @@
             
             gameState.actionPoints--;
             gameState.gamePhase = 'select';
+            clearTempScanArea();
             updateDisplay();
-            showMessage('Sonar active! Enemy ships revealed in area.');
+            showMessage('Sonar active! Enemy ships revealed in 3x3 area.');
         }
 
         function useRecon(row, col) {
-            // Create 5x5 scan area
-            const cells = [];
-            for (let r = Math.max(0, row-2); r <= Math.min(19, row+2); r++) {
-                for (let c = Math.max(0, col-2); c <= Math.min(19, col+2); c++) {
-                    cells.push({row: r, col: c});
-                }
-            }
+            const cells = getScanArea(row, col, 2);
             
             gameState.scanAreas.push({
                 player: gameState.currentPlayer,
@@ -1842,7 +2083,6 @@
                 turns: 3
             });
             
-            // Reveal enemy ships
             cells.forEach(cell => {
                 const ship = getShipAt(cell.row, cell.col);
                 if (ship && ship.player !== gameState.currentPlayer) {
@@ -1855,8 +2095,9 @@
             
             gameState.actionPoints--;
             gameState.gamePhase = 'select';
+            clearTempScanArea();
             updateDisplay();
-            showMessage('Aerial reconnaissance active!');
+            showMessage('Aerial reconnaissance active! Enemy ships revealed in 5x5 area.');
         }
 
         function repairTarget(row, col) {
@@ -1868,7 +2109,6 @@
                 return;
             }
             
-            // Check if adjacent
             const isAdjacent = repairer.cells.some(cell =>
                 Math.abs(cell.row - row) <= 1 && Math.abs(cell.col - col) <= 1
             );
@@ -1883,7 +2123,6 @@
                 return;
             }
             
-            // Repair
             const repairAmount = 50;
             targetShip.health = Math.min(targetShip.maxHealth, targetShip.health + repairAmount);
             
@@ -1899,7 +2138,6 @@
             const attacker = gameState.ships.find(s => s.id === gameState.selectedShip);
             let hits = 0;
             
-            // Damage all enemy ships in 3x3 area
             for (let r = Math.max(0, row-1); r <= Math.min(19, row+1); r++) {
                 for (let c = Math.max(0, col-1); c <= Math.min(19, col+1); c++) {
                     const targetShip = getShipAt(r, c);
@@ -1907,7 +2145,6 @@
                         targetShip.health = Math.max(0, targetShip.health - 40);
                         hits++;
                         
-                        // Reveal enemy
                         targetShip.revealed = true;
                         
                         if (targetShip.health <= 0) {
@@ -1925,11 +2162,273 @@
             showMessage(`Barrage hit ${hits} targets!`);
         }
 
+        // ========== COMMANDER ABILITIES IMPLEMENTATION ==========
+        function specialAction() {
+            if (gameState.actionPoints < 2) {
+                showMessage('Need 2 action points for commander ability!');
+                return;
+            }
+            
+            if (gameState.usedCommanderAbility) {
+                showMessage('Commander ability already used this turn!');
+                return;
+            }
+            
+            const ability = getCurrentCommanderAbility();
+            if (!ability) {
+                showMessage('No commander ability available!');
+                return;
+            }
+            
+            switch(ability.id) {
+                case 'artillery_strike':
+                    gameState.gamePhase = 'special_artillery';
+                    showMessage('Select center for artillery strike (3x3 area). Hover to preview.');
+                    break;
+                    
+                case 'smoke_screen':
+                    gameState.gamePhase = 'special_smoke';
+                    showMessage('Select center for smoke screen (5x5 area). Hover to preview.');
+                    break;
+                    
+                case 'emergency_supply':
+                    executeCommanderAbility('emergency_supply');
+                    break;
+                    
+                case 'tactical_nuke':
+                    gameState.gamePhase = 'special_nuke';
+                    showMessage('Select target for tactical nuke (single cell).');
+                    break;
+                    
+                case 'sonar_buoy':
+                    gameState.gamePhase = 'special_sonar';
+                    showMessage('Select location to deploy sonar buoy (5x5 area). Hover to preview.');
+                    break;
+                    
+                case 'minefield':
+                    executeCommanderAbility('minefield');
+                    break;
+                    
+                case 'repair_team':
+                    executeCommanderAbility('repair_team');
+                    break;
+                    
+                case 'radar_jam':
+                    executeCommanderAbility('radar_jam');
+                    break;
+                    
+                case 'double_tap':
+                    executeCommanderAbility('double_tap');
+                    break;
+                    
+                case 'precision_strike':
+                    gameState.gamePhase = 'special_nuke'; // Reuse nuke targeting
+                    showMessage('Select enemy ship for precision strike.');
+                    break;
+                    
+                default:
+                    showMessage('Commander ability not implemented yet!');
+                    gameState.gamePhase = 'select';
+                    break;
+            }
+        }
+
+        function executeCommanderAbility(abilityId) {
+            const ability = commanderAbilityTemplates.find(a => a.id === abilityId);
+            if (!ability) return;
+            
+            switch(abilityId) {
+                case 'emergency_supply':
+                    gameState.ships.forEach(ship => {
+                        if (ship.player === gameState.currentPlayer) {
+                            ship.fuel = Math.min(ship.maxFuel, ship.fuel + ability.fuelRestore);
+                        }
+                    });
+                    showMessage(`Emergency supply delivered! All ships received +${ability.fuelRestore} fuel.`);
+                    break;
+                    
+                case 'minefield':
+                    for (let i = 0; i < ability.mineCount; i++) {
+                        let placed = false;
+                        let attempts = 0;
+                        
+                        while (!placed && attempts < 50) {
+                            const row = Math.floor(Math.random() * 20);
+                            const col = Math.floor(Math.random() * 20);
+                            
+                            if (!getShipAt(row, col)) {
+                                gameState.mines.push({
+                                    player: gameState.currentPlayer,
+                                    row: row,
+                                    col: col,
+                                    active: true
+                                });
+                                placed = true;
+                            }
+                            attempts++;
+                        }
+                    }
+                    showMessage(`Minefield deployed! ${ability.mineCount} mines placed randomly.`);
+                    break;
+                    
+                case 'repair_team':
+                    let healedShips = 0;
+                    gameState.ships.forEach(ship => {
+                        if (ship.player === gameState.currentPlayer && ship.health < ship.maxHealth) {
+                            ship.health = Math.min(ship.maxHealth, ship.health + ability.heal);
+                            healedShips++;
+                        }
+                    });
+                    showMessage(`Repair team deployed! ${healedShips} ships healed for ${ability.heal} HP.`);
+                    break;
+                    
+                case 'radar_jam':
+                    gameState.scanAreas = gameState.scanAreas.filter(area => 
+                        area.player === gameState.currentPlayer
+                    );
+                    showMessage('Radar jam activated! All enemy scan areas removed.');
+                    break;
+                    
+                case 'double_tap':
+                    gameState.actionPoints += ability.extraAP;
+                    showMessage(`Double tap! +${ability.extraAP} action point this turn.`);
+                    break;
+                    
+                default:
+                    showMessage('Commander ability executed!');
+                    break;
+            }
+            
+            // Deduct cost and mark as used
+            gameState.actionPoints -= ability.cost;
+            gameState.usedCommanderAbility = true;
+            gameState.gamePhase = 'select';
+            clearTempScanArea();
+            updateDisplay();
+        }
+
+        function useArtilleryStrike(row, col) {
+            const ability = getCurrentCommanderAbility();
+            if (!ability) return;
+            
+            const cells = getScanArea(row, col, ability.radius);
+            let hits = 0;
+            
+            cells.forEach(cell => {
+                const targetShip = getShipAt(cell.row, cell.col);
+                if (targetShip && targetShip.player !== gameState.currentPlayer) {
+                    targetShip.health = Math.max(0, targetShip.health - ability.damage);
+                    hits++;
+                    
+                    targetShip.revealed = true;
+                    
+                    if (targetShip.health <= 0) {
+                        sinkShip(targetShip.id);
+                    }
+                }
+            });
+            
+            // Visual effect
+            cells.forEach(cell => {
+                const cellElem = document.querySelector(
+                    `.game-cell[data-row="${cell.row}"][data-col="${cell.col}"]`
+                );
+                if (cellElem) {
+                    cellElem.classList.add('artillery');
+                    setTimeout(() => cellElem.classList.remove('artillery'), 1000);
+                }
+            });
+            
+            gameState.actionPoints -= ability.cost;
+            gameState.usedCommanderAbility = true;
+            gameState.gamePhase = 'select';
+            clearTempScanArea();
+            updateDisplay();
+            showMessage(`Artillery strike hit ${hits} targets for ${ability.damage} damage each!`);
+        }
+
+        function useSmokeScreen(row, col) {
+            const ability = getCurrentCommanderAbility();
+            if (!ability) return;
+            
+            // Create smoke area that hides ships for 2 turns
+            const cells = getScanArea(row, col, ability.radius);
+            
+            // For now, just mark the area visually
+            // In a full implementation, this would hide ships in the area
+            
+            gameState.actionPoints -= ability.cost;
+            gameState.usedCommanderAbility = true;
+            gameState.gamePhase = 'select';
+            clearTempScanArea();
+            updateDisplay();
+            showMessage(`Smoke screen deployed in 5x5 area for ${ability.turns} turns!`);
+        }
+
+        function useTacticalNuke(row, col) {
+            const ability = getCurrentCommanderAbility();
+            if (!ability) return;
+            
+            const targetShip = getShipAt(row, col);
+            if (targetShip && targetShip.player !== gameState.currentPlayer) {
+                targetShip.health = Math.max(0, targetShip.health - ability.damage);
+                targetShip.revealed = true;
+                
+                if (targetShip.health <= 0) {
+                    sinkShip(targetShip.id);
+                }
+                
+                // Visual effect
+                const cell = document.querySelector(
+                    `.game-cell[data-row="${row}"][data-col="${col}"]`
+                );
+                if (cell) {
+                    cell.classList.add('hit');
+                    setTimeout(() => cell.classList.remove('hit'), 1000);
+                }
+                
+                gameState.actionPoints -= ability.cost;
+                gameState.usedCommanderAbility = true;
+                gameState.gamePhase = 'select';
+                updateDisplay();
+                showMessage(`Tactical nuke hit ${targetShip.name} for ${ability.damage} damage!`);
+            } else {
+                showMessage('No enemy ship at target location!');
+            }
+        }
+
+        function useSonarBuoy(row, col) {
+            const ability = getCurrentCommanderAbility();
+            if (!ability) return;
+            
+            const cells = getScanArea(row, col, ability.radius);
+            
+            gameState.scanAreas.push({
+                player: gameState.currentPlayer,
+                cells: cells,
+                turns: ability.turns
+            });
+            
+            cells.forEach(cell => {
+                const ship = getShipAt(cell.row, cell.col);
+                if (ship && ship.player !== gameState.currentPlayer) {
+                    ship.revealed = true;
+                }
+            });
+            
+            gameState.actionPoints -= ability.cost;
+            gameState.usedCommanderAbility = true;
+            gameState.gamePhase = 'select';
+            clearTempScanArea();
+            updateDisplay();
+            showMessage(`Sonar buoy deployed! Revealing 5x5 area for ${ability.turns} turns.`);
+        }
+
+        // ========== REMAINING FUNCTIONS (sinkShip, checkWin, etc.) ==========
         function sinkShip(shipId) {
             const ship = gameState.ships.find(s => s.id === shipId);
             showMessage(`💥 ${ship.name} DESTROYED!`);
             
-            // Create explosion
             ship.cells.forEach(cell => {
                 gameState.explosions.push({
                     row: cell.row,
@@ -1937,7 +2436,6 @@
                     turns: 2
                 });
                 
-                // Damage nearby ships
                 for (let r = Math.max(0, cell.row-1); r <= Math.min(19, cell.row+1); r++) {
                     for (let c = Math.max(0, cell.col-1); c <= Math.min(19, cell.col+1); c++) {
                         const nearbyShip = getShipAt(r, c);
@@ -1954,10 +2452,8 @@
                 }
             });
             
-            // Remove ship
             gameState.ships = gameState.ships.filter(s => s.id !== shipId);
             
-            // Check win condition
             setTimeout(checkWin, 500);
         }
 
@@ -1983,6 +2479,7 @@
 
         function cancelAction() {
             gameState.gamePhase = 'select';
+            clearTempScanArea();
             updateDisplay();
             showMessage('Action cancelled.');
         }
@@ -1994,14 +2491,14 @@
                 }
             }
             
-            // Switch player and show ready screen
             gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
             gameState.turn++;
             gameState.actionPoints = 3;
             gameState.selectedShip = null;
             gameState.gamePhase = 'select';
+            clearTempScanArea();
+            gameState.usedCommanderAbility = false;
             
-            // Refuel ships
             gameState.ships.forEach(ship => {
                 if (ship.player === gameState.currentPlayer) {
                     ship.fuel = Math.min(ship.maxFuel, ship.fuel + 1);
@@ -2012,56 +2509,17 @@
                 }
             });
             
-            // Update scan areas
             gameState.scanAreas = gameState.scanAreas.filter(area => {
                 area.turns--;
                 return area.turns > 0;
             });
             
-            // Update explosions
             gameState.explosions = gameState.explosions.filter(exp => {
                 exp.turns--;
                 return exp.turns > 0;
             });
             
-            // Show ready screen for next player
             showReadyScreen(`PLAYER ${gameState.currentPlayer}`, "Your turn begins now!");
-        }
-
-        function specialAction() {
-            if (gameState.actionPoints < 2) {
-                showMessage('Need 2 action points for special action!');
-                return;
-            }
-            
-            // Radar sweep
-            const row = Math.floor(Math.random() * 15) + 2;
-            const col = Math.floor(Math.random() * 15) + 2;
-            
-            const cells = [];
-            for (let r = Math.max(0, row-2); r <= Math.min(19, row+2); r++) {
-                for (let c = Math.max(0, col-2); c <= Math.min(19, col+2); c++) {
-                    cells.push({row: r, col: c});
-                }
-            }
-            
-            gameState.scanAreas.push({
-                player: gameState.currentPlayer,
-                cells: cells,
-                turns: 1
-            });
-            
-            // Reveal ships
-            cells.forEach(cell => {
-                const ship = getShipAt(cell.row, cell.col);
-                if (ship && ship.player !== gameState.currentPlayer) {
-                    ship.revealed = true;
-                }
-            });
-            
-            gameState.actionPoints -= 2;
-            updateDisplay();
-            showMessage('Radar sweep activated!');
         }
 
         function surrender() {
@@ -2070,19 +2528,24 @@
             }
         }
 
-        // ========== DISPLAY FUNCTIONS - SIMPLIFIED FIX ==========
+        // ========== DISPLAY FUNCTIONS ==========
         function updateDisplay() {
-            // Update header
             document.getElementById('turnDisplay').textContent = `PLAYER ${gameState.currentPlayer}'S TURN`;
             document.getElementById('turnCounter').textContent = gameState.turn;
             document.getElementById('playerIndicator').textContent = gameState.currentPlayer;
             
-            // Update action points
             document.getElementById('ap1').className = `ap-dot ${gameState.actionPoints < 1 ? 'used' : ''}`;
             document.getElementById('ap2').className = `ap-dot ${gameState.actionPoints < 2 ? 'used' : ''}`;
             document.getElementById('ap3').className = `ap-dot ${gameState.actionPoints < 3 ? 'used' : ''}`;
             
-            // Update selected ship info
+            const ability = getCurrentCommanderAbility();
+            if (ability) {
+                document.getElementById('commanderAbilityName').textContent = ability.name;
+                document.getElementById('commanderAbilityTitle').textContent = `${ability.icon} ${ability.name}`;
+                document.getElementById('commanderAbilityDesc').textContent = ability.description;
+                document.getElementById('specialBtn').textContent = `⚡ ${ability.name} (${ability.cost} CP)`;
+            }
+            
             const ship = gameState.ships.find(s => s.id === gameState.selectedShip);
             if (ship && ship.player === gameState.currentPlayer) {
                 document.getElementById('selectedShipInfo').classList.remove('hidden');
@@ -2093,11 +2556,11 @@
                 document.getElementById('attackBtn').disabled = false;
                 document.getElementById('abilityBtn').disabled = ship.cooldown > 0;
                 
-                // Update action summary
                 let summary = `${ship.name} selected. `;
                 if (gameState.gamePhase === 'moving') summary += 'Select destination.';
                 else if (gameState.gamePhase === 'attacking') summary += 'Select target.';
                 else if (gameState.gamePhase.startsWith('ability_')) summary += 'Select ability target.';
+                else if (gameState.gamePhase.startsWith('special_')) summary += 'Select target for commander ability.';
                 else summary += 'Choose an action.';
                 document.getElementById('actionSummary').textContent = summary;
             } else {
@@ -2105,20 +2568,16 @@
                 document.getElementById('actionSummary').textContent = 'Select a ship and choose an action';
             }
             
-            // Update ships panel
             updateShipsPanel();
+            updateGameGrid();
             
-            // Update game grid - SIMPLIFIED FIX
-            updateGameGridSimple();
-            
-            // Update tips
             const tips = [
-                'Tip: Enemy ships are hidden until scanned or hit!',
-                'Tip: Use sonar/recon to reveal enemy positions',
+                'Tip: Each player gets 5 random commander abilities!',
+                'Tip: Commander abilities cost 2 Command Points (CP)',
+                'Tip: You can use one commander ability per turn',
+                'Tip: Hover to preview area effects',
                 'Tip: Damaged ships (>50%) cannot move',
-                'Tip: Mines damage enemy ships that move over them',
-                'Tip: Sunk ships explode, damaging nearby ships',
-                'Tip: Fuel regenerates 1 point per turn'
+                'Tip: Mines damage enemy ships that move over them'
             ];
             document.getElementById('gameTip').textContent = tips[gameState.turn % tips.length];
         }
@@ -2167,16 +2626,13 @@
             });
         }
 
-        // SIMPLIFIED FIXED VERSION
-        function updateGameGridSimple() {
-            // Clear all cells
+        function updateGameGrid() {
             const cells = document.querySelectorAll('.game-cell');
             cells.forEach(cell => {
                 cell.className = 'game-cell';
                 cell.innerHTML = '';
             });
             
-            // Show scan areas
             gameState.scanAreas.forEach(area => {
                 if (area.player === gameState.currentPlayer) {
                     area.cells.forEach(cellPos => {
@@ -2185,12 +2641,14 @@
                         );
                         if (cell) {
                             cell.classList.add('scan-area');
+                            if (area.turns > 0) {
+                                cell.classList.add('active');
+                            }
                         }
                     });
                 }
             });
             
-            // Show mines (only current player's mines)
             gameState.mines.forEach(mine => {
                 if (mine.active && mine.player === gameState.currentPlayer) {
                     const cell = document.querySelector(
@@ -2203,7 +2661,6 @@
                 }
             });
             
-            // Show explosions
             gameState.explosions.forEach(explosion => {
                 const cell = document.querySelector(
                     `.game-cell[data-row="${explosion.row}"][data-col="${explosion.col}"]`
@@ -2214,9 +2671,7 @@
                 }
             });
             
-            // SIMPLE FIX: Show ALL current player ships
             gameState.ships.forEach(ship => {
-                // ALWAYS show current player's ships
                 if (ship.player === gameState.currentPlayer) {
                     ship.cells.forEach(cellPos => {
                         const cell = document.querySelector(
@@ -2225,7 +2680,6 @@
                         if (cell) {
                             cell.classList.add('ship-player');
                             
-                            // Show damage state
                             const healthPercent = (ship.health / ship.maxHealth) * 100;
                             if (healthPercent <= 25) {
                                 cell.classList.add('critical');
@@ -2234,31 +2688,17 @@
                             }
                         }
                     });
-                }
-                // Show enemy ships only when revealed
-                else if (ship.revealed) {
+                } else if (ship.revealed) {
                     ship.cells.forEach(cellPos => {
                         const cell = document.querySelector(
                             `.game-cell[data-row="${cellPos.row}"][data-col="${cellPos.col}"]`
                         );
                         if (cell) {
                             cell.classList.add('ship-enemy');
-                            
-                            // Check if in scan area for special styling
-                            const inScanArea = gameState.scanAreas.some(area => 
-                                area.player === gameState.currentPlayer &&
-                                area.cells.some(c => c.row === cellPos.row && c.col === cellPos.col)
-                            );
-                            if (inScanArea) {
-                                cell.classList.add('scanned');
-                            }
                         }
                     });
                 }
             });
-            
-            // Debug info - shows ship count in console
-            console.log(`Player ${gameState.currentPlayer} turn: ${gameState.ships.filter(s => s.player === gameState.currentPlayer).length} ships should be visible`);
         }
 
         // ========== GAME FLOW ==========
@@ -2269,7 +2709,6 @@
             initGame();
             showMessage('Player 1: Drag and drop your ships!');
             
-            // Add keyboard shortcut
             document.addEventListener('keydown', (e) => {
                 if (e.key.toLowerCase() === 'r' && gameState.phase === 'placement') {
                     rotateShip();
@@ -2300,7 +2739,10 @@
                 mines: [],
                 explosions: [],
                 placedShips: [],
-                ships: []
+                ships: [],
+                tempScanArea: null,
+                commanderAbilities: [],
+                usedCommanderAbility: false
             };
             
             document.getElementById('startScreen').style.display = 'flex';
@@ -2312,7 +2754,6 @@
             showMessage('Game reset. Ready to play!');
         }
 
-        // Initialize
         window.onload = initGame;
     </script>
 </body>
