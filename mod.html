@@ -427,21 +427,15 @@
             background: rgba(0, 255, 255, 0.2);
         }
 
-        /* PLAYER 1 SHIPS - Blue */
-        .game-cell.ship-p1 {
+        /* PLAYER SHIP COLORS */
+        .game-cell.ship-player {
             background: #3498db !important;
             border-color: #2980b9 !important;
         }
 
-        /* PLAYER 2 SHIPS - Red (only when revealed) */
-        .game-cell.ship-p2.revealed {
+        .game-cell.ship-enemy {
             background: #e74c3c !important;
             border-color: #c0392b !important;
-        }
-
-        .game-cell.ship-p2.scanned {
-            background: rgba(255, 0, 0, 0.3) !important;
-            border-color: #ff0000 !important;
         }
 
         /* DAMAGE STATES */
@@ -2076,7 +2070,7 @@
             }
         }
 
-        // ========== DISPLAY FUNCTIONS - FIXED VISIBILITY ==========
+        // ========== DISPLAY FUNCTIONS - SIMPLIFIED FIX ==========
         function updateDisplay() {
             // Update header
             document.getElementById('turnDisplay').textContent = `PLAYER ${gameState.currentPlayer}'S TURN`;
@@ -2114,8 +2108,8 @@
             // Update ships panel
             updateShipsPanel();
             
-            // Update game grid - THIS IS THE FIXED FUNCTION
-            updateGameGrid();
+            // Update game grid - SIMPLIFIED FIX
+            updateGameGridSimple();
             
             // Update tips
             const tips = [
@@ -2173,9 +2167,11 @@
             });
         }
 
-        function updateGameGrid() {
-            // Clear grid first
-            document.querySelectorAll('.game-cell').forEach(cell => {
+        // SIMPLIFIED FIXED VERSION
+        function updateGameGridSimple() {
+            // Clear all cells
+            const cells = document.querySelectorAll('.game-cell');
+            cells.forEach(cell => {
                 cell.className = 'game-cell';
                 cell.innerHTML = '';
             });
@@ -2202,7 +2198,7 @@
                     );
                     if (cell) {
                         cell.classList.add('mine');
-                        cell.innerHTML = '💣';
+                        cell.textContent = '💣';
                     }
                 }
             });
@@ -2214,23 +2210,20 @@
                 );
                 if (cell) {
                     cell.classList.add('hit');
-                    cell.innerHTML = '💥';
+                    cell.textContent = '💥';
                 }
             });
             
-            // Show missed shots from previous attacks
-            // (This would need to track misses in gameState)
-            
-            // ========== CRITICAL FIX: SHOW CURRENT PLAYER'S SHIPS ==========
-            // Show ALL current player's ships (always visible to owner)
+            // SIMPLE FIX: Show ALL current player ships
             gameState.ships.forEach(ship => {
+                // ALWAYS show current player's ships
                 if (ship.player === gameState.currentPlayer) {
                     ship.cells.forEach(cellPos => {
                         const cell = document.querySelector(
                             `.game-cell[data-row="${cellPos.row}"][data-col="${cellPos.col}"]`
                         );
                         if (cell) {
-                            cell.classList.add(`ship-p${ship.player}`);
+                            cell.classList.add('ship-player');
                             
                             // Show damage state
                             const healthPercent = (ship.health / ship.maxHealth) * 100;
@@ -2242,18 +2235,14 @@
                         }
                     });
                 }
-            });
-            
-            // ========== SHOW ENEMY SHIPS (only when revealed) ==========
-            gameState.ships.forEach(ship => {
-                if (ship.player !== gameState.currentPlayer && ship.revealed) {
+                // Show enemy ships only when revealed
+                else if (ship.revealed) {
                     ship.cells.forEach(cellPos => {
                         const cell = document.querySelector(
                             `.game-cell[data-row="${cellPos.row}"][data-col="${cellPos.col}"]`
                         );
                         if (cell) {
-                            cell.classList.add(`ship-p${ship.player}`);
-                            cell.classList.add('revealed');
+                            cell.classList.add('ship-enemy');
                             
                             // Check if in scan area for special styling
                             const inScanArea = gameState.scanAreas.some(area => 
@@ -2267,6 +2256,9 @@
                     });
                 }
             });
+            
+            // Debug info - shows ship count in console
+            console.log(`Player ${gameState.currentPlayer} turn: ${gameState.ships.filter(s => s.player === gameState.currentPlayer).length} ships should be visible`);
         }
 
         // ========== GAME FLOW ==========
