@@ -333,11 +333,13 @@
             box-shadow: 0 8px 20px rgba(212, 175, 55, 0.3);
         }
 
+        /* SPACING FIX: Increased margin between difficulty selector and button */
         .difficulty-selector {
             display: flex;
             justify-content: center;
             gap: 10px;
             margin-top: 20px;
+            margin-bottom: 35px; /* Increased from 0 to 35px for more space */
             flex-wrap: wrap;
         }
 
@@ -363,7 +365,7 @@
             border-color: var(--accent-blue);
         }
 
-        /* Stats Bar - Redesigned */
+        /* Stats Section - Redesigned */
         .stats-section {
             background: rgba(10, 26, 58, 0.8);
             border-radius: 20px;
@@ -557,7 +559,7 @@
             color: var(--navy-blue);
         }
 
-        /* Features Section */
+        /* Features Section - Updated with real features */
         .features {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -595,7 +597,7 @@
             color: #c5d1eb;
         }
 
-        /* Footer */
+        /* Footer - Simplified */
         footer {
             text-align: center;
             padding: 60px 0 40px;
@@ -628,7 +630,6 @@
 
         .footer-links a:hover {
             color: var(--gold);
-            text-decoration: underline;
         }
 
         .copyright {
@@ -698,6 +699,11 @@
             .stats-section {
                 padding: 30px 20px;
             }
+            
+            /* Adjust spacing for mobile */
+            .difficulty-selector {
+                margin-bottom: 30px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -729,6 +735,11 @@
             .footer-links {
                 flex-direction: column;
                 gap: 15px;
+            }
+            
+            /* More spacing for mobile */
+            .difficulty-selector {
+                margin-bottom: 25px;
             }
         }
 
@@ -785,7 +796,7 @@
                 </div>
             </div>
             
-            <p class="subtitle">Dominate the high seas in the ultimate naval warfare experience. Outsmart opponents, command your fleet, and prove your strategic mastery across multiple battle modes and innovative variations.</p>
+            <p class="subtitle">Command your fleet and dominate the high seas. Experience classic naval warfare with innovative twists across multiple battle modes.</p>
             
             <div class="cta-buttons">
                 <button class="cta-primary" onclick="startLocalGame()">
@@ -814,24 +825,24 @@
                     <div class="stat-icon">
                         <i class="fas fa-ship"></i>
                     </div>
-                    <div class="stat-number">15</div>
-                    <div class="stat-label">Ship Types</div>
+                    <div class="stat-number">5</div>
+                    <div class="stat-label">Ship Classes</div>
                 </div>
                 
                 <div class="stat-card">
                     <div class="stat-icon">
-                        <i class="fas fa-trophy"></i>
+                        <i class="fas fa-bolt"></i>
                     </div>
-                    <div class="stat-number">∞</div>
-                    <div class="stat-label">Strategic Possibilities</div>
+                    <div class="stat-number">3</div>
+                    <div class="stat-label">AI Difficulties</div>
                 </div>
                 
                 <div class="stat-card">
                     <div class="stat-icon">
-                        <i class="fas fa-globe"></i>
+                        <i class="fas fa-code-branch"></i>
                     </div>
-                    <div class="stat-number">100%</div>
-                    <div class="stat-label">Browser Compatible</div>
+                    <div class="stat-number">2</div>
+                    <div class="stat-label">Modded Versions</div>
                 </div>
             </div>
         </div>
@@ -860,7 +871,7 @@
                     <i class="fas fa-robot"></i>
                 </div>
                 <h3>AI Admiral</h3>
-                <p>Challenge intelligent AI opponents with adaptive difficulty. From Cadet to Grand Admiral levels, each AI has unique strategies that evolve based on your gameplay patterns.</p>
+                <p>Challenge intelligent AI opponents with adaptive difficulty. From Cadet to Admiral levels, each AI has unique strategies that will test your tactical skills.</p>
                 <div class="difficulty-selector" id="difficultySelector">
                     <button class="difficulty-btn active" data-level="1">Cadet</button>
                     <button class="difficulty-btn" data-level="2">Captain</button>
@@ -877,9 +888,9 @@
                     <i class="fas fa-globe-americas"></i>
                 </div>
                 <h3>Global Conflict</h3>
-                <p>Join commanders worldwide in real-time naval warfare. Climb ranked ladders, participate in tournaments, and establish your reputation as the ultimate fleet commander.</p>
+                <p>Compete against commanders in naval warfare. Face real opponents in strategic battles that will test your tactical decision-making and adaptability.</p>
                 <button class="play-btn" onclick="startOnlineGame()">
-                    <i class="fas fa-bolt"></i> Join Online
+                    <i class="fas fa-bolt"></i> Join Battle
                 </button>
             </div>
         </div>
@@ -899,7 +910,7 @@
                     </div>
                     <div class="mod-content">
                         <h3>Reverse Battleship</h3>
-                        <p><strong>Paradoxical Strategy:</strong> You WIN when all your ships are sunk! Deploy your fleet to deliberately get hit while trying to miss your opponent's ships. A complete mind-bending reversal of traditional gameplay.</p>
+                        <p><strong>Paradoxical Strategy:</strong> You WIN when all your ships are sunk! Deploy your fleet to deliberately get hit while trying to make your opponent discover your ships. A complete mind-bending reversal of traditional gameplay.</p>
                         
                         <div class="mod-tags">
                             <span class="mod-tag">Mind Games</span>
@@ -907,7 +918,7 @@
                             <span class="mod-tag">Advanced Strategy</span>
                         </div>
                         
-                        <a href="reversed.html" class="mod-btn">Play Reverse Mode</a>
+                        <a href="reverse.html" class="mod-btn">Play Reverse Mode</a>
                     </div>
                 </div>
 
@@ -918,7 +929,7 @@
                     </div>
                     <div class="mod-content">
                         <h3>Enhanced Battleship</h3>
-                        <p>Experience Battleship with advanced features: Special abilities, power-ups, variable ship sizes, minefields, radar jammers, and weather effects that impact visibility and accuracy. Completely customizable rulesets.</p>
+                        <p>Experience Battleship with advanced features: Special abilities, power-ups, variable ship sizes, and unique gameplay mechanics. Completely fresh take on the classic formula.</p>
                         
                         <div class="mod-tags">
                             <span class="mod-tag">Power-ups</span>
@@ -932,9 +943,9 @@
             </div>
         </div>
 
-        <!-- Features -->
+        <!-- Features - Updated with Real Features -->
         <div class="section-title">
-            <h2>Advanced Features</h2>
+            <h2>Game Features</h2>
         </div>
         
         <div class="features">
@@ -942,43 +953,41 @@
                 <div class="feature-icon">
                     <i class="fas fa-chess-board"></i>
                 </div>
-                <h3>Tactical Grid System</h3>
-                <p>Dynamic 10x10 battle grid with coordinate tracking, visual hit/miss feedback, and strategic planning tools. Includes fog of war and reconnaissance options.</p>
+                <h3>Tactical 10x10 Grid</h3>
+                <p>Strategic battle grid with coordinate tracking. Visual feedback for hits, misses, and ship placements with intuitive interface.</p>
             </div>
             
             <div class="feature-card">
                 <div class="feature-icon">
-                    <i class="fas fa-trophy"></i>
+                    <i class="fas fa-ship"></i>
                 </div>
-                <h3>Progression & Rewards</h3>
-                <p>Earn ranks, unlock achievements, collect ship skins, and track detailed statistics. Compete on global leaderboards with seasonal rewards.</p>
+                <h3>Classic Fleet Composition</h3>
+                <p>Command 5 ship classes: Carrier (5), Battleship (4), Cruiser (3), Submarine (3), and Destroyer (2). Deploy strategically to outmaneuver opponents.</p>
             </div>
             
             <div class="feature-card">
                 <div class="feature-icon">
-                    <i class="fas fa-customize"></i>
+                    <i class="fas fa-brain"></i>
                 </div>
-                <h3>Deep Customization</h3>
-                <p>Personalize your fleet with unique ship designs, grid themes, sound effects, and visual styles. Create custom game rules and scenarios.</p>
+                <h3>Smart AI Opponents</h3>
+                <p>Three difficulty levels with adaptive AI that learns from your strategies. From beginner-friendly to challenging expert levels.</p>
             </div>
         </div>
 
-        <!-- Footer -->
+        <!-- Footer - Simplified -->
         <footer>
             <div class="footer-logo">
                 <i class="fas fa-anchor"></i>
             </div>
             
             <div class="footer-links">
-                <a href="#">Command Center</a>
-                <a href="#">Fleet Archives</a>
-                <a href="#">Strategy Guides</a>
-                <a href="#">Leaderboards</a>
-                <a href="#">Community</a>
-                <a href="#">Support Deck</a>
+                <a href="local-game.html">Local Play</a>
+                <a href="bot-game.html">AI Battle</a>
+                <a href="reverse.html">Reverse Mode</a>
+                <a href="mod.html">Enhanced Mode</a>
             </div>
             
-            <p class="copyright">© 2023 Battleship Commander. All Naval Rights Reserved. | Engage in Strategic Warfare Responsibly</p>
+            <p class="copyright">© 2023 Battleship Commander. All naval strategy enthusiasts welcome!</p>
         </footer>
     </div>
 
@@ -1004,7 +1013,7 @@
         }
 
         function startOnlineGame() {
-            alert("Scanning for worthy opponents...\n\nConnecting to the global naval command network.\n\nYour battle credentials are being verified.");
+            alert("Scanning for worthy opponents...\n\nConnecting to the naval command network.\n\nYour battle credentials are being verified.");
             // In a real implementation, this would redirect to the online game page
             window.location.href = "online/game.html";
         }
