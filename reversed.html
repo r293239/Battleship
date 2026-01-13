@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <title>Last Fleet Standing - Reverse Battleship</title>
+    <title>Local Multiplayer - Last Fleet Standing</title>
     <style>
         * {
             margin: 0;
@@ -27,14 +27,14 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        /* Ready Screen */
+        /* Ready Screen - Pure Black with ONLY Ready Button */
         #readyScreen {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            background: #000000;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -50,32 +50,23 @@
         #readyScreen h2 {
             font-size: clamp(2rem, 8vw, 3rem);
             margin-bottom: 30px;
-            color: #fff;
-            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            color: #3498db;
+            text-shadow: 0 0 20px rgba(52, 152, 219, 0.5);
             line-height: 1.2;
-        }
-
-        #modeTitle {
-            font-size: clamp(1.5rem, 6vw, 2.5rem);
-            margin-bottom: 20px;
-            color: #ff6b6b;
-            text-shadow: 0 0 15px rgba(255, 107, 107, 0.7);
-            animation: pulse 2s infinite;
         }
 
         #rulesBox {
             background: rgba(255, 255, 255, 0.1);
-            border: 2px solid #ff6b6b;
+            border: 2px solid #3498db;
             border-radius: 15px;
             padding: clamp(15px, 3vw, 25px);
             margin: 20px auto;
             max-width: 600px;
             text-align: left;
-            backdrop-filter: blur(10px);
         }
 
         #rulesBox h3 {
-            color: #ff6b6b;
+            color: #3498db;
             margin-bottom: 15px;
             font-size: clamp(1.2rem, 4vw, 1.8rem);
             text-align: center;
@@ -94,7 +85,7 @@
         }
 
         #rulesBox li::before {
-            content: "⚠️";
+            content: "🎯";
             margin-right: 10px;
         }
 
@@ -105,11 +96,11 @@
             border: none;
             border-radius: 50px;
             cursor: pointer;
-            background: linear-gradient(to right, #ff6b6b, #ee5a52);
+            background: linear-gradient(to right, #2ecc71, #27ae60);
             color: white;
             text-transform: uppercase;
             letter-spacing: 2px;
-            box-shadow: 0 0 40px rgba(255, 107, 107, 0.7);
+            box-shadow: 0 0 40px rgba(46, 204, 113, 0.7);
             animation: pulse 2s infinite;
             transition: all 0.3s;
             touch-action: manipulation;
@@ -119,7 +110,7 @@
 
         #readyButton:hover, #readyButton:active {
             transform: scale(1.05);
-            box-shadow: 0 0 60px rgba(255, 107, 107, 1);
+            box-shadow: 0 0 60px rgba(46, 204, 113, 1);
         }
 
         @keyframes pulse {
@@ -150,13 +141,12 @@
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
             margin-bottom: 10px;
             line-height: 1.2;
-            color: #ff6b6b;
         }
 
         .game-mode {
             font-size: clamp(1rem, 3vw, 1.3rem);
             color: #fff;
-            background: rgba(255, 107, 107, 0.3);
+            background: rgba(52, 152, 219, 0.3);
             padding: 8px 20px;
             border-radius: 25px;
             display: inline-block;
@@ -190,19 +180,19 @@
             text-align: center;
             margin-bottom: 20px;
             padding-bottom: 10px;
-            border-bottom: 4px solid #ff6b6b;
+            border-bottom: 4px solid #3498db;
             font-size: clamp(1.5rem, 5vw, 2.2rem);
             line-height: 1.3;
         }
 
-        /* Ship Dock for Drag & Drop - HIDDEN during battle */
+        /* Ship Dock for Drag & Drop */
         .ship-dock {
             display: flex;
             flex-direction: column;
             gap: 15px;
             margin: 20px auto;
             padding: 20px;
-            background: rgba(255, 107, 107, 0.1);
+            background: rgba(52, 152, 219, 0.1);
             border-radius: 15px;
             max-width: 600px;
         }
@@ -240,13 +230,13 @@
         }
 
         .ship-dock-item:hover, .ship-dock-item.dragging {
-            background: #ffcccc;
+            background: #d6eaf8;
             transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.2);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
 
         .ship-dock-item.placed {
-            background: #ff6b6b;
+            background: #2ecc71;
             color: white;
             opacity: 0.7;
             cursor: default;
@@ -264,7 +254,7 @@
         .ship-cell {
             width: 20px;
             height: 20px;
-            background: #ff6b6b;
+            background: #3498db;
             border-radius: 3px;
         }
 
@@ -324,7 +314,7 @@
             width: min(95vw, 350px);
             height: min(95vw, 350px);
             border: 3px solid #2c3e50;
-            background-color: #ff6b6b;
+            background-color: #3498db;
             margin: 0 auto;
             touch-action: manipulation;
         }
@@ -354,18 +344,18 @@
         }
 
         .cell.drag-over {
-            background-color: #ffd166 !important;
+            background-color: #f39c12 !important;
             opacity: 0.7;
         }
 
         .cell:active {
-            background-color: #ffcccc;
+            background-color: #d6eaf8;
             transform: scale(0.95);
         }
 
         /* Hit effect - now BAD for you! */
         .cell.hit::after {
-            content: "💣";
+            content: "💥";
             font-size: clamp(1.2rem, 3vw, 1.8rem);
             animation: hitEffect 0.5s;
         }
@@ -378,11 +368,11 @@
         }
 
         .cell.ship {
-            background-color: #ff6b6b;
+            background-color: #2c3e50;
         }
 
         .cell.ship.hit {
-            background-color: #ff0000;
+            background-color: #e74c3c;
         }
 
         .cell.ship.hit::after {
@@ -409,12 +399,7 @@
             border-radius: 15px;
         }
 
-        .placement-controls {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .game-controls {
+        .placement-controls, .game-controls {
             text-align: center;
             margin-bottom: 20px;
         }
@@ -467,7 +452,7 @@
         }
 
         .rotate-btn {
-            background: linear-gradient(to right, #ff9a00, #ff6b6b);
+            background: linear-gradient(to right, #3498db, #2980b9);
             color: white;
         }
 
@@ -477,17 +462,12 @@
         }
 
         .start-btn {
-            background: linear-gradient(to right, #ff6b6b, #ee5a52);
+            background: linear-gradient(to right, #2ecc71, #27ae60);
             color: white;
         }
 
         .back-btn {
-            background: linear-gradient(to right, #2c3e50, #34495e);
-            color: white;
-        }
-
-        .end-turn-btn {
-            background: linear-gradient(to right, #2ecc71, #27ae60);
+            background: linear-gradient(to right, #e74c3c, #c0392b);
             color: white;
         }
 
@@ -549,7 +529,7 @@
         }
 
         .ship-status-item.placing {
-            background: linear-gradient(to right, #ff9a00, #ff6b6b);
+            background: linear-gradient(to right, #f39c12, #e67e22);
             color: white;
             font-weight: bold;
         }
@@ -561,9 +541,26 @@
         }
 
         .ship-status-item.sunk {
-            background: linear-gradient(to right, #ff0000, #cc0000);
+            background: linear-gradient(to right, #e74c3c, #c0392b);
             color: white;
             font-weight: bold;
+        }
+
+        .attacks-counter {
+            text-align: center;
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
+            color: #2c3e50;
+            font-weight: bold;
+            margin: 15px 0;
+            padding: clamp(10px, 2vw, 15px);
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 10px;
+            border: 3px solid #3498db;
+        }
+
+        .attacks-counter .remaining {
+            color: #e74c3c;
+            font-size: clamp(1.5rem, 5vw, 2.2rem);
         }
 
         .danger-meter {
@@ -595,13 +592,13 @@
         .current-ship-display {
             text-align: center;
             font-size: clamp(1rem, 3vw, 1.4rem);
-            color: #ff6b6b;
+            color: #3498db;
             font-weight: bold;
             margin: 15px 0;
             padding: clamp(10px, 2vw, 15px);
-            background: rgba(255, 107, 107, 0.1);
+            background: rgba(52, 152, 219, 0.1);
             border-radius: 10px;
-            border: 2px solid #ff6b6b;
+            border: 2px solid #3498db;
             line-height: 1.4;
             word-break: break-word;
         }
@@ -612,7 +609,7 @@
             color: #2c3e50;
             margin: 15px 0;
             padding: clamp(10px, 2vw, 15px);
-            background: rgba(255, 107, 107, 0.1);
+            background: rgba(52, 152, 219, 0.1);
             border-radius: 10px;
             min-height: 60px;
             display: flex;
@@ -701,16 +698,15 @@
     <!-- Ready Screen with Rules -->
     <div id="readyScreen">
         <h2 id="readyTitle">PLAYER 1</h2>
-        <div id="modeTitle">⚠️ LAST FLEET STANDING ⚠️</div>
         <div id="rulesBox">
-            <h3>REVERSE RULES</h3>
+            <h3>LAST FLEET STANDING</h3>
             <ul>
                 <li><strong>YOU LOSE if you sink ALL enemy ships</strong></li>
-                <li><strong>✅ MISS = GOOD! 💣 HIT = BAD!</strong></li>
+                <li><strong>✅ MISS = GOOD! 💥 HIT = BAD!</strong></li>
+                <li><strong>⚡ ONE-HIT KILLS: Ships sink immediately!</strong></li>
+                <li><strong>🎯 3 ATTACKS PER TURN</strong></li>
                 <li>Try to AVOID hitting enemy ships</li>
-                <li>One shot per turn - choose wisely!</li>
                 <li>Last player with enemy ships alive WINS!</li>
-                <li>Strategic misses are your best friend</li>
             </ul>
         </div>
         <button id="readyButton" onclick="startTurn()">READY</button>
@@ -719,8 +715,8 @@
     <!-- Game Screen -->
     <div id="gameScreen">
         <div class="header">
-            <div class="game-mode">⚠️ LAST FLEET STANDING ⚠️</div>
-            <h1>🚢 REVERSE BATTLESHIP</h1>
+            <div class="game-mode">LAST FLEET STANDING</div>
+            <h1>🚢 BATTLESHIP - REVERSE MODE</h1>
             <div class="player-turn" id="turnIndicator">Player 1's Turn</div>
         </div>
 
@@ -731,8 +727,13 @@
                 Drag ships from the dock to your grid. Rotate with R or button.
             </div>
             
+            <!-- Attacks Counter -->
+            <div class="attacks-counter hidden" id="attacksCounter">
+                🎯 ATTACKS LEFT: <span class="remaining" id="remainingAttacks">3</span> / 3
+            </div>
+            
             <!-- Danger Meter -->
-            <div class="ship-status-container" id="dangerMeterContainer">
+            <div class="ship-status-container hidden" id="dangerMeterContainer">
                 <h3>DANGER METER</h3>
                 <div class="danger-meter">
                     <div class="danger-fill" id="dangerFill"></div>
@@ -788,10 +789,10 @@
                     <h3>Battle Controls</h3>
                     <div class="control-buttons">
                         <button class="control-btn back-btn" onclick="returnToMenu()">
-                            🏠 Menu
+                            🏠 Back to Menu
                         </button>
-                        <button class="control-btn end-turn-btn" id="endTurnBtn" onclick="endTurn()" disabled>
-                            ⏭️ End Turn (Make a move first)
+                        <button class="control-btn start-btn" id="endTurnBtn" onclick="endTurn()">
+                            ⏭️ End Turn
                         </button>
                     </div>
                 </div>
@@ -819,7 +820,7 @@
         let currentPhase = 'placement';
         let currentPlayer = 1;
         let isVertical = true;
-        let hasMadeMoveThisTurn = false;
+        let attacksRemaining = 3; // 3 attacks per turn
         let selectedShipIndex = -1;
         let isDragging = false;
         let dragOffsetX = 0;
@@ -1069,8 +1070,7 @@
                 ships[playerKey].push({
                     ...ship,
                     cells: cells,
-                    hits: 0,
-                    sunk: false
+                    sunk: false  // Ships are either safe or completely sunk
                 });
                 
                 ship.placed = true;
@@ -1102,14 +1102,15 @@
             document.getElementById('readyScreen').style.display = 'none';
             document.getElementById('gameScreen').style.display = 'block';
             
-            hasMadeMoveThisTurn = false;
+            // Reset attacks for new turn
+            attacksRemaining = 3;
             
             const attackGrid = document.getElementById('attackGrid');
             if (currentPhase === 'battle') {
                 attackGrid.style.pointerEvents = 'auto';
                 attackGrid.style.opacity = '1';
-                document.getElementById('endTurnBtn').disabled = true;
-                document.getElementById('endTurnBtn').textContent = "⏭️ End Turn (Make a move first)";
+                document.getElementById('endTurnBtn').disabled = false;
+                updateAttacksCounter();
             } else {
                 attackGrid.style.pointerEvents = 'none';
                 attackGrid.style.opacity = '0.5';
@@ -1184,6 +1185,7 @@
             updateShipDock();
             updateShipStatus();
             updateDangerMeter();
+            updateAttacksCounter();
             updateCurrentShipDisplay();
             updateMessageDisplay();
             updateControls();
@@ -1267,7 +1269,7 @@
                     attackGrid.children[index].classList.add(hit ? 'hit' : 'miss');
                 });
                 
-                if (!hasMadeMoveThisTurn) {
+                if (attacksRemaining > 0) {
                     attackGrid.style.opacity = '1';
                     attackGrid.style.pointerEvents = 'auto';
                 } else {
@@ -1334,7 +1336,6 @@
                         ships[playerKey].push({
                             ...ship,
                             cells: cells,
-                            hits: 0,
                             sunk: false
                         });
                         ship.placed = true;
@@ -1369,8 +1370,9 @@
             } else {
                 currentPhase = 'battle';
                 currentPlayer = 1;
+                attacksRemaining = 3;
                 showReadyScreen();
-                showMessage("⚠️ BATTLE BEGINS! ⚠️\nTry NOT to sink enemy ships!");
+                showMessage("Battle begins! 3 attacks per turn - Try NOT to hit!");
             }
             
             if (navigator.vibrate) {
@@ -1378,11 +1380,11 @@
             }
         }
 
-        // Handle attack - REVERSE LOGIC
+        // Handle attack - REVERSE LOGIC with 3 attacks per turn
         function handleAttack(row, col) {
             if (currentPhase !== 'battle') return;
-            if (hasMadeMoveThisTurn) {
-                showMessage("You already made your move this turn!");
+            if (attacksRemaining <= 0) {
+                showMessage("No attacks left! Click 'End Turn'.");
                 return;
             }
             
@@ -1396,29 +1398,29 @@
             }
             
             attacks[playerKey].add(attackKey);
-            hasMadeMoveThisTurn = true;
+            attacksRemaining--;
             
-            // Enable end turn button
-            document.getElementById('endTurnBtn').disabled = false;
-            document.getElementById('endTurnBtn').textContent = "⏭️ End Turn";
+            // Update attacks counter
+            updateAttacksCounter();
             
-            const attackGrid = document.getElementById('attackGrid');
-            attackGrid.style.pointerEvents = 'none';
-            attackGrid.style.opacity = '0.7';
+            // Disable attack grid if no attacks left
+            if (attacksRemaining <= 0) {
+                const attackGrid = document.getElementById('attackGrid');
+                attackGrid.style.pointerEvents = 'none';
+                attackGrid.style.opacity = '0.7';
+                document.getElementById('endTurnBtn').disabled = false;
+            }
             
             let hit = false;
             let shipHit = null;
             
+            // Check if hit any ship (ONE-HIT KILL)
             ships[enemyKey].forEach(ship => {
                 ship.cells.forEach(pos => {
                     if (pos.row === row && pos.col === col) {
                         hit = true;
-                        ship.hits++;
                         shipHit = ship;
-                        
-                        if (ship.hits === ship.size) {
-                            ship.sunk = true;
-                        }
+                        ship.sunk = true; // ONE-HIT KILL: ship sinks immediately
                     }
                 });
             });
@@ -1427,11 +1429,7 @@
             
             // REVERSE MESSAGES: Hits are BAD, Misses are GOOD
             if (hit) {
-                if (shipHit.sunk) {
-                    showMessage(`💀 OH NO! You sunk their ${shipHit.name}! 💀\nYou're closer to LOSING!`);
-                } else {
-                    showMessage("💣 HIT! That's BAD! Try to miss next time!");
-                }
+                showMessage(`💥 OH NO! You sunk their ${shipHit.name} in one hit! 💥\nThat's VERY BAD!`);
                 
                 // Check for LOSS condition (you sank all their ships)
                 if (checkLoss(enemyKey)) {
@@ -1447,11 +1445,36 @@
                     return;
                 }
             } else {
-                showMessage("✅ MISS! Excellent! That's what you want!");
+                showMessage("✅ MISS! Good job avoiding their ships!");
             }
             
+            // Vibrate differently based on hit/miss
             if (navigator.vibrate) {
-                navigator.vibrate(hit ? 300 : 100);
+                navigator.vibrate(hit ? [200, 100, 200] : 100);
+            }
+        }
+
+        // Update attacks counter display
+        function updateAttacksCounter() {
+            const attacksCounter = document.getElementById('attacksCounter');
+            const remainingDisplay = document.getElementById('remainingAttacks');
+            
+            if (currentPhase === 'battle') {
+                attacksCounter.classList.remove('hidden');
+                remainingDisplay.textContent = attacksRemaining;
+                
+                // Color coding based on remaining attacks
+                if (attacksRemaining === 3) {
+                    remainingDisplay.style.color = '#2ecc71';
+                } else if (attacksRemaining === 2) {
+                    remainingDisplay.style.color = '#f39c12';
+                } else if (attacksRemaining === 1) {
+                    remainingDisplay.style.color = '#e74c3c';
+                } else {
+                    remainingDisplay.style.color = '#7f8c8d';
+                }
+            } else {
+                attacksCounter.classList.add('hidden');
             }
         }
 
@@ -1462,13 +1485,13 @@
 
         // End turn and switch player
         function endTurn() {
-            if (!hasMadeMoveThisTurn) {
-                showMessage("You must make a move before ending your turn!");
+            if (attacksRemaining > 0) {
+                showMessage(`You still have ${attacksRemaining} attack(s) left! Use them first.`);
                 return;
             }
             
             currentPlayer = currentPlayer === 1 ? 2 : 1;
-            hasMadeMoveThisTurn = false;
+            attacksRemaining = 3; // Reset to 3 attacks for next player
             showReadyScreen();
         }
 
@@ -1523,7 +1546,7 @@
                 ships[enemyKey].forEach(ship => {
                     const item = document.createElement('div');
                     item.className = `ship-status-item ${ship.sunk ? 'sunk' : 'safe'}`;
-                    const status = ship.sunk ? 'SUNK! (Bad for you!)' : `SAFE (${ship.hits}/${ship.size} hits)`;
+                    const status = ship.sunk ? 'SUNK! (Bad for you!)' : 'SAFE (Avoid this!)';
                     item.innerHTML = `${ship.sunk ? '💀' : '🚢'} ${ship.name}: ${status}`;
                     shipStatus.appendChild(item);
                 });
@@ -1566,10 +1589,10 @@
                     display.textContent = 'All ships placed! Ready for REVERSE battle!';
                 }
             } else {
-                if (hasMadeMoveThisTurn) {
-                    display.textContent = `Player ${currentPlayer}'s Turn - Move made! Click "End Turn"`;
+                if (attacksRemaining > 0) {
+                    display.textContent = `Player ${currentPlayer}'s Turn - ${attacksRemaining} attack(s) left!\n💥 ONE-HIT KILLS! Try to MISS!`;
                 } else {
-                    display.textContent = `Player ${currentPlayer}'s Turn - Make your ONE attack!\n⚠️ Remember: MISS = GOOD, HIT = BAD!`;
+                    display.textContent = `Player ${currentPlayer}'s Turn - No attacks left! Click "End Turn"`;
                 }
             }
         }
@@ -1586,10 +1609,10 @@
                     display.textContent = 'All ships placed! Click "Finish Placement" when ready.';
                 }
             } else {
-                if (hasMadeMoveThisTurn) {
-                    display.textContent = 'You made your move! Click "End Turn" to switch players.';
+                if (attacksRemaining > 0) {
+                    display.textContent = `Click on the right grid to make your ${attacksRemaining} attack(s)!\n💥 ONE-HIT KILLS - MISS = GOOD, HIT = BAD!`;
                 } else {
-                    display.textContent = 'Click on the right grid to make your ONE attack!\n⚠️ Try to MISS enemy ships!';
+                    display.textContent = 'No attacks left! Click "End Turn" to switch players.';
                 }
             }
         }
@@ -1609,8 +1632,8 @@
             } else {
                 placementControls.classList.add('hidden');
                 gameControls.classList.remove('hidden');
-                turnIndicator.textContent = `Player ${currentPlayer}'s Turn ⚠️`;
-                playerTitle.textContent = `Player ${currentPlayer} (Try to MISS!)`;
+                turnIndicator.textContent = `Player ${currentPlayer}'s Turn (3 attacks)`;
+                playerTitle.textContent = `Player ${currentPlayer}`;
             }
         }
 
@@ -1637,7 +1660,7 @@
             currentPhase = 'placement';
             currentPlayer = 1;
             isVertical = true;
-            hasMadeMoveThisTurn = false;
+            attacksRemaining = 3;
             selectedShipIndex = -1;
             isDragging = false;
             
