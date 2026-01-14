@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <title>Local Multiplayer - Last Fleet Standing</title>
+    <title>Last Fleet Standing - Reverse Battleship</title>
     <style>
         * {
             margin: 0;
@@ -27,7 +27,7 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        /* Ready Screen - Pure Black with ONLY Ready Button */
+        /* Ready Screen */
         #readyScreen {
             position: fixed;
             top: 0;
@@ -50,14 +50,14 @@
         #readyScreen h2 {
             font-size: clamp(2rem, 8vw, 3rem);
             margin-bottom: 30px;
-            color: #3498db;
-            text-shadow: 0 0 20px rgba(52, 152, 219, 0.5);
+            color: #ff4444;
+            text-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
             line-height: 1.2;
         }
 
         #rulesBox {
             background: rgba(255, 255, 255, 0.1);
-            border: 2px solid #3498db;
+            border: 2px solid #ff4444;
             border-radius: 15px;
             padding: clamp(15px, 3vw, 25px);
             margin: 20px auto;
@@ -66,7 +66,7 @@
         }
 
         #rulesBox h3 {
-            color: #3498db;
+            color: #ff4444;
             margin-bottom: 15px;
             font-size: clamp(1.2rem, 4vw, 1.8rem);
             text-align: center;
@@ -85,7 +85,7 @@
         }
 
         #rulesBox li::before {
-            content: "🎯";
+            content: "💥";
             margin-right: 10px;
         }
 
@@ -96,11 +96,11 @@
             border: none;
             border-radius: 50px;
             cursor: pointer;
-            background: linear-gradient(to right, #2ecc71, #27ae60);
+            background: linear-gradient(to right, #ff4444, #cc0000);
             color: white;
             text-transform: uppercase;
             letter-spacing: 2px;
-            box-shadow: 0 0 40px rgba(46, 204, 113, 0.7);
+            box-shadow: 0 0 40px rgba(255, 68, 68, 0.7);
             animation: pulse 2s infinite;
             transition: all 0.3s;
             touch-action: manipulation;
@@ -110,7 +110,7 @@
 
         #readyButton:hover, #readyButton:active {
             transform: scale(1.05);
-            box-shadow: 0 0 60px rgba(46, 204, 113, 1);
+            box-shadow: 0 0 60px rgba(255, 68, 68, 1);
         }
 
         @keyframes pulse {
@@ -123,7 +123,7 @@
         #gameScreen {
             display: none;
             min-height: 100vh;
-            background: linear-gradient(135deg, #1a2980, #26d0ce);
+            background: linear-gradient(135deg, #8B0000, #B22222);
             padding: 15px;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
@@ -141,12 +141,13 @@
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
             margin-bottom: 10px;
             line-height: 1.2;
+            color: #ffcccc;
         }
 
         .game-mode {
             font-size: clamp(1rem, 3vw, 1.3rem);
             color: #fff;
-            background: rgba(52, 152, 219, 0.3);
+            background: rgba(255, 68, 68, 0.3);
             padding: 8px 20px;
             border-radius: 25px;
             display: inline-block;
@@ -176,11 +177,11 @@
         }
 
         .player-title {
-            color: #2c3e50;
+            color: #8B0000;
             text-align: center;
             margin-bottom: 20px;
             padding-bottom: 10px;
-            border-bottom: 4px solid #3498db;
+            border-bottom: 4px solid #ff4444;
             font-size: clamp(1.5rem, 5vw, 2.2rem);
             line-height: 1.3;
         }
@@ -192,7 +193,7 @@
             gap: 15px;
             margin: 20px auto;
             padding: 20px;
-            background: rgba(52, 152, 219, 0.1);
+            background: rgba(255, 68, 68, 0.1);
             border-radius: 15px;
             max-width: 600px;
         }
@@ -202,7 +203,7 @@
         }
 
         .ship-dock h3 {
-            color: #2c3e50;
+            color: #8B0000;
             text-align: center;
             margin-bottom: 15px;
             font-size: clamp(1.2rem, 3vw, 1.5rem);
@@ -220,7 +221,7 @@
             align-items: center;
             gap: 10px;
             padding: 12px 20px;
-            background: #ecf0f1;
+            background: #ffe6e6;
             border-radius: 10px;
             cursor: grab;
             user-select: none;
@@ -230,13 +231,13 @@
         }
 
         .ship-dock-item:hover, .ship-dock-item.dragging {
-            background: #d6eaf8;
+            background: #ffcccc;
             transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 5px 15px rgba(255, 68, 68, 0.2);
         }
 
         .ship-dock-item.placed {
-            background: #2ecc71;
+            background: #ff4444;
             color: white;
             opacity: 0.7;
             cursor: default;
@@ -254,7 +255,7 @@
         .ship-cell {
             width: 20px;
             height: 20px;
-            background: #3498db;
+            background: #ff4444;
             border-radius: 3px;
         }
 
@@ -270,6 +271,11 @@
         .ship-name {
             font-weight: bold;
             font-size: 0.9rem;
+            color: #8B0000;
+        }
+
+        .ship-dock-item.placed .ship-name {
+            color: white;
         }
 
         .grids-container {
@@ -299,7 +305,7 @@
         }
 
         .grid-wrapper h3 {
-            color: #34495e;
+            color: #8B0000;
             margin-bottom: 10px;
             font-size: clamp(1.1rem, 3vw, 1.5rem);
             font-weight: bold;
@@ -313,8 +319,8 @@
             gap: 1px;
             width: min(95vw, 350px);
             height: min(95vw, 350px);
-            border: 3px solid #2c3e50;
-            background-color: #3498db;
+            border: 3px solid #8B0000;
+            background-color: #ff4444;
             margin: 0 auto;
             touch-action: manipulation;
         }
@@ -327,8 +333,8 @@
         }
 
         .cell {
-            background-color: #ecf0f1;
-            border: 1px solid #bdc3c7;
+            background-color: #ffe6e6;
+            border: 1px solid #ff9999;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -344,12 +350,12 @@
         }
 
         .cell.drag-over {
-            background-color: #f39c12 !important;
+            background-color: #ffcc00 !important;
             opacity: 0.7;
         }
 
         .cell:active {
-            background-color: #d6eaf8;
+            background-color: #ffcccc;
             transform: scale(0.95);
         }
 
@@ -362,17 +368,17 @@
 
         .cell.miss::after {
             content: "✅";
-            color: #2ecc71;
+            color: #00cc44;
             font-size: clamp(1.2rem, 3vw, 1.8rem);
             animation: missEffect 0.5s;
         }
 
         .cell.ship {
-            background-color: #2c3e50;
+            background-color: #cc0000;
         }
 
         .cell.ship.hit {
-            background-color: #e74c3c;
+            background-color: #ff0000;
         }
 
         .cell.ship.hit::after {
@@ -395,7 +401,7 @@
         .controls-container {
             margin-top: 25px;
             padding: clamp(15px, 3vw, 25px);
-            background: rgba(236, 240, 241, 0.9);
+            background: rgba(255, 230, 230, 0.9);
             border-radius: 15px;
         }
 
@@ -405,7 +411,7 @@
         }
 
         .placement-controls h3, .game-controls h3 {
-            color: #2c3e50;
+            color: #8B0000;
             margin-bottom: 15px;
             font-size: clamp(1.1rem, 3vw, 1.4rem);
             line-height: 1.3;
@@ -452,22 +458,22 @@
         }
 
         .rotate-btn {
-            background: linear-gradient(to right, #3498db, #2980b9);
+            background: linear-gradient(to right, #ff9900, #ff6600);
             color: white;
         }
 
         .random-btn {
-            background: linear-gradient(to right, #9b59b6, #8e44ad);
+            background: linear-gradient(to right, #9900cc, #660099);
             color: white;
         }
 
         .start-btn {
-            background: linear-gradient(to right, #2ecc71, #27ae60);
+            background: linear-gradient(to right, #ff4444, #cc0000);
             color: white;
         }
 
         .back-btn {
-            background: linear-gradient(to right, #e74c3c, #c0392b);
+            background: linear-gradient(to right, #666666, #444444);
             color: white;
         }
 
@@ -484,7 +490,7 @@
         }
 
         .ship-status-container h3 {
-            color: #2c3e50;
+            color: #8B0000;
             text-align: center;
             margin-bottom: 15px;
             font-size: clamp(1.1rem, 3vw, 1.4rem);
@@ -508,7 +514,7 @@
         }
 
         .ship-status-item {
-            background: #ecf0f1;
+            background: #ffe6e6;
             padding: clamp(8px, 2vw, 10px) clamp(15px, 3vw, 20px);
             border-radius: 25px;
             font-size: clamp(0.85rem, 2.5vw, 1rem);
@@ -529,19 +535,19 @@
         }
 
         .ship-status-item.placing {
-            background: linear-gradient(to right, #f39c12, #e67e22);
+            background: linear-gradient(to right, #ff9900, #ff6600);
             color: white;
             font-weight: bold;
         }
 
         .ship-status-item.safe {
-            background: linear-gradient(to right, #2ecc71, #27ae60);
+            background: linear-gradient(to right, #00cc44, #009933);
             color: white;
             font-weight: bold;
         }
 
         .ship-status-item.sunk {
-            background: linear-gradient(to right, #e74c3c, #c0392b);
+            background: linear-gradient(to right, #ff0000, #cc0000);
             color: white;
             font-weight: bold;
         }
@@ -549,24 +555,24 @@
         .attacks-counter {
             text-align: center;
             font-size: clamp(1.2rem, 4vw, 1.8rem);
-            color: #2c3e50;
+            color: #8B0000;
             font-weight: bold;
             margin: 15px 0;
             padding: clamp(10px, 2vw, 15px);
-            background: rgba(52, 152, 219, 0.1);
+            background: rgba(255, 68, 68, 0.1);
             border-radius: 10px;
-            border: 3px solid #3498db;
+            border: 3px solid #ff4444;
         }
 
         .attacks-counter .remaining {
-            color: #e74c3c;
+            color: #ff0000;
             font-size: clamp(1.5rem, 5vw, 2.2rem);
         }
 
         .danger-meter {
             width: 100%;
             height: 25px;
-            background: #ecf0f1;
+            background: #ffe6e6;
             border-radius: 12px;
             margin: 15px 0;
             overflow: hidden;
@@ -575,7 +581,7 @@
 
         .danger-fill {
             height: 100%;
-            background: linear-gradient(to right, #2ecc71, #f39c12, #e74c3c, #ff0000);
+            background: linear-gradient(to right, #00cc44, #ff9900, #ff4444, #ff0000);
             border-radius: 12px;
             transition: width 0.5s ease;
             width: 0%;
@@ -586,19 +592,19 @@
             justify-content: space-between;
             margin-top: 5px;
             font-size: 0.9rem;
-            color: #2c3e50;
+            color: #8B0000;
         }
 
         .current-ship-display {
             text-align: center;
             font-size: clamp(1rem, 3vw, 1.4rem);
-            color: #3498db;
+            color: #ff4444;
             font-weight: bold;
             margin: 15px 0;
             padding: clamp(10px, 2vw, 15px);
-            background: rgba(52, 152, 219, 0.1);
+            background: rgba(255, 68, 68, 0.1);
             border-radius: 10px;
-            border: 2px solid #3498db;
+            border: 2px solid #ff4444;
             line-height: 1.4;
             word-break: break-word;
         }
@@ -606,10 +612,10 @@
         .message-display {
             text-align: center;
             font-size: clamp(1rem, 3vw, 1.3rem);
-            color: #2c3e50;
+            color: #8B0000;
             margin: 15px 0;
             padding: clamp(10px, 2vw, 15px);
-            background: rgba(52, 152, 219, 0.1);
+            background: rgba(255, 68, 68, 0.1);
             border-radius: 10px;
             min-height: 60px;
             display: flex;
@@ -703,8 +709,9 @@
             <ul>
                 <li><strong>YOU LOSE if you sink ALL enemy ships</strong></li>
                 <li><strong>✅ MISS = GOOD! 💥 HIT = BAD!</strong></li>
-                <li><strong>⚡ ONE-HIT KILLS: Ships sink immediately!</strong></li>
+                <li><strong>💥 ONE-HIT KILLS: Ships sink immediately!</strong></li>
                 <li><strong>🎯 3 ATTACKS PER TURN</strong></li>
+                <li><strong>⚓ When a ship sinks, ALL its spaces become hits!</strong></li>
                 <li>Try to AVOID hitting enemy ships</li>
                 <li>Last player with enemy ships alive WINS!</li>
             </ul>
@@ -716,7 +723,7 @@
     <div id="gameScreen">
         <div class="header">
             <div class="game-mode">LAST FLEET STANDING</div>
-            <h1>🚢 BATTLESHIP - REVERSE MODE</h1>
+            <h1>🚢 REVERSE BATTLESHIP</h1>
             <div class="player-turn" id="turnIndicator">Player 1's Turn</div>
         </div>
 
@@ -1380,6 +1387,15 @@
             }
         }
 
+        // NEW: When a ship is sunk, convert all its occupied spaces to hits
+        function markEntireShipAsHit(ship, playerKey) {
+            ship.cells.forEach(pos => {
+                const attackKey = `${pos.row},${pos.col}`;
+                // Add each ship cell as an attack on that position
+                attacks[playerKey].add(attackKey);
+            });
+        }
+
         // Handle attack - REVERSE LOGIC with 3 attacks per turn
         function handleAttack(row, col) {
             if (currentPhase !== 'battle') return;
@@ -1421,6 +1437,9 @@
                         hit = true;
                         shipHit = ship;
                         ship.sunk = true; // ONE-HIT KILL: ship sinks immediately
+                        
+                        // NEW: When ship sinks, convert all its spaces to hits
+                        markEntireShipAsHit(ship, playerKey);
                     }
                 });
             });
@@ -1429,7 +1448,11 @@
             
             // REVERSE MESSAGES: Hits are BAD, Misses are GOOD
             if (hit) {
-                showMessage(`💥 OH NO! You sunk their ${shipHit.name} in one hit! 💥\nThat's VERY BAD!`);
+                if (shipHit.sunk) {
+                    showMessage(`💥 OH NO! You sunk their ${shipHit.name}! 💥\nAll its spaces are now hits! That's VERY BAD!`);
+                } else {
+                    showMessage("💥 HIT! That's BAD! Try to miss next time!");
+                }
                 
                 // Check for LOSS condition (you sank all their ships)
                 if (checkLoss(enemyKey)) {
@@ -1465,13 +1488,13 @@
                 
                 // Color coding based on remaining attacks
                 if (attacksRemaining === 3) {
-                    remainingDisplay.style.color = '#2ecc71';
+                    remainingDisplay.style.color = '#00cc44';
                 } else if (attacksRemaining === 2) {
-                    remainingDisplay.style.color = '#f39c12';
+                    remainingDisplay.style.color = '#ff9900';
                 } else if (attacksRemaining === 1) {
-                    remainingDisplay.style.color = '#e74c3c';
+                    remainingDisplay.style.color = '#ff4444';
                 } else {
-                    remainingDisplay.style.color = '#7f8c8d';
+                    remainingDisplay.style.color = '#666666';
                 }
             } else {
                 attacksCounter.classList.add('hidden');
@@ -1590,7 +1613,7 @@
                 }
             } else {
                 if (attacksRemaining > 0) {
-                    display.textContent = `Player ${currentPlayer}'s Turn - ${attacksRemaining} attack(s) left!\n💥 ONE-HIT KILLS! Try to MISS!`;
+                    display.textContent = `Player ${currentPlayer}'s Turn - ${attacksRemaining} attack(s) left!\n💥 ONE-HIT KILLS! Ships reveal all spaces when sunk!`;
                 } else {
                     display.textContent = `Player ${currentPlayer}'s Turn - No attacks left! Click "End Turn"`;
                 }
@@ -1610,7 +1633,7 @@
                 }
             } else {
                 if (attacksRemaining > 0) {
-                    display.textContent = `Click on the right grid to make your ${attacksRemaining} attack(s)!\n💥 ONE-HIT KILLS - MISS = GOOD, HIT = BAD!`;
+                    display.textContent = `Click on the right grid to make your ${attacksRemaining} attack(s)!\n💥 When a ship sinks, ALL its spaces become hits!`;
                 } else {
                     display.textContent = 'No attacks left! Click "End Turn" to switch players.';
                 }
