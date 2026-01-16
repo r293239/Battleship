@@ -1042,7 +1042,7 @@
             placedShips: [],
             ships: [],
             tempScanArea: null,
-            commanderAbilities: [], // Will store 5 random abilities for each player
+            commanderAbilities: [],
             usedCommanderAbility: false
         };
 
@@ -1212,7 +1212,6 @@
             createGameGrid();
             createShipDock();
             
-            // Initialize commander abilities for both players
             gameState.commanderAbilities = {
                 1: getRandomCommanderAbilities(),
                 2: getRandomCommanderAbilities()
@@ -1222,7 +1221,6 @@
         }
 
         function getRandomCommanderAbilities() {
-            // Select 5 random unique abilities from the pool
             const shuffled = [...commanderAbilityTemplates].sort(() => 0.5 - Math.random());
             return shuffled.slice(0, 5);
         }
@@ -1231,7 +1229,6 @@
             const playerAbilities = gameState.commanderAbilities[gameState.currentPlayer];
             if (!playerAbilities || playerAbilities.length === 0) return null;
             
-            // For now, just use the first ability. Could be enhanced to cycle through them.
             return playerAbilities[0];
         }
 
@@ -1376,7 +1373,6 @@
                     useBarrage(row, col);
                     break;
                     
-                // Commander ability phases
                 case 'special_artillery':
                     useArtilleryStrike(row, col);
                     break;
@@ -1395,7 +1391,6 @@
                     
                 default:
                     if (gameState.gamePhase.startsWith('special_')) {
-                        // Auto-execute abilities that don't need targeting
                         const ability = getCurrentCommanderAbility();
                         if (ability) {
                             executeCommanderAbility(ability.id);
@@ -1810,16 +1805,16 @@
             if (gameState.phase === 'ready' && gameState.currentPlayer === 1) {
                 gameState.phase = 'game';
                 gameState.currentPlayer = 1;
+                gameState.actionPoints = 3; // Reset action points for Player 1's first turn
                 document.getElementById('gameScreen').style.display = 'block';
                 updateDisplay();
                 showMessage('Game started! Player 1\'s turn. Each player has unique commander abilities.');
             } else {
                 document.getElementById('gameScreen').style.display = 'block';
                 updateDisplay();
-                showMessage(`Player ${gameState.currentPlayer}'s turn!`);
+                showMessage(`Player ${gameState.currentPlayer}'s turn! Action points: ${gameState.actionPoints}`);
             }
             
-            // Reset commander ability usage for new turn
             gameState.usedCommanderAbility = false;
         }
 
@@ -2222,7 +2217,7 @@
                     break;
                     
                 case 'precision_strike':
-                    gameState.gamePhase = 'special_nuke'; // Reuse nuke targeting
+                    gameState.gamePhase = 'special_nuke';
                     showMessage('Select enemy ship for precision strike.');
                     break;
                     
@@ -2290,16 +2285,23 @@
                     break;
                     
                 case 'double_tap':
+                    // Add the extra action point but don't deduct cost here
                     gameState.actionPoints += ability.extraAP;
                     showMessage(`Double tap! +${ability.extraAP} action point this turn.`);
-                    break;
+                    
+                    // Mark as used but don't deduct cost - return early
+                    gameState.usedCommanderAbility = true;
+                    gameState.gamePhase = 'select';
+                    clearTempScanArea();
+                    updateDisplay();
+                    return; // Return early to avoid double deduction
                     
                 default:
                     showMessage('Commander ability executed!');
                     break;
             }
             
-            // Deduct cost and mark as used
+            // Deduct cost for all other abilities
             gameState.actionPoints -= ability.cost;
             gameState.usedCommanderAbility = true;
             gameState.gamePhase = 'select';
@@ -2328,7 +2330,6 @@
                 }
             });
             
-            // Visual effect
             cells.forEach(cell => {
                 const cellElem = document.querySelector(
                     `.game-cell[data-row="${cell.row}"][data-col="${cell.col}"]`
@@ -2351,11 +2352,7 @@
             const ability = getCurrentCommanderAbility();
             if (!ability) return;
             
-            // Create smoke area that hides ships for 2 turns
             const cells = getScanArea(row, col, ability.radius);
-            
-            // For now, just mark the area visually
-            // In a full implementation, this would hide ships in the area
             
             gameState.actionPoints -= ability.cost;
             gameState.usedCommanderAbility = true;
@@ -2378,7 +2375,6 @@
                     sinkShip(targetShip.id);
                 }
                 
-                // Visual effect
                 const cell = document.querySelector(
                     `.game-cell[data-row="${row}"][data-col="${col}"]`
                 );
@@ -2424,7 +2420,7 @@
             showMessage(`Sonar buoy deployed! Revealing 5x5 area for ${ability.turns} turns.`);
         }
 
-        // ========== REMAINING FUNCTIONS (sinkShip, checkWin, etc.) ==========
+        // ========== GAME LOGIC ==========
         function sinkShip(shipId) {
             const ship = gameState.ships.find(s => s.id === shipId);
             showMessage(`💥 ${ship.name} DESTROYED!`);
@@ -2493,7 +2489,7 @@
             
             gameState.currentPlayer = gameState.currentPlayer === 1 ? 2 : 1;
             gameState.turn++;
-            gameState.actionPoints = 3;
+            gameState.actionPoints = 3; // Reset to 3 action points for new player
             gameState.selectedShip = null;
             gameState.gamePhase = 'select';
             clearTempScanArea();
@@ -2544,6 +2540,7 @@
                 document.getElementById('commanderAbilityTitle').textContent = `${ability.icon} ${ability.name}`;
                 document.getElementById('commanderAbilityDesc').textContent = ability.description;
                 document.getElementById('specialBtn').textContent = `⚡ ${ability.name} (${ability.cost} CP)`;
+                document.getElementById('specialBtn').disabled = gameState.usedCommanderAbility;
             }
             
             const ship = gameState.ships.find(s => s.id === gameState.selectedShip);
